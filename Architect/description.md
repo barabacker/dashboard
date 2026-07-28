@@ -1,0 +1,1 @@
+Инженерный Architect для Plan & Act workflow с Claude Code: помогает думать до реализации, выбирать режим и глубину (модель + thinking), готовить brief для Claude Code/superpowers и ревьюить результат по git-diff, тестам и опциональному контексту репозитория.
