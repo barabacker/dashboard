@@ -34,7 +34,7 @@ class ParameterError(ValueError):
         self.collector_version = version
         self.errors = list(errors)
         super().__init__(
-            f"config invalid for collector {key} v{version}: " + "; ".join(self.errors)
+            f"параметры не подходят сборщику {key} v{version}: " + "; ".join(self.errors)
         )
 
 
@@ -95,17 +95,19 @@ class ParamSpec:
         expected = _KIND_TYPES[self.kind]
         # bool is a subclass of int in Python — an int param must not silently accept True.
         if self.kind in {"int", "float"} and isinstance(value, bool):
-            return [f"{self.name}: expected {self.kind}, got bool"]
+            return [f"{self.name}: ожидается {self.kind}, получено bool"]
         if not isinstance(value, expected):
-            return [f"{self.name}: expected {self.kind}, got {type(value).__name__}"]
+            return [f"{self.name}: ожидается {self.kind}, получено {type(value).__name__}"]
 
         problems: list[str] = []
         if self.choices is not None and value not in self.choices:
-            problems.append(f"{self.name}: must be one of {list(self.choices)!r}, got {value!r}")
+            problems.append(
+                f"{self.name}: допустимо одно из {list(self.choices)!r}, получено {value!r}"
+            )
         if self.min_value is not None and value < self.min_value:
-            problems.append(f"{self.name}: must be >= {self.min_value}, got {value!r}")
+            problems.append(f"{self.name}: должно быть >= {self.min_value}, получено {value!r}")
         if self.max_value is not None and value > self.max_value:
-            problems.append(f"{self.name}: must be <= {self.max_value}, got {value!r}")
+            problems.append(f"{self.name}: должно быть <= {self.max_value}, получено {value!r}")
         return problems
 
 
@@ -141,7 +143,7 @@ class CollectorVersionSchema:
             value = raw.pop(spec.name, _MISSING)
             if value is _MISSING or value is None:
                 if spec.required:
-                    errors.append(f"{spec.name}: required")
+                    errors.append(f"{spec.name}: обязательный параметр")
                     continue
                 effective[spec.name] = spec.default
                 continue
@@ -152,7 +154,7 @@ class CollectorVersionSchema:
             effective[spec.name] = spec.coerce(value)
 
         for unknown in sorted(raw):
-            errors.append(f"{unknown}: unknown parameter for {self.key} v{self.version}")
+            errors.append(f"{unknown}: неизвестный параметр для {self.key} v{self.version}")
 
         if errors:
             raise ParameterError(self.key, self.version, errors)

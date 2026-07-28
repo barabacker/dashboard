@@ -37,10 +37,10 @@ def test_resolve_reports_every_problem_at_once():
             "example_api", "1.0", {"page_size": 0, "pages": "many", "surprise": 1}
         )
     errors = exc_info.value.errors
-    assert any("base_url" in e and "required" in e for e in errors)
+    assert any("base_url" in e and "обязательный" in e for e in errors)
     assert any("page_size" in e and ">= 1" in e for e in errors)
-    assert any("pages" in e and "expected int" in e for e in errors)
-    assert any("surprise" in e and "unknown parameter" in e for e in errors)
+    assert any("pages" in e and "ожидается int" in e for e in errors)
+    assert any("surprise" in e and "неизвестный параметр" in e for e in errors)
 
 
 def test_params_valid_for_v1_can_be_invalid_for_v2():
@@ -50,12 +50,12 @@ def test_params_valid_for_v1_can_be_invalid_for_v2():
 
     with pytest.raises(schemas.ParameterError) as exc_info:
         schemas.resolve_parameters("example_api", "2.0", v1_params)
-    assert exc_info.value.errors == ["dataset: required"]
+    assert exc_info.value.errors == ["dataset: обязательный параметр"]
 
 
 def test_bool_is_not_accepted_where_an_int_is_declared():
     spec = ParamSpec(name="n", kind="int")
-    assert spec.validate(True) == ["n: expected int, got bool"]
+    assert spec.validate(True) == ["n: ожидается int, получено bool"]
     assert spec.validate(3) == []
 
 

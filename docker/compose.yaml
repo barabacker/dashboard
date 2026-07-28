@@ -36,6 +36,9 @@ services:
       - ..:/app
     ports:
       - "8000:8000"
+    # A transient import error (a half-saved settings file during development) should not leave a
+    # dead container behind — the autoreloader cannot recover from a crash at startup.
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -46,6 +49,9 @@ services:
     environment: *app_env
     volumes:
       - ..:/app
+    # A transient import error (a half-saved settings file during development) should not leave a
+    # dead container behind — the autoreloader cannot recover from a crash at startup.
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -56,6 +62,9 @@ services:
     environment: *app_env
     volumes:
       - ..:/app
+    # A transient import error (a half-saved settings file during development) should not leave a
+    # dead container behind — the autoreloader cannot recover from a crash at startup.
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy

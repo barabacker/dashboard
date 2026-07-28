@@ -85,10 +85,16 @@ make scheduler
 
 ## The surfaces
 
+The UI is in **Russian**; code, logs, stored values and documentation stay English. See "What is
+Russian and what is deliberately not" in [`CLAUDE.md`](CLAUDE.md) before adding a string.
+
 * **`/admin/`** — the primary UI. Configs with schedules inline, Job history, and a Collector page
   that shows the parameter schema straight from the code.
 * **`/dashboard/`** — a small HTMX page: what each Config last did, what is running now, "Run now"
   and "Cancel". Actions are plain form POSTs; HTMX only auto-refreshes the job panel.
+
+Times are rendered in `DJANGO_TIME_ZONE` (default `UTC`; set `Europe/Moscow` in `.env` to read
+local times). Storage is always UTC.
 
 ## Commands
 

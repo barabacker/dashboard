@@ -16,8 +16,8 @@ from control.models import Config
 
 class ConfigForm(forms.ModelForm):
     collector_key = forms.ChoiceField(
-        label="Collector",
-        help_text="Resolved to a concrete version at enqueue time.",
+        label="Сборщик",
+        help_text="Конкретная версия определяется в момент постановки в очередь.",
     )
 
     class Meta:
@@ -35,14 +35,14 @@ class ConfigForm(forms.ModelForm):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         known = [
-            (d.key, f"{d.display_name} — current v{d.current_version}")
+            (d.key, f"{d.display_name} — текущая v{d.current_version}")
             for d in schemas.all_collectors()
         ]
         current = self.initial.get("collector_key") or getattr(self.instance, "collector_key", "")
         # A Config may point at a collector that has since been removed from the code. Keep the
         # stale value selectable so editing the rest of the row still works.
         if current and current not in {key for key, _ in known}:
-            known.insert(0, (current, f"{current} — no longer in the codebase"))
+            known.insert(0, (current, f"{current} — больше нет в кодовой базе"))
         self.fields["collector_key"].choices = known
 
     def clean(self) -> dict:
@@ -54,13 +54,13 @@ class ConfigForm(forms.ModelForm):
         if parameters is None:
             return cleaned
         if not isinstance(parameters, dict):
-            self.add_error("parameters", "Parameters must be a JSON object.")
+            self.add_error("parameters", "Параметры должны быть JSON-объектом.")
             return cleaned
 
         try:
             version = schemas.current_version(key)
         except schemas.UnknownCollector:
-            self.add_error("collector_key", f"Collector {key!r} is not in the codebase.")
+            self.add_error("collector_key", f"Сборщика {key!r} нет в кодовой базе.")
             return cleaned
 
         try:

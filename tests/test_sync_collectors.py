@@ -13,7 +13,7 @@ pytestmark = pytest.mark.django_db
 def test_creates_rows_for_collectors_in_code():
     call_command("sync_collectors")
     row = Collector.objects.get(key="example_api")
-    assert row.display_name == "Example API"
+    assert row.display_name == "Пример: HTTP API"
     assert row.enabled
     assert row.synced_at is not None
 
@@ -38,7 +38,7 @@ def test_manual_edits_to_projected_fields_are_overwritten():
     Collector.objects.filter(key="example_api").update(display_name="hand-edited")
 
     call_command("sync_collectors")
-    assert Collector.objects.get(key="example_api").display_name == "Example API"
+    assert Collector.objects.get(key="example_api").display_name == "Пример: HTTP API"
 
 
 def test_dry_run_writes_nothing():

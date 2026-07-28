@@ -41,7 +41,7 @@ class Command(BaseCommand):
 
         samples = [
             {
-                "name": "Example API — nightly full pull",
+                "name": "Пример API — ночная полная выгрузка",
                 "collector_key": "example_api",
                 "parameters": {
                     "base_url": "https://api.example.com",
@@ -60,7 +60,7 @@ class Command(BaseCommand):
                 },
             },
             {
-                "name": "Example API — hourly customers",
+                "name": "Пример API — клиенты каждый час",
                 "collector_key": "example_api",
                 "parameters": {
                     "base_url": "https://api.example.com",
@@ -80,7 +80,7 @@ class Command(BaseCommand):
                 # Deliberately missing the `dataset` parameter that v2.0 requires: this is what a
                 # Config authored against v1.0 looks like after the collector was upgraded.
                 # "Run now" refuses it; a scheduled fire records a failed Job.
-                "name": "Example API — stale config (pre-v2.0)",
+                "name": "Пример API — устаревшая конфигурация (до v2.0)",
                 "collector_key": "example_api",
                 "parameters": {"base_url": "https://api.example.com", "path": "/legacy"},
                 "tags": ["legacy"],

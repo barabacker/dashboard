@@ -114,13 +114,15 @@ class TestJobInvariants:
 class TestSchedule:
     def test_rejects_an_invalid_cron(self, config):
         schedule = Schedule(config=config, cron="not a cron", timezone="UTC")
-        with pytest.raises(ValidationError, match="cron"):
+        with pytest.raises(ValidationError) as exc_info:
             schedule.full_clean()
+        assert "cron" in exc_info.value.message_dict
 
     def test_rejects_an_unknown_timezone(self, config):
         schedule = Schedule(config=config, cron="0 * * * *", timezone="Mars/Olympus")
-        with pytest.raises(ValidationError, match="timezone"):
+        with pytest.raises(ValidationError) as exc_info:
             schedule.full_clean()
+        assert "timezone" in exc_info.value.message_dict
 
     def test_is_deleted_with_its_config(self, config, make_schedule):
         make_schedule(config)

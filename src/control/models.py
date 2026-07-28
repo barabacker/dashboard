@@ -30,12 +30,14 @@ def _snapshot_values(names: Iterable[str], values: Sequence[Any]) -> dict[str, A
     }
 
 
+# Stored values stay English — they are data, referenced by the queue SQL, the tests and
+# CLAUDE.md. Only the labels are Russian, because only labels are ever shown to a human.
 class JobStatus(models.TextChoices):
-    PENDING = "pending", "Pending"
-    RUNNING = "running", "Running"
-    SUCCEEDED = "succeeded", "Succeeded"
-    FAILED = "failed", "Failed"
-    CANCELLED = "cancelled", "Cancelled"
+    PENDING = "pending", "В очереди"
+    RUNNING = "running", "Выполняется"
+    SUCCEEDED = "succeeded", "Успешно"
+    FAILED = "failed", "Ошибка"
+    CANCELLED = "cancelled", "Отменена"
 
     @classmethod
     def terminal(cls) -> frozenset[str]:
@@ -47,19 +49,19 @@ class JobStatus(models.TextChoices):
 
 
 class OverlapPolicy(models.TextChoices):
-    SKIP = "skip", "Skip — drop this fire if the previous run is still active"
-    QUEUE = "queue", "Queue — enqueue anyway, it waits behind the active run"
-    ALLOW = "allow", "Allow — enqueue and run concurrently"
+    SKIP = "skip", "Пропустить — не запускать, пока идёт предыдущий запуск"
+    QUEUE = "queue", "В очередь — поставить в очередь за текущим запуском"
+    ALLOW = "allow", "Разрешить — запускать параллельно"
 
 
 class CatchupPolicy(models.TextChoices):
-    FIRE_MISSED = "fire_missed", "Fire missed — enqueue every missed occurrence"
-    SKIP_TO_NOW = "skip_to_now", "Skip to now — enqueue at most the latest occurrence"
+    FIRE_MISSED = "fire_missed", "Догнать — поставить каждый пропущенный запуск"
+    SKIP_TO_NOW = "skip_to_now", "Только последний — пропустить всё, кроме ближайшего к текущему"
 
 
 class JobOrigin(models.TextChoices):
-    MANUAL = "manual", "Manual"
-    SCHEDULE = "schedule", "Schedule"
+    MANUAL = "manual", "Вручную"
+    SCHEDULE = "schedule", "По расписанию"
 
 
 class Collector(models.Model):
@@ -71,17 +73,21 @@ class Collector(models.Model):
     disabled, never deleted.
     """
 
-    key = models.CharField(max_length=100, unique=True)
-    display_name = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
+    key = models.CharField("Ключ", max_length=100, unique=True)
+    display_name = models.CharField("Название", max_length=200)
+    description = models.TextField("Описание", blank=True)
     enabled = models.BooleanField(
+        "Включён",
         default=True,
-        help_text="Disabled collectors keep their history and their Configs; nothing new runs.",
+        help_text="У выключенного сборщика сохраняется история и конфигурации, "
+        "но ничего нового не запускается.",
     )
-    synced_at = models.DateTimeField(null=True, blank=True, editable=False)
+    synced_at = models.DateTimeField("Синхронизирован", null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ["key"]
+        verbose_name = "Сборщик"
+        verbose_name_plural = "Сборщики"
 
     def __str__(self) -> str:
         return f"{self.display_name} ({self.key})"
@@ -97,25 +103,31 @@ class Config(models.Model):
     #: Fields whose change means "the authored intent changed" and must bump `revision`.
     REVISIONED_FIELDS = ("name", "collector_key", "parameters", "enabled", "archived", "tags")
 
-    name = models.CharField(max_length=200)
+    name = models.CharField("Название", max_length=200)
     collector_key = models.CharField(
+        "Сборщик",
         max_length=100,
         db_index=True,
-        help_text="Resolve-by-key. The concrete version is pinned at enqueue time, not here.",
+        help_text="Ссылка по ключу. Конкретная версия фиксируется в момент постановки "
+        "в очередь, а не здесь.",
     )
     parameters = models.JSONField(
+        "Параметры",
         default=dict,
         blank=True,
-        help_text="Raw authored parameters. Resolved against the collector version's schema at "
-        "enqueue; the resolved form is what the Job snapshots.",
+        help_text="Исходные параметры как их задал человек. При постановке в очередь они "
+        "проверяются по схеме версии сборщика, и уже результат попадает в снимок задачи.",
     )
-    enabled = models.BooleanField(default=True)
+    enabled = models.BooleanField("Включена", default=True)
     archived = models.BooleanField(
-        default=False, help_text="Soft delete. An archived config never enqueues."
+        "В архиве",
+        default=False,
+        help_text="Мягкое удаление. Архивная конфигурация никогда не ставится в очередь.",
     )
-    tags = models.JSONField(default=list, blank=True)
+    tags = models.JSONField("Метки", default=list, blank=True)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
+        verbose_name="Владелец",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -123,27 +135,35 @@ class Config(models.Model):
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
+        verbose_name="Создал",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name="created_configs",
         editable=False,
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    revision = models.PositiveIntegerField(default=1, editable=False)
+    created_at = models.DateTimeField("Создана", auto_now_add=True)
+    updated_at = models.DateTimeField("Изменена", auto_now=True)
+    revision = models.PositiveIntegerField("Ревизия", default=1, editable=False)
 
     # --- dashboard cache columns (§11) ------------------------------------------------
     # Written by the worker when a Job reaches a terminal state, read by list views. These are
     # denormalized caches, not a read model: the Job table remains the source of truth.
     last_status = models.CharField(
-        max_length=16, choices=JobStatus.choices, blank=True, default="", editable=False
+        "Последний статус",
+        max_length=16,
+        choices=JobStatus.choices,
+        blank=True,
+        default="",
+        editable=False,
     )
-    last_run_at = models.DateTimeField(null=True, blank=True, editable=False)
-    last_job_id = models.BigIntegerField(null=True, blank=True, editable=False)
+    last_run_at = models.DateTimeField("Последний запуск", null=True, blank=True, editable=False)
+    last_job_id = models.BigIntegerField("Последняя задача", null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ["-updated_at"]
+        verbose_name = "Конфигурация"
+        verbose_name_plural = "Конфигурации"
         indexes = [
             models.Index(fields=["archived", "enabled"]),
             models.Index(fields=["collector_key"]),
@@ -213,30 +233,46 @@ class Schedule(models.Model):
     collection cursor belongs to execution, not here.
     """
 
-    config = models.ForeignKey(Config, on_delete=models.CASCADE, related_name="schedules")
-    cron = models.CharField(max_length=100, help_text="Standard 5-field cron expression.")
+    config = models.ForeignKey(
+        Config, verbose_name="Конфигурация", on_delete=models.CASCADE, related_name="schedules"
+    )
+    cron = models.CharField(
+        "Cron", max_length=100, help_text="Стандартное cron-выражение из пяти полей."
+    )
     timezone = models.CharField(
+        "Часовой пояс",
         max_length=64,
         default="UTC",
-        help_text="IANA name. Cron occurrences are computed in this zone, stored in UTC.",
+        help_text="Название по IANA. Моменты запуска считаются в этом поясе, хранятся в UTC.",
     )
-    enabled = models.BooleanField(default=True)
+    enabled = models.BooleanField("Включено", default=True)
     overlap_policy = models.CharField(
-        max_length=16, choices=OverlapPolicy.choices, default=OverlapPolicy.SKIP
+        "При наложении",
+        max_length=16,
+        choices=OverlapPolicy.choices,
+        default=OverlapPolicy.SKIP,
+        help_text="Что делать, если предыдущий запуск этой конфигурации ещё не завершён.",
     )
     catchup_policy = models.CharField(
-        max_length=16, choices=CatchupPolicy.choices, default=CatchupPolicy.SKIP_TO_NOW
+        "После простоя",
+        max_length=16,
+        choices=CatchupPolicy.choices,
+        default=CatchupPolicy.SKIP_TO_NOW,
+        help_text="Что делать с запусками, пропущенными пока система была недоступна.",
     )
     last_fired_at = models.DateTimeField(
+        "Последнее срабатывание",
         null=True,
         blank=True,
-        help_text="Advanced in the same transaction that creates the Job.",
+        help_text="Сдвигается в той же транзакции, что создаёт задачу.",
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField("Создано", auto_now_add=True)
+    updated_at = models.DateTimeField("Изменено", auto_now=True)
 
     class Meta:
         ordering = ["config__name", "cron"]
+        verbose_name = "Расписание"
+        verbose_name_plural = "Расписания"
         indexes = [models.Index(fields=["enabled"])]
 
     def __str__(self) -> str:
@@ -248,12 +284,14 @@ class Schedule(models.Model):
         try:
             ZoneInfo(self.timezone)
         except (ZoneInfoNotFoundError, ValueError):
-            raise ValidationError({"timezone": f"unknown timezone {self.timezone!r}"}) from None
+            raise ValidationError(
+                {"timezone": f"неизвестный часовой пояс {self.timezone!r}"}
+            ) from None
 
         from croniter import croniter
 
         if not croniter.is_valid(self.cron):
-            raise ValidationError({"cron": f"invalid cron expression {self.cron!r}"})
+            raise ValidationError({"cron": f"некорректное cron-выражение {self.cron!r}"})
 
 
 class Job(models.Model):
@@ -277,34 +315,42 @@ class Job(models.Model):
     )
 
     # --- snapshot (§4) ----------------------------------------------------------------
-    collector_key = models.CharField(max_length=100, editable=False)
-    collector_version = models.CharField(max_length=32, editable=False)
+    collector_key = models.CharField("Сборщик", max_length=100, editable=False)
+    collector_version = models.CharField("Версия сборщика", max_length=32, editable=False)
     effective_parameters = models.JSONField(
+        "Итоговые параметры",
         default=dict,
         editable=False,
-        help_text="Raw params resolved through the version's schema: defaults applied, validated. "
-        "Credential *references* only — never credential values.",
+        help_text="Параметры, разрешённые по схеме версии: подставлены умолчания, пройдена "
+        "проверка. Только *ссылки* на учётные данные — никогда не сами секреты.",
     )
-    schema_version = models.IntegerField(default=0, editable=False)
+    schema_version = models.IntegerField("Версия схемы", default=0, editable=False)
     config_id = models.BigIntegerField(
+        "Конфигурация",
         db_index=True,
         editable=False,
-        help_text="Soft reference. No FK on purpose: Job history outlives Config lifecycle.",
+        help_text="Мягкая ссылка. Внешнего ключа нет намеренно: история задач переживает "
+        "жизненный цикл конфигурации.",
     )
-    config_revision = models.PositiveIntegerField(default=0, editable=False)
+    config_revision = models.PositiveIntegerField("Ревизия конфигурации", default=0, editable=False)
 
     # --- origin -----------------------------------------------------------------------
-    origin = models.CharField(max_length=16, choices=JobOrigin.choices, default=JobOrigin.MANUAL)
-    schedule_id = models.BigIntegerField(null=True, blank=True, editable=False)
+    origin = models.CharField(
+        "Источник", max_length=16, choices=JobOrigin.choices, default=JobOrigin.MANUAL
+    )
+    schedule_id = models.BigIntegerField("Расписание", null=True, blank=True, editable=False)
     fire_time = models.DateTimeField(
+        "Момент срабатывания",
         null=True,
         blank=True,
         editable=False,
-        help_text="The scheduled occurrence this Job realises. Unique per schedule — that "
-        "constraint, not a lock, is what makes scheduling idempotent.",
+        help_text="Запланированный момент, который реализует эта задача. Уникален в пределах "
+        "расписания — именно это ограничение, а не блокировка, делает планирование "
+        "идемпотентным.",
     )
     requested_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
+        verbose_name="Запросил",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -313,29 +359,38 @@ class Job(models.Model):
     )
 
     # --- mutable state / lease (§7) ---------------------------------------------------
-    status = models.CharField(max_length=16, choices=JobStatus.choices, default=JobStatus.PENDING)
-    claimed_by = models.CharField(max_length=200, blank=True, default="")
-    claimed_until = models.DateTimeField(null=True, blank=True)
-    attempt_no = models.PositiveIntegerField(
-        default=0,
-        help_text="Executor handoffs, not collector retries. Incremented by every claim, "
-        "including a reclaim after a lease expired.",
+    status = models.CharField(
+        "Статус", max_length=16, choices=JobStatus.choices, default=JobStatus.PENDING
     )
-    cancel_requested = models.BooleanField(default=False)
-    priority = models.IntegerField(default=0, help_text="Higher runs first.")
-    available_at = models.DateTimeField(default=timezone.now, db_index=True)
+    claimed_by = models.CharField("Захвачена воркером", max_length=200, blank=True, default="")
+    claimed_until = models.DateTimeField("Аренда до", null=True, blank=True)
+    attempt_no = models.PositiveIntegerField(
+        "Попытка",
+        default=0,
+        help_text="Число передач между исполнителями, а не повторов сборщика. Растёт при каждом "
+        "захвате, включая перехват после истечения аренды.",
+    )
+    cancel_requested = models.BooleanField("Запрошена отмена", default=False)
+    priority = models.IntegerField("Приоритет", default=0, help_text="Больше — раньше.")
+    available_at = models.DateTimeField("Доступна с", default=timezone.now, db_index=True)
 
     # --- outcome (§8) -----------------------------------------------------------------
-    started_at = models.DateTimeField(null=True, blank=True)
-    finished_at = models.DateTimeField(null=True, blank=True)
-    result = models.JSONField(default=dict, blank=True)
-    structured_error = models.JSONField(null=True, blank=True, help_text="{type, message, trace}")
-    metrics = models.JSONField(default=dict, blank=True, help_text="{rows, bytes, calls, ...}")
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    started_at = models.DateTimeField("Начата", null=True, blank=True)
+    finished_at = models.DateTimeField("Завершена", null=True, blank=True)
+    result = models.JSONField("Результат", default=dict, blank=True)
+    structured_error = models.JSONField(
+        "Ошибка", null=True, blank=True, help_text="{type, message, trace}"
+    )
+    metrics = models.JSONField(
+        "Метрики", default=dict, blank=True, help_text="{rows, bytes, calls, ...}"
+    )
+    created_at = models.DateTimeField("Создана", auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField("Изменена", auto_now=True)
 
     class Meta:
         ordering = ["-created_at"]
+        verbose_name = "Задача"
+        verbose_name_plural = "Задачи"
         constraints = [
             models.UniqueConstraint(
                 fields=["schedule_id", "fire_time"],
@@ -361,7 +416,10 @@ class Job(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"Job #{self.pk} {self.collector_key} v{self.collector_version} [{self.status}]"
+        return (
+            f"Задача #{self.pk} · {self.collector_key} v{self.collector_version} "
+            f"· {self.get_status_display()}"
+        )
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         loaded = getattr(self, "_loaded_values", None)

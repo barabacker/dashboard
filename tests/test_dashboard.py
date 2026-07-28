@@ -37,7 +37,7 @@ def test_run_now_surfaces_a_refusal_without_creating_anything(client, user, make
     response = client.post(reverse("dashboard:run_now", args=[config.pk]), follow=True)
 
     assert Job.objects.count() == 0
-    assert b"disabled" in response.content
+    assert "отключена".encode() in response.content
 
 
 def test_cancelling_a_pending_job_cancels_it_outright(client, user, config):

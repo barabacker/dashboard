@@ -66,7 +66,7 @@ def run_now(request: HttpRequest, pk: int) -> HttpResponse:
         detail = f" — {'; '.join(exc.errors)}" if exc.errors else ""
         messages.error(request, f"{config.name}: {exc}{detail}")
     else:
-        messages.success(request, f"Queued job #{job.pk} for {config.name}.")
+        messages.success(request, f"Задача #{job.pk} поставлена в очередь для «{config.name}».")
     return redirect("dashboard:index")
 
 
@@ -76,19 +76,31 @@ def cancel_job(request: HttpRequest, pk: int) -> HttpResponse:
     job = get_object_or_404(Job, pk=pk)
     outcome = request_cancel(job)
     if outcome == "cancelled":
-        messages.success(request, f"Job #{job.pk} cancelled before it was claimed.")
+        messages.success(request, f"Задача #{job.pk} отменена — её никто не успел взять.")
     elif outcome == "signalled":
         messages.success(
-            request, f"Job #{job.pk} signalled — it stops at the runner's next checkpoint."
+            request,
+            f"Задача #{job.pk} получила сигнал отмены — остановится на ближайшей контрольной "
+            f"точке сборщика.",
         )
     else:
-        messages.warning(request, f"Job #{job.pk} already finished ({job.status}).")
+        messages.warning(
+            request, f"Задача #{job.pk} уже завершена ({job.get_status_display().lower()})."
+        )
     return redirect("dashboard:index")
 
 
-def _status_counts() -> dict[str, int]:
+def _status_counts() -> list[dict[str, object]]:
+    """One tally per status, carrying both the raw value and its label.
+
+    The raw value drives the CSS class, the label is what a human reads — the template must never
+    print the stored value.
+    """
     rows = Job.objects.values("status").annotate(n=Count("pk"))
     counts = dict.fromkeys(JobStatus.values, 0)
     for row in rows:
         counts[row["status"]] = row["n"]
-    return counts
+    return [
+        {"value": status, "label": JobStatus(status).label, "count": counts[status]}
+        for status in JobStatus.values
+    ]

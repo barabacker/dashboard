@@ -97,16 +97,18 @@ class TestInvalidParameters:
         with pytest.raises(EnqueueRefused) as exc_info:
             enqueue(stale_config, origin=JobOrigin.MANUAL)
         assert exc_info.value.reason == "params_invalid"
-        assert exc_info.value.errors == ["dataset: required"]
+        assert exc_info.value.errors == ["dataset: обязательный параметр"]
         assert Job.objects.count() == 0
 
     def test_a_scheduled_fire_records_a_failed_job_instead(self, stale_config):
         job = enqueue(stale_config, origin=JobOrigin.SCHEDULE)
 
         assert job.status == JobStatus.FAILED
+        # The persisted diagnostic stays English — §6 names this exact wording, and it is data,
+        # not UI. Only the human-readable parameter errors are translated.
         assert job.structured_error["type"] == "config_invalid"
-        assert "v2.0" in job.structured_error["message"]
-        assert job.structured_error["errors"] == ["dataset: required"]
+        assert job.structured_error["message"] == "config invalid for collector v2.0"
+        assert job.structured_error["errors"] == ["dataset: обязательный параметр"]
         assert job.finished_at is not None
 
     def test_the_recorded_failure_is_not_claimable(self, stale_config):

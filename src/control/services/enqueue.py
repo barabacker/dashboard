@@ -76,10 +76,16 @@ def enqueue(
         )
 
     # --- precondition 1: the Config is allowed to run at all --------------------------
+    # `reason` stays an English code — it is an API, matched in tests and in CLAUDE.md. Only the
+    # message is Russian, because only the message reaches a human.
     if config.archived:
-        raise EnqueueRefused("config_archived", f"Config {config.name!r} is archived.")
+        raise EnqueueRefused(
+            "config_archived", f"Конфигурация {config.name!r} в архиве — запуск невозможен."
+        )
     if not config.enabled:
-        raise EnqueueRefused("config_disabled", f"Config {config.name!r} is disabled.")
+        raise EnqueueRefused(
+            "config_disabled", f"Конфигурация {config.name!r} отключена — запуск невозможен."
+        )
 
     # --- precondition 2: the collector exists in code and is not deprecated ------------
     try:
@@ -87,13 +93,13 @@ def enqueue(
     except schemas.UnknownCollector:
         raise EnqueueRefused(
             "collector_unknown",
-            f"Collector {config.collector_key!r} is not in the codebase; nothing to run.",
+            f"Сборщика {config.collector_key!r} нет в кодовой базе — запускать нечего.",
         ) from None
 
     if not _collector_enabled(config.collector_key):
         raise EnqueueRefused(
             "collector_disabled",
-            f"Collector {config.collector_key!r} is disabled; nothing new is enqueued for it.",
+            f"Сборщик {config.collector_key!r} выключен — новые задачи для него не создаются.",
         )
 
     version_schema = schemas.schema(config.collector_key, version)
@@ -105,7 +111,7 @@ def enqueue(
         if on_invalid_params is InvalidParamsPolicy.REFUSE:
             raise EnqueueRefused(
                 "params_invalid",
-                f"config invalid for collector v{version}",
+                f"параметры не подходят версии сборщика v{version}",
                 exc.errors,
             ) from None
         return _record_invalid_config_job(

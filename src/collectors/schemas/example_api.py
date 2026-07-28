@@ -17,17 +17,19 @@ from collectors.schemas.base import CollectorDescriptor, CollectorVersionSchema,
 
 KEY = "example_api"
 
+# Parameter *names* stay English — they are keys in the stored JSON and in the runner code.
+# Descriptions are Russian: they are shown to whoever fills the form.
 _BASE_URL = ParamSpec(
     name="base_url",
     kind="str",
     required=True,
-    description="Root URL of the source API. Part of *what was collected* — snapshotted.",
+    description="Корневой URL источника. Часть ответа на «что именно собрали» — попадает в снимок.",
 )
 _PATH = ParamSpec(
     name="path",
     kind="str",
     default="/items",
-    description="Endpoint path appended to base_url.",
+    description="Путь эндпоинта, дописывается к base_url.",
 )
 _PAGE_SIZE = ParamSpec(
     name="page_size",
@@ -35,7 +37,7 @@ _PAGE_SIZE = ParamSpec(
     default=100,
     min_value=1,
     max_value=1000,
-    description="Rows requested per page.",
+    description="Сколько записей запрашивать на страницу.",
 )
 _PAGES = ParamSpec(
     name="pages",
@@ -43,7 +45,7 @@ _PAGES = ParamSpec(
     default=1,
     min_value=1,
     max_value=100,
-    description="How many pages to walk. Each page is a cancellation checkpoint.",
+    description="Сколько страниц пройти. Каждая страница — контрольная точка для отмены.",
 )
 _CREDENTIAL_REF = ParamSpec(
     name="credential_ref",
@@ -51,8 +53,8 @@ _CREDENTIAL_REF = ParamSpec(
     default="",
     is_credential_ref=True,
     description=(
-        "Name of the environment variable holding the API token. The *name* is snapshotted; "
-        "the token itself is resolved at execution time and never stored on the Job."
+        "Имя переменной окружения с токеном доступа. В снимок попадает только *имя*; сам токен "
+        "разрешается в момент выполнения и никогда не сохраняется в задаче."
     ),
 )
 
@@ -60,7 +62,7 @@ V1 = CollectorVersionSchema(
     key=KEY,
     version="1.0",
     schema_version=1,
-    summary="Paginated fetch from a single endpoint.",
+    summary="Постраничная выгрузка с одного эндпоинта.",
     params=(_BASE_URL, _PATH, _PAGE_SIZE, _PAGES, _CREDENTIAL_REF),
 )
 
@@ -68,7 +70,7 @@ V2 = CollectorVersionSchema(
     key=KEY,
     version="2.0",
     schema_version=2,
-    summary="Adds an explicit dataset selector; rows are tagged with it.",
+    summary="Добавлен явный выбор набора данных; записи помечаются им.",
     params=(
         _BASE_URL,
         _PATH,
@@ -79,13 +81,13 @@ V2 = CollectorVersionSchema(
             name="dataset",
             kind="str",
             required=True,
-            description="Which dataset to pull. Required from v2.0 on.",
+            description="Какой набор данных выгружать. Обязателен начиная с версии 2.0.",
         ),
         ParamSpec(
             name="since",
             kind="str",
             default="",
-            description="Optional ISO-8601 lower bound passed to the API as a filter.",
+            description="Необязательная нижняя граница в формате ISO-8601, уходит в фильтр API.",
         ),
         ParamSpec(
             name="page_delay_seconds",
@@ -93,19 +95,19 @@ V2 = CollectorVersionSchema(
             default=0.0,
             min_value=0.0,
             max_value=60.0,
-            description="Artificial per-page pause. Exists so cancellation is observable on a "
-            "run long enough to catch in the act.",
+            description="Искусственная пауза между страницами. Нужна, чтобы отмену можно было "
+            "увидеть на запуске, который успеваешь поймать.",
         ),
     ),
 )
 
 DESCRIPTOR = CollectorDescriptor(
     key=KEY,
-    display_name="Example API",
+    display_name="Пример: HTTP API",
     description=(
-        "Reference collector used to exercise version resolution, parameter validation and "
-        "cooperative cancellation. It fabricates rows instead of doing network I/O so tests stay "
-        "deterministic."
+        "Эталонный сборщик: на нём проверяются разрешение версий, валидация параметров и "
+        "кооперативная отмена. Вместо сетевых запросов он выдумывает записи, поэтому тесты "
+        "остаются детерминированными."
     ),
     versions=(V1, V2),
 )

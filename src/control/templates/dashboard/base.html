@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Collection dashboard{% endblock %}</title>
+  <title>{% block title %}Панель сбора данных{% endblock %}</title>
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
   <style>
     :root {
@@ -61,11 +61,11 @@
 <body>
 <main>
   <header>
-    <h1>Collection dashboard</h1>
+    <h1>Панель сбора данных</h1>
     <nav>
-      <a href="{% url 'admin:index' %}">Admin</a>
-      <a href="{% url 'admin:control_config_changelist' %}">Configs</a>
-      <a href="{% url 'admin:control_job_changelist' %}">Jobs</a>
+      <a href="{% url 'admin:index' %}">Админка</a>
+      <a href="{% url 'admin:control_config_changelist' %}">Конфигурации</a>
+      <a href="{% url 'admin:control_job_changelist' %}">Задачи</a>
     </nav>
   </header>
 

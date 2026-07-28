@@ -14,6 +14,7 @@ env = environ.Env(
     DJANGO_DEBUG=(bool, False),
     DJANGO_SECRET_KEY=(str, "dev-insecure-secret-key-change-me"),
     DJANGO_ALLOWED_HOSTS=(list, ["*"]),
+    DJANGO_TIME_ZONE=(str, "UTC"),
     POSTGRES_DB=(str, "dashboard"),
     POSTGRES_USER=(str, "dashboard"),
     POSTGRES_PASSWORD=(str, "dashboard"),
@@ -89,8 +90,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
+LANGUAGE_CODE = "ru"
+# Storage stays UTC (USE_TZ); this only decides how instants are rendered in the admin and the
+# dashboard. Set DJANGO_TIME_ZONE=Europe/Moscow to read local times instead.
+TIME_ZONE = env("DJANGO_TIME_ZONE")
 USE_I18N = True
 USE_TZ = True
 

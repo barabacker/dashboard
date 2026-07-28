@@ -130,6 +130,27 @@ full extent of "projection" allowed.
 | D13 | `enqueue` refuses an interactive "Run now" with invalid params, but records a born-terminal `failed` Job for a scheduled fire. | §6 allows either. Interactively the user is there to be told; on a schedule nobody is watching, and a silently skipped run is worse than a visible failed one. |
 | D14 | The Collector projection's `enabled=False` blocks new enqueues. A collector with no projection row is treated as enabled. | Otherwise the field has no behavior at all. A missing row is a deployment gap (run `sync_collectors`), not a decision to disable. |
 
+| D15 | The UI is Russian, written **directly in the code** — no gettext, no `.po`/`.mo`. | `LANGUAGE_CODE = "ru"` makes Django's own admin chrome Russian from the locale files it ships. For our own strings there is no `msgfmt`/`xgettext` on the target machine, so `compilemessages` cannot run; a catalogue nobody can compile is worse than plain literals. If a second language is ever needed, wrap the strings listed below in `gettext_lazy` and generate the catalogue then. |
+
+### What is Russian and what is deliberately not
+
+**Russian** (anything a human reads): model `verbose_name` / `help_text`, all `TextChoices`
+labels, admin site header, column headers, fieldset titles, actions and messages, form labels and
+errors, parameter-validation errors from `collectors.schemas`, collector display names and
+parameter descriptions, dashboard templates, seed sample names.
+
+**English on purpose** (anything a machine or a maintainer reads):
+
+- stored values of every `TextChoices` (`"pending"`, `"skip"`, …) — the claim SQL, the tests and
+  this document all match on them;
+- `EnqueueRefused.reason` codes (`config_disabled`, `params_invalid`, …) — an API, not a message;
+- `structured_error["type"]` codes, and the `"config invalid for collector vX"` message, whose
+  wording §6 of the spec names explicitly;
+- log lines, exception text for programmer errors, docstrings, comments, and all documentation.
+
+When adding a user-facing string, put the Russian in the code and keep the machine-readable
+identifier next to it in English. Never translate a stored value.
+
 ### Known limitation: `overlap_policy=queue` under Option A
 
 `skip` and `allow` are exact. **`queue` is not a mutual-exclusion guarantee.** It enqueues the
