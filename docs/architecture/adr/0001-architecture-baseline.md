@@ -8,13 +8,13 @@ A back office for **data collection**: humans author *what to collect* (Config),
 (Schedule), and the system produces *what actually ran* (Job). Collector algorithms are code, not
 data. The operational surface is Django Admin plus a small dashboard.
 
-The spec (`claude-code-build-prompt.md`) is frozen. This ADR records the style chosen and why it
-is enough, not a re-derivation of the spec.
+The spec (`docs/spec/claude-code-build-prompt.md`) is frozen. This ADR records the style chosen and
+why it is enough, not a re-derivation of the spec.
 
 ## Decision
 
 A **modular monolith**: one Django project, one PostgreSQL database, one deployment, with three
-internal packages whose boundaries are enforced mechanically by `import-linter`.
+internal packages under `src/` whose boundaries are enforced mechanically by `import-linter`.
 
 | Package | Responsibility | Owns |
 |---|---|---|
@@ -44,7 +44,7 @@ the collector algorithms physically live.
 - **Job** — produced; source of truth for *what happened*. It is a separate aggregate holding an
   immutable snapshot plus mutable execution state, deliberately **not** a child of Config, so
   editing or archiving a Config never rewrites history.
-- **Collector** — source of truth is the **code** in `collectors/`. The DB row is a projection
+- **Collector** — source of truth is the **code** in `src/collectors/`. The DB row is a projection
   synced by `manage.py sync_collectors`; version and parameter schema are never editable in the
   admin.
 - **Config.last_status / last_run_at / last_job_id** — denormalized cache columns written by the

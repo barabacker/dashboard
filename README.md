@@ -8,16 +8,24 @@ the Job table *is* the queue.
 
 * Architecture and the reasoning behind it: [`docs/architecture/adr/0001-architecture-baseline.md`](docs/architecture/adr/0001-architecture-baseline.md)
 * Frozen invariants, dependency rules and decisions: [`CLAUDE.md`](CLAUDE.md)
-* The original specification: [`claude-code-build-prompt.md`](claude-code-build-prompt.md)
+* The original specification: [`docs/spec/claude-code-build-prompt.md`](docs/spec/claude-code-build-prompt.md)
 
-## Packages
+## Layout
+
+```
+manage.py            pyproject.toml       uv.lock
+src/                 the four packages
+tests/               unit/ is pure; the rest is DB-backed
+docker/              Dockerfile + compose.yaml
+docs/                agent harness · architecture ADRs · spec · Architect bundle
+```
 
 | Package | Owns | Rule |
 |---|---|---|
-| `collectors/` | collector algorithms and their parameter schemas | pure leaf — imports nothing from the project, not even Django |
-| `control/` | **all** models, admin, dashboard, the single `enqueue` function | never imports the execution runtime or runner code |
-| `execution/` | claim/lease/reclaim, worker loop, scheduler | **no** models; imports `control` and `collectors` freely |
-| `project/` | settings, urls, wsgi | framework glue |
+| `src/collectors/` | collector algorithms and their parameter schemas | pure leaf — imports nothing from the project, not even Django |
+| `src/control/` | **all** models, admin, dashboard, the single `enqueue` function | never imports the execution runtime or runner code |
+| `src/execution/` | claim/lease/reclaim, worker loop, scheduler | **no** models; imports `control` and `collectors` freely |
+| `src/project/` | settings, urls, wsgi | framework glue |
 
 Enforced by `import-linter`, not by review discipline:
 
@@ -29,11 +37,20 @@ lint-imports
 
 ### Docker
 
+The compose file lives in `docker/`. Copy `.env.example` to `.env` first — it sets `COMPOSE_FILE`,
+which is what lets you run plain `docker compose` from the repository root:
+
+```bash
+cp .env.example .env
+```
+
 ```bash
 docker compose up --build
 ```
 
-Brings up Postgres, the web app on http://localhost:8000, a worker and a scheduler. Then, in
+Without a `.env`, point at it explicitly: `docker compose -f docker/compose.yaml up --build`.
+
+That brings up Postgres, the web app on http://localhost:8000, a worker and a scheduler. Then, in
 another shell:
 
 ```bash
@@ -56,12 +73,10 @@ Requires [uv](https://docs.astral.sh/uv/). Postgres can still come from compose.
 uv sync
 ```
 
-```bash
-docker compose up -d db
-```
+`uv sync` installs the project editable, which is what puts `src/` on the import path.
 
 ```bash
-cp .env.example .env
+docker compose up -d db
 ```
 
 ```bash

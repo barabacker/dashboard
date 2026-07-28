@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "dashboard"
 version = "0.1.0"
@@ -19,9 +23,16 @@ dev = [
     "pre-commit>=4.0",
 ]
 
+# src layout: `uv sync` installs the project in editable mode, which is what puts `collectors`,
+# `control`, `execution` and `project` on the path for manage.py, pytest and import-linter alike —
+# no PYTHONPATH juggling, and all four tools resolve imports identically.
+[tool.hatch.build.targets.wheel]
+packages = ["src/collectors", "src/control", "src/execution", "src/project"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+src = ["src", "tests"]
 extend-exclude = ["*/migrations/*"]
 
 [tool.ruff.lint]
@@ -35,6 +46,7 @@ known-first-party = ["collectors", "control", "execution", "project"]
 DJANGO_SETTINGS_MODULE = "project.settings"
 python_files = ["test_*.py"]
 testpaths = ["tests"]
+pythonpath = ["src"]
 addopts = "-q"
 
 [tool.importlinter]

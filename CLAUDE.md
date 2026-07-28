@@ -15,24 +15,38 @@ Before non-trivial work, read:
 - `docs/agent/new_service_architecture.md` (greenfield work)
 - `docs/architecture/adr/0001-architecture-baseline.md`
 
-## Package map
+## Repository map
 
 ```
-project/      Django settings/urls/wsgi — framework glue only
-collectors/   collector CODE, pure leaf, depends on NOTHING else in the project
-  schemas/      pure descriptors: key, versions, parameter schema per version
-  runners/      run() implementations, one module per (key, version)
-  registry.py   resolve (key, version) -> runner   [imports runners — control must not touch it]
-control/      everything authored/stored + admin/dashboard surface. ALL models live here.
-  models.py     Collector projection, Config, Schedule, Job
-  services/     the single shared enqueue function
-  dashboard/    small HTMX dashboard
-execution/    runtime that CONSUMES jobs. Owns behavior, owns NO models.
-  queue/        claim + lease + reclaim (one function)
-  worker/       worker loop
-  scheduler/    scheduler runtime
-  management/commands/  run_worker, run_scheduler
+manage.py               entry point; puts src/ on sys.path for bare checkouts
+pyproject.toml          deps, ruff, pytest, import-linter contracts — one config file
+src/
+  project/              Django settings/urls/wsgi — framework glue only
+  collectors/           collector CODE, pure leaf, depends on NOTHING else in the project
+    schemas/              pure descriptors: key, versions, parameter schema per version
+    runners/              run() implementations, one module per (key, version)
+    registry.py           resolve (key, version) -> runner  [imports runners — control must not]
+  control/              everything authored/stored + admin/dashboard surface. ALL models here.
+    models.py             Collector projection, Config, Schedule, Job
+    services/             the single shared enqueue function
+    dashboard/            small HTMX dashboard
+  execution/            runtime that CONSUMES jobs. Owns behavior, owns NO models.
+    queue/                claim + lease + reclaim (one function)
+    worker/               worker loop
+    scheduler/            scheduler runtime
+    management/commands/  run_worker, run_scheduler
+tests/                  unit/ is pure (no DB); everything else is DB-backed
+docker/                 Dockerfile + compose.yaml
+docs/
+  agent/                the Architect harness
+  architecture/adr/     architecture decisions
+  spec/                 the frozen build prompt this repo implements
+  architect-bundle/     the Architect Project bundle, kept for reference
 ```
+
+`src/` is a real src layout: `uv sync` installs the project editable, which is what puts the four
+packages on the import path for `manage.py`, `pytest` and `lint-imports` alike. After changing
+`[tool.hatch.build.targets.wheel] packages`, re-run `uv sync`.
 
 ## Invariants (frozen — §12 of the spec)
 
@@ -102,7 +116,7 @@ full extent of "projection" allowed.
 |---|----------|-----|
 | D1 | **Option A — stateless collectors** (§17). | Confirmed with the user before P2. No `CollectionState`, no `processed_window`, no per-stream partial unique index, no extra claim predicate. Switching to B later is a hot-path change, not an add-on. |
 | D2 | Python 3.13 + Django 5.2 LTS, managed with `uv`. | 3.12+ required by the spec; 3.13 is supported by Django 5.2. |
-| D3 | Layout: `manage.py` + `project/` (settings) + `collectors/`, `control/`, `execution/` at repo root. | The spec's `project/` box is the repo itself; a nested package of the same name would only add a path segment. |
+| D3 | Layout: `manage.py` at the root, the four packages under `src/`, docker under `docker/`, all prose under `docs/`. | The spec's `project/` box is the repo itself. A src layout keeps the root readable and makes "is this importable?" a property of the install rather than of the current working directory. |
 | D4 | Parameter schemas are plain Python descriptors (`ParamSpec` list), not JSON Schema. | Simpler option per the prompt's ambiguity rule; enough to type-check, default and validate, with no extra dependency. |
 | D5 | Cron parsing via `croniter`. | Schedules need real cron + timezone semantics and catch-up iteration; hand-rolling that is the complex option. |
 | D6 | The queue claim is a single raw-SQL `UPDATE ... FROM (SELECT ... FOR UPDATE SKIP LOCKED)` in `execution/queue/claim.py::claim_job`. | §7 requires exactly one place for the claim predicate so the A→B fork stays localized. |

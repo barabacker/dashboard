@@ -7,7 +7,8 @@ from pathlib import Path
 
 import environ
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+#: The repository root — src/project/settings.py -> src/project -> src -> repo root.
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env(
     DJANGO_DEBUG=(bool, False),
@@ -56,7 +57,7 @@ ROOT_URLCONF = "project.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "project" / "templates"],
+        "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

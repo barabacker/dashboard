@@ -3,6 +3,11 @@
 
 import os
 import sys
+from pathlib import Path
+
+# The packages live under src/. `uv sync` installs the project editable, so this is usually
+# redundant — but it keeps `python manage.py ...` working from a bare checkout too.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
 
 def main() -> None:

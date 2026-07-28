@@ -1,3 +1,8 @@
+# Paths here are relative to this file's directory, so the repository root is `..`.
+# Run it from the repo root: `.env` there sets COMPOSE_FILE, so plain `docker compose up` finds
+# this file. Without a .env, pass it explicitly: `docker compose -f docker/compose.yaml up`.
+name: dashboard
+
 services:
   db:
     image: postgres:16-alpine
@@ -16,7 +21,9 @@ services:
       retries: 20
 
   web:
-    build: .
+    build: &app_build
+      context: ..
+      dockerfile: docker/Dockerfile
     command: python manage.py runserver 0.0.0.0:8000
     environment: &app_env
       DJANGO_DEBUG: "true"
@@ -26,7 +33,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-dashboard}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dashboard}
     volumes:
-      - .:/app
+      - ..:/app
     ports:
       - "8000:8000"
     depends_on:
@@ -34,21 +41,21 @@ services:
         condition: service_healthy
 
   worker:
-    build: .
+    build: *app_build
     command: python manage.py run_worker
     environment: *app_env
     volumes:
-      - .:/app
+      - ..:/app
     depends_on:
       db:
         condition: service_healthy
 
   scheduler:
-    build: .
+    build: *app_build
     command: python manage.py run_scheduler --loop
     environment: *app_env
     volumes:
-      - .:/app
+      - ..:/app
     depends_on:
       db:
         condition: service_healthy

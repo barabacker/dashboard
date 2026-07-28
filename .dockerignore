@@ -1,0 +1,16 @@
+# The build context is the repository root. Keep it to what the image actually needs — a copied
+# .venv would be both huge and built for the wrong platform.
+.venv/
+.git/
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.import_linter_cache/
+staticfiles/
+docs/
+tests/
+LICENSE
+README.md
+CLAUDE.md
