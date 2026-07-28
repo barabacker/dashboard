@@ -109,6 +109,21 @@ full extent of "projection" allowed.
 | D7 | Cancellation signal is read from the DB (`Job.cancel_requested`) by `RunContext.check_cancelled()`, polled cooperatively by runners. | No signal bus, no heartbeat subsystem. |
 | D8 | `sync_collectors` upserts the Collector projection and **disables** rows whose key vanished from the registry. | Deprecate-not-delete. |
 | D9 | `available_at` is the scheduling knob for a pending Job; there is no separate retry/backoff machinery. | Retry is postponed (§14). |
+| D10 | A Schedule with `last_fired_at IS NULL` is **anchored at now** on its first tick and fires nothing. | "No history" is not "the epoch". Back-filling a cron to 1970 is never the intent. |
+| D11 | A Schedule whose Config is disabled or archived advances `last_fired_at` to now without firing. | Otherwise re-enabling a Config would unleash every occurrence that passed while it was off. |
+| D12 | Catch-up is capped at `DEFAULT_MAX_CATCHUP = 100` occurrences per schedule per tick. | After a long outage `fire_missed` would otherwise bury the queue. The remainder is picked up by the next tick, so nothing is lost. |
+| D13 | `enqueue` refuses an interactive "Run now" with invalid params, but records a born-terminal `failed` Job for a scheduled fire. | §6 allows either. Interactively the user is there to be told; on a schedule nobody is watching, and a silently skipped run is worse than a visible failed one. |
+| D14 | The Collector projection's `enabled=False` blocks new enqueues. A collector with no projection row is treated as enabled. | Otherwise the field has no behavior at all. A missing row is a deployment gap (run `sync_collectors`), not a decision to disable. |
+
+### Known limitation: `overlap_policy=queue` under Option A
+
+`skip` and `allow` are exact. **`queue` is not a mutual-exclusion guarantee.** It enqueues the
+occurrence and lets it wait, which serialises correctly with a single worker — but with several
+workers the queued Job can be claimed while the previous one is still running.
+
+A real guarantee needs the ≤1-active-Job-per-stream invariant: a partial unique index on active
+jobs plus the matching claim predicate. That is Option B (§17), which decision **D1** deferred.
+Do not paper over this with a lock (§14). If non-overlap is required, reopen the A/B fork.
 
 ## Core working rules
 
