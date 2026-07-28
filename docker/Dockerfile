@@ -19,4 +19,4 @@ COPY . .
 # Then the project itself, editable — that is what puts src/ on the import path.
 RUN uv sync --frozen --no-dev
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["python", "src/manage.py", "runserver", "0.0.0.0:8000"]

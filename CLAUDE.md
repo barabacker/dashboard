@@ -18,9 +18,10 @@ Before non-trivial work, read:
 ## Repository map
 
 ```
-manage.py               entry point; puts src/ on sys.path for bare checkouts
+Makefile                every routine command; `make help` lists them
 pyproject.toml          deps, ruff, pytest, import-linter contracts — one config file
 src/
+  manage.py             Django entry point, next to the packages it drives
   project/              Django settings/urls/wsgi — framework glue only
   collectors/           collector CODE, pure leaf, depends on NOTHING else in the project
     schemas/              pure descriptors: key, versions, parameter schema per version
@@ -116,7 +117,7 @@ full extent of "projection" allowed.
 |---|----------|-----|
 | D1 | **Option A — stateless collectors** (§17). | Confirmed with the user before P2. No `CollectionState`, no `processed_window`, no per-stream partial unique index, no extra claim predicate. Switching to B later is a hot-path change, not an add-on. |
 | D2 | Python 3.13 + Django 5.2 LTS, managed with `uv`. | 3.12+ required by the spec; 3.13 is supported by Django 5.2. |
-| D3 | Layout: `manage.py` at the root, the four packages under `src/`, docker under `docker/`, all prose under `docs/`. | The spec's `project/` box is the repo itself. A src layout keeps the root readable and makes "is this importable?" a property of the install rather than of the current working directory. |
+| D3 | Layout: everything runnable under `src/` (including `manage.py`), docker under `docker/`, all prose under `docs/`, a `Makefile` as the command surface. | The spec's `project/` box is the repo itself. A src layout keeps the root readable and makes "is this importable?" a property of the install rather than of the working directory. `manage.py` sits in `src/` by the user's explicit call — the usual Django convention puts it at the root, so **invoke it as `python src/manage.py`**, or just use `make`. |
 | D4 | Parameter schemas are plain Python descriptors (`ParamSpec` list), not JSON Schema. | Simpler option per the prompt's ambiguity rule; enough to type-check, default and validate, with no extra dependency. |
 | D5 | Cron parsing via `croniter`. | Schedules need real cron + timezone semantics and catch-up iteration; hand-rolling that is the complex option. |
 | D6 | The queue claim is a single raw-SQL `UPDATE ... FROM (SELECT ... FOR UPDATE SKIP LOCKED)` in `execution/queue/claim.py::claim_job`. | §7 requires exactly one place for the claim predicate so the A→B fork stays localized. |
@@ -150,11 +151,16 @@ Do not paper over this with a lock (§14). If non-overlap is required, reopen th
 ## Definition of done for any change (§15)
 
 ```bash
-python manage.py check
-python manage.py makemigrations --check --dry-run
+make verify
+```
+
+That is `check` + `lint` + `contracts` + `test`:
+
+```bash
+python src/manage.py check && python src/manage.py makemigrations --check --dry-run
 ruff check . && ruff format --check .
 lint-imports
 pytest
 ```
 
-`docker compose up db` must bring up Postgres and the app must run against it.
+`make up` must bring up the stack and the app must run against it.

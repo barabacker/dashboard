@@ -13,8 +13,8 @@ the Job table *is* the queue.
 ## Layout
 
 ```
-manage.py            pyproject.toml       uv.lock
-src/                 the four packages
+Makefile             pyproject.toml       uv.lock
+src/                 manage.py + the four packages
 tests/               unit/ is pure; the rest is DB-backed
 docker/              Dockerfile + compose.yaml
 docs/                agent harness · architecture ADRs · spec · Architect bundle
@@ -30,35 +30,25 @@ docs/                agent harness · architecture ADRs · spec · Architect bun
 Enforced by `import-linter`, not by review discipline:
 
 ```bash
-lint-imports
+make contracts
 ```
 
 ## Running it
 
+Everything routine has a make target. `make` on its own prints the list.
+
 ### Docker
 
-The compose file lives in `docker/`. Copy `.env.example` to `.env` first — it sets `COMPOSE_FILE`,
-which is what lets you run plain `docker compose` from the repository root:
-
 ```bash
-cp .env.example .env
+make env && make up
 ```
 
-```bash
-docker compose up --build
-```
-
-Without a `.env`, point at it explicitly: `docker compose -f docker/compose.yaml up --build`.
-
-That brings up Postgres, the web app on http://localhost:8000, a worker and a scheduler. Then, in
-another shell:
+`make env` writes `.env` from the example — it sets `COMPOSE_FILE`, which is what lets plain
+`docker compose` find `docker/compose.yaml` from the repository root. `make up` starts Postgres,
+the web app on http://localhost:8000, a worker and a scheduler. Then:
 
 ```bash
-docker compose exec web python manage.py migrate
-```
-
-```bash
-docker compose exec web python manage.py seed
+make docker-migrate && make docker-seed
 ```
 
 `seed` creates an `admin` / `admin` superuser, syncs the collector projection and adds three
@@ -70,31 +60,28 @@ fail-fast path is visible from the first minute.
 Requires [uv](https://docs.astral.sh/uv/). Postgres can still come from compose.
 
 ```bash
-uv sync
+make install && make env && make db
 ```
 
-`uv sync` installs the project editable, which is what puts `src/` on the import path.
+`make install` runs `uv sync`, which installs the project editable — that is what puts `src/` on
+the import path.
 
 ```bash
-docker compose up -d db
+make migrate && make seed && make run
 ```
 
-```bash
-uv run manage.py migrate && uv run manage.py seed && uv run manage.py runserver
-```
-
-Then a worker, and a scheduler tick:
+Then a worker in one shell and the scheduler in another:
 
 ```bash
-uv run manage.py run_worker
+make worker
 ```
 
 ```bash
-uv run manage.py run_scheduler
+make scheduler
 ```
 
-`run_scheduler` does one pass and exits — the intended deployment is system cron every minute.
-`--loop` exists for compose and for hosts without cron.
+`make tick` is a single scheduling pass — the intended deployment is system cron every minute.
+`make scheduler` (`--loop`) exists for compose and for hosts without cron.
 
 ## The surfaces
 
@@ -105,12 +92,20 @@ uv run manage.py run_scheduler
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `manage.py sync_collectors` | Mirror the collector registry into the projection table. Run on deploy. `--dry-run` available. |
-| `manage.py seed` | Dev data. Idempotent. |
-| `manage.py run_worker` | Claim and execute Jobs. `--once`, `--max-jobs`, `--lease-seconds`, `--poll-seconds`. Run as many as you like — they compete for rows. |
-| `manage.py run_scheduler` | One scheduling pass. `--loop`, `--interval`, `--max-catchup`. |
+`make help` lists every target. The ones specific to this system:
+
+| Target | Underlying command | What it does |
+|---|---|---|
+| `make collectors` | `sync_collectors` | Mirror the collector registry into the projection table. Run on deploy. `--dry-run` available. |
+| `make seed` | `seed` | Dev data. Idempotent. |
+| `make worker` | `run_worker` | Claim and execute Jobs. `--once`, `--max-jobs`, `--lease-seconds`, `--poll-seconds`. Run as many as you like — they compete for rows. |
+| `make tick` / `make scheduler` | `run_scheduler` | One scheduling pass, or `--loop`. Also `--interval`, `--max-catchup`. |
+
+To pass flags, call the management command directly — `manage.py` lives in `src/`:
+
+```bash
+uv run python src/manage.py run_worker --once
+```
 
 ## How it hangs together
 
@@ -143,5 +138,8 @@ edited in place; a year-old snapshot still resolves to the code it ran.
 ## Checks
 
 ```bash
-uv run manage.py check && uv run manage.py makemigrations --check --dry-run && uv run ruff check . && uv run ruff format --check . && uv run lint-imports && uv run pytest
+make verify
 ```
+
+Django system check, migration drift, ruff, the import contracts and the test suite — the same
+gate CI would run.

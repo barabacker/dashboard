@@ -24,7 +24,7 @@ services:
     build: &app_build
       context: ..
       dockerfile: docker/Dockerfile
-    command: python manage.py runserver 0.0.0.0:8000
+    command: python src/manage.py runserver 0.0.0.0:8000
     environment: &app_env
       DJANGO_DEBUG: "true"
       POSTGRES_HOST: db
@@ -42,7 +42,7 @@ services:
 
   worker:
     build: *app_build
-    command: python manage.py run_worker
+    command: python src/manage.py run_worker
     environment: *app_env
     volumes:
       - ..:/app
@@ -52,7 +52,7 @@ services:
 
   scheduler:
     build: *app_build
-    command: python manage.py run_scheduler --loop
+    command: python src/manage.py run_scheduler --loop
     environment: *app_env
     volumes:
       - ..:/app

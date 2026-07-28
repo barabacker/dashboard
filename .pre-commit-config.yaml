@@ -17,7 +17,7 @@ repos:
 
       - id: django-check
         name: django check
-        entry: python manage.py check
+        entry: python src/manage.py check
         language: system
         pass_filenames: false
         types: [python]
