@@ -1,0 +1,54 @@
+{% comment %}
+Refreshed in place by HTMX every few seconds. Keep the id and the hx-* attributes on the root
+element — they are what makes the swap re-arm itself.
+{% endcomment %}
+<div id="jobs-panel" hx-get="{% url 'dashboard:jobs_panel' %}"
+     hx-trigger="every 5s" hx-swap="outerHTML">
+  <h2>Последние задачи</h2>
+  <ul class="tally">
+    {% for tally in counts %}
+      <li><span class="status status-{{ tally.value }}">{{ tally.label }}</span> {{ tally.count }}</li>
+    {% endfor %}
+  </ul>
+  <section>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Статус</th><th>Сборщик</th><th>Источник</th>
+          <th>Попытка</th><th>Создана</th><th>Длительность</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in jobs %}
+          <tr>
+            <td><a href="{% url 'admin:control_job_change' job.pk %}">{{ job.pk }}</a></td>
+            <td>
+              <span class="status status-{{ job.status }}">{{ job.get_status_display }}</span>
+              {% if job.cancel_requested and job.status == 'running' %}
+                <span class="muted">· отменяется</span>
+              {% endif %}
+            </td>
+            <td><code>{{ job.collector_key }} v{{ job.collector_version }}</code></td>
+            <td class="muted">{{ job.get_origin_display }}</td>
+            <td class="muted">{{ job.attempt_no }}</td>
+            <td class="muted">{{ job.created_at }}</td>
+            <td class="muted">
+              {% if job.duration_seconds %}{{ job.duration_seconds|floatformat:1 }} с
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if job.is_active and not job.cancel_requested %}
+                <form method="post" action="{% url 'dashboard:cancel_job' job.pk %}">
+                  {% csrf_token %}
+                  <button type="submit">Отменить</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="empty">Ещё ничего не запускалось.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>

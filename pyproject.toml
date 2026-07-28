@@ -1,0 +1,75 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dashboard"
+version = "0.1.0"
+description = "Data-collection back office: configs, schedules, jobs, workers."
+requires-python = ">=3.13"
+dependencies = [
+    "django>=5.2,<6.0",
+    "psycopg[binary]>=3.2",
+    "django-environ>=0.12",
+    "croniter>=6.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+    "ruff>=0.9",
+    "import-linter>=2.1",
+    "pre-commit>=4.0",
+]
+
+# src layout: `uv sync` installs the project in editable mode, which is what puts `collectors`,
+# `control`, `execution` and `project` on the path for manage.py, pytest and import-linter alike —
+# no PYTHONPATH juggling, and all four tools resolve imports identically.
+[tool.hatch.build.targets.wheel]
+packages = ["src/collectors", "src/control", "src/execution", "src/project"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests"]
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ", "C4", "SIM"]
+ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["collectors", "control", "execution", "project"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "project.settings"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+
+[tool.importlinter]
+root_packages = ["collectors", "control", "execution", "project"]
+include_external_packages = true
+
+# --- Contract 1: control must never import the execution runtime (§13) ---
+[[tool.importlinter.contracts]]
+name = "control does not import execution"
+type = "forbidden"
+source_modules = ["control"]
+forbidden_modules = ["execution"]
+
+# --- Contract 2: control may read collector schemas, never runner code (§13) ---
+[[tool.importlinter.contracts]]
+name = "control does not import collectors.runners"
+type = "forbidden"
+source_modules = ["control"]
+forbidden_modules = ["collectors.runners", "collectors.registry"]
+
+# --- Contract 3: collectors is a pure leaf package (§13) ---
+[[tool.importlinter.contracts]]
+name = "collectors is a pure leaf"
+type = "forbidden"
+source_modules = ["collectors"]
+forbidden_modules = ["control", "execution", "django"]

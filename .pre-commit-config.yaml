@@ -1,0 +1,23 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: import-linter
+        name: import-linter (dependency contracts, §13)
+        entry: lint-imports
+        language: system
+        pass_filenames: false
+        types: [python]
+
+      - id: django-check
+        name: django check
+        entry: python src/manage.py check
+        language: system
+        pass_filenames: false
+        types: [python]

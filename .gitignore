@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+staticfiles/
+.pytest_cache/
+.ruff_cache/
+.import_linter_cache/
+*.sqlite3
+.idea/
+.vscode/
