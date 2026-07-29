@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 
 import pytest
 from django.utils import timezone
 
 from collectors.runners.base import Cancelled, RunResult
+from collectors.runners.tender_site_v1 import _JobControl
 from control.models import Config, Job, JobStatus
 from control.services import enqueue, request_cancel
 from execution.queue import LeaseLost, claim_job
@@ -221,6 +223,90 @@ class TestLeaseLoss:
         reloaded = Job.objects.get(pk=job.pk)
         assert reloaded.status == JobStatus.RUNNING, "the new owner keeps the job"
         assert Config.objects.get(pk=config.pk).last_status == ""
+
+
+@pytest.mark.django_db(transaction=True)
+class TestRunContextInsideAnEventLoop:
+    """A runner is entitled to own an event loop, and the tender collectors do.
+
+    `crawl_site` is `asyncio.run`, and the engine polls cancellation and renews the lease from
+    *inside* its coroutines. Django refuses ORM access from a thread with a running loop, so both
+    of the context's mid-run database methods have to cross that boundary themselves. Nothing
+    else on `RunContext` touches the database: `resolve_credential` reads the environment.
+
+    Transactional on purpose, and it must stay that way: the query runs on another thread, hence
+    another connection, which can only see *committed* rows. That is not an artefact of the test
+    — it is what the second connection means. In production `claim_job` has already committed by
+    the time a runner starts, so the job row is there to be read.
+    """
+
+    def test_the_cancel_flag_is_readable_from_inside_an_event_loop(self, config):
+        enqueue(config)
+        claimed = claim_job(worker_id="w1", lease_seconds=60)
+        ctx = DbRunContext(claimed, worker_id="w1", lease_seconds=60)
+
+        async def poll() -> bool:
+            return ctx.is_cancel_requested()
+
+        assert asyncio.run(poll()) is False
+
+    def test_a_cancellation_is_seen_from_inside_an_event_loop(self, config):
+        enqueue(config)
+        claimed = claim_job(worker_id="w1", lease_seconds=60)
+        request_cancel(claimed)
+        ctx = DbRunContext(claimed, worker_id="w1", lease_seconds=60)
+
+        async def poll() -> bool:
+            return ctx.is_cancel_requested()
+
+        assert asyncio.run(poll()) is True
+
+    def test_the_lease_is_renewable_from_inside_an_event_loop(self, config):
+        enqueue(config)
+        claimed = claim_job(worker_id="w1", lease_seconds=60)
+        ctx = DbRunContext(claimed, worker_id="w1", lease_seconds=60)
+        before = Job.objects.values_list("claimed_until", flat=True).get(pk=claimed.pk)
+
+        async def renew() -> None:
+            ctx.extend_lease(600)
+
+        asyncio.run(renew())
+
+        after = Job.objects.values_list("claimed_until", flat=True).get(pk=claimed.pk)
+        assert after > before
+
+    def test_a_lost_lease_still_raises_from_inside_an_event_loop(self, config):
+        """The failure has to survive the thread hop, or a reclaimed job would crawl on."""
+        enqueue(config)
+        claimed = claim_job(worker_id="w1", lease_seconds=60)
+        Job.objects.filter(pk=claimed.pk).update(claimed_by="w2")
+        ctx = DbRunContext(claimed, worker_id="w1", lease_seconds=60)
+
+        async def renew() -> None:
+            ctx.extend_lease()
+
+        with pytest.raises(LeaseLost):
+            asyncio.run(renew())
+
+    def test_the_tender_runners_job_control_survives_the_loop(self, config):
+        """The production call shape: the two callables the engine is handed, driven from a
+        coroutine the way `parser.crawl` drives them.
+
+        `heartbeat` latches its exception instead of raising, so a broken lease renewal surfaces
+        later as a lost lease. Asserting `failure is None` is what keeps a database error from
+        being reported to the operator as someone else stealing the job.
+        """
+        enqueue(config)
+        claimed = claim_job(worker_id="w1", lease_seconds=60)
+        ctx = DbRunContext(claimed, worker_id="w1", lease_seconds=60)
+        control = _JobControl(ctx, renew_interval=0.0)
+
+        async def drive() -> bool:
+            control.heartbeat()
+            return control.should_stop()
+
+        assert asyncio.run(drive()) is False
+        assert control.failure is None
 
 
 @pytest.mark.django_db(transaction=True)

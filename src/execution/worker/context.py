@@ -7,9 +7,15 @@ the API.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import time
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
+
+from django.db import connections
 
 from collectors.runners.base import CredentialMissing, RunContext
 from control.models import Job
@@ -20,6 +26,40 @@ logger = logging.getLogger(__name__)
 #: Cancellation is polled, not pushed. A runner may call `check_cancelled()` in a tight loop; this
 #: floor keeps that from turning into a query storm while still stopping a run promptly.
 _CANCEL_POLL_INTERVAL_SECONDS = 1.0
+
+
+def _query[T](fn: Callable[..., T], /, *args: Any, **kwargs: Any) -> T:
+    """Run one of this context's queries, even when the caller sits inside an event loop.
+
+    A runner is entitled to own a loop, and the tender collectors do: `crawl_site` is
+    `asyncio.run`, and the engine polls cancellation and renews the lease from inside its
+    coroutines. Django refuses ORM access from any thread with a running loop, so the query is
+    handed to a plain thread, which has none.
+
+    The caller blocks while it runs. That is the intent, not a compromise — a crawl asking whether
+    it has been cancelled has nothing better to do until it knows — and the cost is bounded by the
+    poll floors above: one query a second, one lease renewal a minute.
+
+    Two properties make this safe rather than clever. The thread closes its own connection, so a
+    worker process that runs jobs for days does not accumulate one per call. And that connection
+    sees only *committed* rows, which is fine precisely because both callers are single autocommit
+    statements outside any transaction of ours — `claim_job` has already committed by the time a
+    runner starts (see `execution.queue.claim`).
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return fn(*args, **kwargs)  # An ordinary synchronous runner: no thread, no cost.
+    with ThreadPoolExecutor(max_workers=1, thread_name_prefix="runcontext-db") as pool:
+        return pool.submit(_and_close_the_connection, fn, *args, **kwargs).result()
+
+
+def _and_close_the_connection[T](fn: Callable[..., T], /, *args: Any, **kwargs: Any) -> T:
+    try:
+        return fn(*args, **kwargs)
+    finally:
+        # `connections` is thread-local, so this closes what this thread opened and nothing else.
+        connections.close_all()
 
 
 class DbRunContext(RunContext):
@@ -45,7 +85,7 @@ class DbRunContext(RunContext):
         if now - self._cancel_checked_at < _CANCEL_POLL_INTERVAL_SECONDS:
             return False
         self._cancel_checked_at = now
-        self._cancel_cached = read_cancel_flag(self.job_id)
+        self._cancel_cached = _query(read_cancel_flag, self.job_id)
         return self._cancel_cached
 
     def resolve_credential(self, reference: str) -> str:
@@ -62,7 +102,8 @@ class DbRunContext(RunContext):
         return value
 
     def extend_lease(self, seconds: int | None = None) -> None:
-        if not renew_lease(
+        if not _query(
+            renew_lease,
             job_id=self.job_id,
             worker_id=self._worker_id,
             lease_seconds=seconds or self._lease_seconds,
