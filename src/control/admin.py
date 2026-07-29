@@ -12,9 +12,11 @@ Shape of the surface:
 from __future__ import annotations
 
 from django.contrib import admin, messages
+from django.db import transaction
 from django.db.models import QuerySet
-from django.http import HttpRequest
-from django.urls import reverse
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
+from django.shortcuts import render
+from django.urls import URLPattern, path, reverse
 from django.utils.html import format_html
 from django.utils.safestring import SafeString
 
@@ -410,6 +412,7 @@ class JobAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
     actions = ["action_request_cancel"]
+    change_list_template = "admin/control/job/change_list.html"
 
     readonly_fields = tuple(f.name for f in Job._meta.fields if f.name != "cancel_requested") + (
         "config_link",
@@ -504,3 +507,111 @@ class JobAdmin(admin.ModelAdmin):
             f"Уже завершено: {ignored}.",
             messages.SUCCESS if (cancelled or signalled) else messages.WARNING,
         )
+
+    # --- the two bulk buttons (§ the job list toolbar) ---------------------------------
+    # Views rather than admin actions: an action is worded "for the selected" and needs a
+    # selection, and both of these are deliberately unconditional. Each answers GET with a
+    # confirmation page and only acts on POST — neither is undoable.
+
+    def get_urls(self) -> list[URLPattern]:
+        own = [
+            path(
+                "stop-all/",
+                self.admin_site.admin_view(self.view_stop_all),
+                name="control_job_stop_all",
+            ),
+            path(
+                "purge-all/",
+                self.admin_site.admin_view(self.view_purge_all),
+                name="control_job_purge_all",
+            ),
+        ]
+        return own + super().get_urls()
+
+    def _changelist_redirect(self) -> HttpResponseRedirect:
+        return HttpResponseRedirect(reverse("admin:control_job_changelist"))
+
+    def view_stop_all(self, request: HttpRequest) -> HttpResponse:
+        """Ask every unfinished Job to stop.
+
+        Reuses `request_cancel` per row rather than issuing its own UPDATE: the difference between
+        cancelling a pending Job outright and merely *signalling* a running one is a rule that
+        must live in exactly one place.
+        """
+        from control.services import request_cancel
+
+        active = Job.objects.filter(status__in=JobStatus.active())
+
+        if request.method != "POST":
+            return render(
+                request,
+                "admin/control/job/stop_all_confirmation.html",
+                {
+                    **self.admin_site.each_context(request),
+                    "title": "Остановить все задачи",
+                    "pending": active.filter(status=JobStatus.PENDING).count(),
+                    "running": active.filter(status=JobStatus.RUNNING).count(),
+                    "opts": self.opts,
+                },
+            )
+
+        cancelled, signalled = 0, 0
+        for job in active:
+            outcome = request_cancel(job)
+            if outcome == "cancelled":
+                cancelled += 1
+            elif outcome == "signalled":
+                signalled += 1
+
+        if cancelled or signalled:
+            self.message_user(
+                request,
+                f"Отменено в очереди: {cancelled}. Сигнал отправлен выполняющимся: {signalled} — "
+                f"они остановятся на ближайшей безопасной точке, а не мгновенно.",
+                messages.SUCCESS,
+            )
+        else:
+            self.message_user(request, "Останавливать нечего.", messages.INFO)
+        return self._changelist_redirect()
+
+    def view_purge_all(self, request: HttpRequest) -> HttpResponse:
+        """Delete every Job, but only once nothing is running.
+
+        Refusing while a Job is active is the point, not a limitation. Deleting a row a worker
+        holds does not stop its crawl: the pages keep being fetched and `finish_job` then writes
+        the outcome nowhere. Stopping first is what actually ends the work.
+        """
+        active = Job.objects.filter(status__in=JobStatus.active()).count()
+
+        if request.method != "POST":
+            return render(
+                request,
+                "admin/control/job/purge_all_confirmation.html",
+                {
+                    **self.admin_site.each_context(request),
+                    "title": "Очистить все задачи",
+                    "total": Job.objects.count(),
+                    "active": active,
+                    "opts": self.opts,
+                },
+            )
+
+        if active:
+            self.message_user(
+                request,
+                f"Незавершённых задач: {active}. Сначала остановите их — удалять строку, "
+                f"которую держит воркер, бессмысленно: обход от этого не прекратится.",
+                messages.ERROR,
+            )
+            return self._changelist_redirect()
+
+        with transaction.atomic():
+            deleted = Job.objects.all().delete()[0]
+            forgotten = Config.forget_job_outcomes()
+
+        self.message_user(
+            request,
+            f"Удалено задач: {deleted}. Сброшен последний статус у конфигураций: {forgotten}.",
+            messages.SUCCESS if deleted else messages.INFO,
+        )
+        return self._changelist_redirect()

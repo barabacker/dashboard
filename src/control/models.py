@@ -227,6 +227,19 @@ class Config(models.Model):
             Q(last_run_at__isnull=True) | Q(last_run_at__lte=finished_at)
         ).update(last_status=status, last_run_at=finished_at, last_job_id=job_id)
 
+    @classmethod
+    def forget_job_outcomes(cls) -> int:
+        """Blank the dashboard cache columns — the mirror image of `record_job_outcome`.
+
+        For when the Jobs they summarise are gone: a `last_status` pointing at a deleted row is
+        worse than no status at all. A direct UPDATE for the same two reasons as above — clearing
+        history is not an authored change, so it must not bump `revision`, and it is not an edit,
+        so it must not move `updated_at`.
+        """
+        return cls.objects.exclude(last_status="", last_run_at=None, last_job_id=None).update(
+            last_status="", last_run_at=None, last_job_id=None
+        )
+
 
 class PlatformManager(models.Manager):
     """Only the Configs that describe a trading platform."""

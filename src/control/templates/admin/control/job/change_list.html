@@ -1,0 +1,14 @@
+{% extends "admin/change_list.html" %}
+
+{# The two bulk buttons sit next to the stock tools. They are plain links: each target answers
+   GET with a confirmation page, so there is nothing to protect against here and no form to post
+   from a list that already owns one for the actions. #}
+{% block object-tools-items %}
+  <li>
+    <a href="{% url 'admin:control_job_stop_all' %}">Остановить все задачи</a>
+  </li>
+  <li>
+    <a href="{% url 'admin:control_job_purge_all' %}" class="deletelink">Очистить все задачи</a>
+  </li>
+  {{ block.super }}
+{% endblock %}
