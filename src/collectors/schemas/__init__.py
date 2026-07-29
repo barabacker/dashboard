@@ -15,7 +15,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from collectors.schemas import example_api
+from collectors.schemas import example_api, tender
 from collectors.schemas.base import (
     CollectorDescriptor,
     CollectorVersionSchema,
@@ -39,7 +39,7 @@ __all__ = [
     "schema",
 ]
 
-_DESCRIPTORS: tuple[CollectorDescriptor, ...] = (example_api.DESCRIPTOR,)
+_DESCRIPTORS: tuple[CollectorDescriptor, ...] = (example_api.DESCRIPTOR, *tender.DESCRIPTORS)
 
 _BY_KEY: dict[str, CollectorDescriptor] = {d.key: d for d in _DESCRIPTORS}
 

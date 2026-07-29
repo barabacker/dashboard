@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from django.core.management import call_command
 
+from collectors import schemas
 from control.models import Collector
 
 pytestmark = pytest.mark.django_db
@@ -18,10 +19,18 @@ def test_creates_rows_for_collectors_in_code():
     assert row.synced_at is not None
 
 
+def test_projects_every_collector_in_code():
+    call_command("sync_collectors")
+    assert set(Collector.objects.values_list("key", flat=True)) == {
+        d.key for d in schemas.all_collectors()
+    }
+
+
 def test_is_idempotent():
     call_command("sync_collectors")
+    once = Collector.objects.count()
     call_command("sync_collectors")
-    assert Collector.objects.count() == 1
+    assert Collector.objects.count() == once
 
 
 def test_a_key_that_left_the_codebase_is_disabled_not_deleted():

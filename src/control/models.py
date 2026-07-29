@@ -17,6 +17,8 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 
+from collectors.schemas.tender import KEY_PREFIX as TENDER_KEY_PREFIX
+
 
 def _snapshot_values(names: Iterable[str], values: Sequence[Any]) -> dict[str, Any]:
     """Remember loaded field values for change detection.
@@ -224,6 +226,39 @@ class Config(models.Model):
         cls.objects.filter(pk=config_id).filter(
             Q(last_run_at__isnull=True) | Q(last_run_at__lte=finished_at)
         ).update(last_status=status, last_run_at=finished_at, last_job_id=job_id)
+
+
+class PlatformManager(models.Manager):
+    """Only the Configs that describe a trading platform."""
+
+    def get_queryset(self) -> models.QuerySet[Config]:
+        return super().get_queryset().filter(collector_key__startswith=TENDER_KEY_PREFIX)
+
+
+class Platform(Config):
+    """A trading platform to crawl — a Config, seen through a form built for sites.
+
+    Deliberately **not** a table of its own. A site is "what to collect": its domain, listing
+    path and TLS quirks are exactly the parameters the collector's schema declares, so storing
+    them anywhere but `Config.parameters` would either duplicate the authored intent or leave
+    execution reading mutable state after enqueue — the one thing the snapshot exists to
+    prevent.
+
+    What this proxy adds is the surface: its own tab, and a form with a field per site attribute
+    instead of a JSON blob (see `control.forms.PlatformForm`).
+    """
+
+    objects = PlatformManager()
+
+    class Meta:
+        proxy = True
+        ordering = ["name"]
+        verbose_name = "Площадка"
+        verbose_name_plural = "Площадки"
+
+    @property
+    def domain(self) -> str:
+        return str(self.parameters.get("domain") or "")
 
 
 class Schedule(models.Model):

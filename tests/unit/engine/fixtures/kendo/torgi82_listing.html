@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description"
+          content="Результаты поиска">
+    <meta name="robots" content="noindex, follow">
+    <title>Список торгов</title>
+    <link rel="canonical" href="">
+    <meta name="csrf-token" content="ak0bwe3fz3XTLrAD7tqX0Qcdto0xs6i8Ab3K1p1Z">
+
+<link href="/css/kendo.common-material.min.css?28b09a32" type="text/css" rel="stylesheet" />
+<link href="/css/kendo.material.min.css?28b09a32" type="text/css" rel="stylesheet" />
+<link href="/css/materialdesignicons.min.css?28b09a32" type="text/css" rel="stylesheet" />
+<link href="/css/ticons.css?28b09a32" type="text/css" rel="stylesheet" />
+<link href="/css/materialize.css?28b09a32" type="text/css" rel="stylesheet" />
+<link href="/css/app.css?28b09a32" type="text/css" rel="stylesheet" />
+<link href="/widgets/daterangepicker/css/daterangepicker.css?28b09a32" type="text/css" rel="stylesheet" />
+<link href="/widgets/daterangepicker/css/custom.css?28b09a32" type="text/css" rel="stylesheet" />
+<link href="/css/etpslider.css?28b09a32" type="text/css" rel="stylesheet" />
+
+
+</head>
+<body>
+
+<header class="navbar-fixed">
+    <nav class="white">
+        <div class="nav-wrapper">
+
+            <div id="serverTime" class="hide-on-small-only">
+                <a class="grey-text text-darken-4 phone-navbar">
+                    <b>8(800) 100-25-15</b>
+                </a>
+                <span class="time-navbar">
+                    <span class="black-text">22.07.2026 </span>
+                    <span class="server-time black-text">19:24:25 </span><span
+                            class="black-text">&nbsp(МСК)</span>
+                </span>
+            </div>
+
+            <ul class="left">
+                <li class="green darken-3 hide-on-small-only  hide " id="siteMenu">
+                    <a>
+                        <i class="mdi mdi-menu left white-text"></i>
+                        <i class="mdi mdi-close left white-text"></i>
+                        <span class="uppercase white-text">Меню</span>
+                    </a>
+                </li>
+                <li class="green darken-3 " id="siteMenu2">
+                    <a data-target="slide-out" data-activates="mainMenu">
+                        <i class="mdi mdi-menu left white-text"></i>
+                    </a>
+                </li>
+            </ul>
+            <a href="/" id="site-logo">
+                <nobr>
+                    <img src="/images/logo.svg" alt="">
+                    <span class="green-text hide-on-med-and-down" style="font-size: 20px; font-weight: bold; margin-left: 20px">Торги по банкротству</span>
+                </nobr>
+            </a>
+
+            <ul class="right">
+
+                <li class="index-links-block index-links-block--blue">
+                                            <a class="index-link__light index-link--tablet" href="/register" style="margin-right: 15px; font-weight: 600">
+                            Регистрация
+                        </a>
+                        <a class="index-link__green index-link--tablet" href="/login" style="margin-right: 17px; font-weight: 600">
+                            Вход
+                        </a>
+                        <a class="index-link-img" href="/register" style="margin-right: 17px; font-weight: 600">
+                            <img src="/images/icons/menu/account.svg" alt="login" class="index-link__img">
+                        </a>
+                        <a  class="index-link-img" href="/login">
+                            <img src="/images/icons/menu/login.svg" alt="login" class="index-link__img">
+                        </a>
+                                    </li>
+            </ul>
+
+        </div>
+        <div style="width: 100%; height: 63px; display: flex; flex-direction: row; justify-content: center" class="white header-menu">
+            <div>
+                <hr style="width: 90%; background-color: #379a47; opacity: 20%" />
+            </div>
+            <div>
+                <ul>
+                    <li><a href="/lots">Торги</a></li>
+                    <li><a href="/tarifs">Тарифы</a></li>
+                    <li><a href="/instruction">Документы</a></li>
+                    <li><a href="/contacts">О нас</a></li>
+                    <li><a href="/support">Техническая поддержка</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header><main id="main_container" class="">
+
+    <div class="left_menu blue darken-2  hide ">
+        <div class="left_menu_container">
+            <a href="https://lot.torgi82.ru/register">
+        <div class="inner">
+            <i class="mdi ti ti-register"></i>
+            <div class="title">Регистрация</div>
+        </div>
+    </a>
+    <a href="https://lot.torgi82.ru/login">
+        <div class="inner">
+            <i class="mdi ti ti-login"></i>
+            <div class="title">Вход</div>
+        </div>
+    </a>
+
+
+<a href="https://lot.torgi82.ru/instruction">
+    <div class="inner">
+        <i class="mdi ti ti-reglament"></i>
+        <div class="title">Документы</div>
+    </div>
+</a>
+<a href="/lots">
+    <div class="inner">
+        <i class="mdi ti ti-hammer"></i>
+        <div class="title">Торги</div>
+    </div>
+</a>
+<a href="/signature-settings">
+    <div class="inner">
+        <i class="mdi ti ti-ep-check"></i>
+        <div class="title">Настроить ЭП</div>
+    </div>
+</a>
+<a href="/tarifs">
+    <div class="inner">
+        <i class="mdi ti ti-tarifs"></i>
+        <div class="title">Тарифы</div>
+    </div>
+</a>
+<a href="/contacts">
+    <div class="inner">
+        <i class="mdi ti ti-contacts"></i>
+        <div class="title">Контакты</div>
+    </div>
+</a>
+        </div>
+    </div>
+    <div class="body">
+            <main class="page">
+
+        <div id="pageHead">
+            <div class="container">
+                <div class="row">
+                    <div class="col s12">
+                            <div class="breadcrumbs">
+        
+                            <a class="grey-text underline link" href="https://lot.torgi82.ru">Стартовая</a>
+                <a class="grey-text  link">&nbsp;&nbsp;/&nbsp;&nbsp;</a>
+                    
+                            
+                            <span class="black-text">
+             <a href="https://lot.torgi82.ru" class="backlink mdi mdi-arrow-left"></a>
+            Список торгов
+        </span>
+
+    </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                <div class="col s12">
+                        <div class="row">
+        <div class="col s12">
+            <div class="row">
+                <div class="col s12">
+                    <h4 style="font-weight: bold">Список торгов</h4>
+                </div>
+            </div>
+            <ul class="collection">
+                <li class="collection-item" style="margin-top: -20px;">
+                    <div class="row">
+                        <div class="col s12">
+                            <form method="GET" action="https://lot.torgi82.ru/lots" accept-charset="UTF-8" id="search_form">
+                            <input name="search" type="hidden" value="true">
+
+                            <div class="row">
+                                                                                                            <div class="col s12 m6 l4 position-relative mt10">
+                                            <label>Имущество</label><br /><input placeholder="Имущество" class="form-control grid-filter" name="search_text" type="text">
+                                        </div>
+                                                                                                                                                <div class="col s12 m6 l4 position-relative mt10">
+                                            <label>Номер торгов</label><br /><input placeholder="Номер торгов" class="form-control grid-filter" name="competition" type="text">
+                                        </div>
+                                                                                                                                                <div class="col s12 m6 l4 position-relative mt10">
+                                            <label>Статус торгов</label><br /><select class="form-control grid-filter" name="status_id"><option selected="selected" value="">Статус торгов</option><option value="2">Объявлен</option><option value="3">Идет прием заявок</option><option value="4">Торги завершены</option><option value="5">Прием заявок окончен</option><option value="6">Прием заявок завершен</option><option value="7">Прием заявок приостановлен</option><option value="701">В стадии проведения</option><option value="8">Торги по лоту отменены</option><option value="99">Ожидание начала следующего шага</option></select>
+                                        </div>
+                                                                                                                                                <div class="col s12 m6 l4 position-relative mt10">
+                                            <label>Тип торгов</label><br /><select class="form-control grid-filter" name="competition_type"><option selected="selected" value="">Тип торгов</option><option value="010">Голландский аукцион</option><option value="101">Открытый аукцион с закрытой формой представления предложений о цене</option><option value="301">Открытые торги посредством публичного предложения</option><option value="401">Открытый аукцион с открытой формой представления предложений о цене</option><option value="501">Закрытый аукцион с открытой формой представления предложений о цене</option><option value="601">Закрытый аукцион с закрытой формой представления предложений о цене</option><option value="701">Закрытый конкурс с открытой формой представления предложений о цене</option><option value="801">Закрытый конкурс с закрытой формой представления предложений о цене</option><option value="901">Открытый конкурс с открытой формой представления предложений о цене</option><option value="1001">Открытый конкурс с закрытой формой представления предложений о цене</option><option value="1101">Закрытые торги посредством публичного предложения</option></select>
+                                        </div>
+                                                                                                                                                <div class="col s12 m6 l4 position-relative mt10">
+                                            <label>Номер лота</label><br /><input placeholder="Номер лота" class="form-control grid-filter" name="order" type="text">
+                                        </div>
+                                                                                                                                                <div class="col s12 m6 l4 position-relative mt10">
+                                            <label>Должник</label><br /><input placeholder="Должник" class="form-control grid-filter" name="debtor" type="text">
+                                        </div>
+                                                                                                                                                <div class="col s12 m6 l4 position-relative mt10">
+                                            <label>Организатор</label><br /><input placeholder="Организатор" class="form-control grid-filter" name="organizer" type="text">
+                                        </div>
+                                                                                                                                                <div class="col s12 m6 l4 position-relative mt10">
+                                            <label>Стоимость лота</label><br /><div class="row" style="margin-bottom: -10px;">
+                        <div class="col s6">
+                            <input id="initial_price_from" class="form-control grid-filter" placeholder="От:" name="initial_price_from" type="text" value="">                             
+                        </div>
+                        <div class="col s6">
+                            <input id="initial_price_to" class="form-control grid-filter" placeholder="До:" name="initial_price_to" type="text" value="">                        
+                        </div>
+                    </div>
+                                        </div>
+                                                                                                                                                <div class="col s12 m6 l4 position-relative mt10">
+                                            <label>Начало приема заявок</label><br /><input placeholder="Начало приема заявок" class="form-control grid-filter" name="applications_start_date" id="applications_start_date" type="text"><input id="applications_start_date_from" name="applications_start_date_from" type="hidden"><input id="applications_start_date_to" name="applications_start_date_to" type="hidden">
+                                        </div>
+                                                                                                                                                <div class="col s12 m6 l4 position-relative mt10">
+                                            <label>Окончание приема заявок</label><br /><input placeholder="Окончание приема заявок" class="form-control grid-filter" name="applications_end_date" id="applications_end_date" type="text"><input id="applications_end_date_from" name="applications_end_date_from" type="hidden"><input id="applications_end_date_to" name="applications_end_date_to" type="hidden">
+                                        </div>
+                                                                                                </div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <hr style="width: 98%; background-color: #dadada;" />
+                        </div>
+                        <div class="col s12 grid-controls " style="margin-top: 21px;">
+                            <div class="left-align" style="display: flex; align-items: flex-start">
+                                <button class="green-button" type="submit">
+                                    <img src="/images/icons/magnify.svg" />
+                                    <span class="ml10">Найти</span>
+                                </button>
+
+                                <a href="https://lot.torgi82.ru/lots" class="white-button" type="clear">
+                                    <img src="/images/icons/window-close.svg" />
+                                    <span class="ml10">Очистить</span>
+                                </a>
+                                &nbsp;
+                                </form>
+
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+                            <ul class="collection">
+                                            <li class="collection-item lot-item">
+    <div class="block-lot">
+        <div class="row">
+            <div class="col s12 m6 l3">
+                                                    <div class="lot-gallery-list" id="lot-gallery-47">
+                        <img src="https://lot.torgi82.ru//storage/temp_files/2026/07/16/openauctionopenform_lot/uB70cTJxi0YxMonRT9FGDoiZ3JEt9rtyL6myMpEWDQDh9wMWtRjZzHSAuZEP-40.jpg" class="hide" />
+            <img src="https://lot.torgi82.ru//storage/temp_files/2026/07/16/openauctionopenform_lot/r0iOKmpbnmbDIGSc7NhOwI9EPpzwFirCoanlpIO9CfWeClyFAu4tVx8L9Q1y-40.jpg" class="hide" />
+            <img src="https://lot.torgi82.ru//storage/temp_files/2026/07/16/openauctionopenform_lot/ExEDqj5wCVreGQtBudKuiClwUgcw8xA6UHPt5gdE8hazGWtqQoqHkY9hA4wu-40.jpg" class="hide" />
+            <img src="https://lot.torgi82.ru//storage/temp_files/2026/07/16/openauctionopenform_lot/3aLbnKUrU3n1URbIJ7RNlafat1lmMbfIRgMOnUOxVCUfEpQZoLNwkvdHSDv8-40.jpg" class="hide" />
+                        </div>
+                            </div>
+            <div class="col s12 m6 l9">
+                <div class="row">
+                    <div class="col l8 m6 s12">
+                        <div class="lot-list-title">Лот №1
+                            <a href="/oaof/37/lots/47" class="black-text bold green-hover">
+                                здание нежилое (магазин), площадь 132,2 кв.м., кадастровый номер: 23:43:0135029:141, адрес: Краснодарский край, г. Краснодар, Прикубанский городской округ, ул. Им. Калинина д. 54/1.
+                            </a>
+                        </div>
+                        <div class="light mt15">
+                            <nobr><i class="mdi ti ti-applications-start"
+                                     title="Начало приема заявок"></i> 17.07.2026 10:00:00
+                            </nobr>
+                            &nbsp;&nbsp;&nbsp;
+                            <nobr><i class="mdi ti ti-applications-end"
+                                     title="Окончание приема заявок"></i> 24.08.2026 09:00:00
+                            </nobr>
+                            &nbsp;&nbsp;&nbsp;
+                                                            <nobr><i class="mdi ti ti-calendar"
+                                         title="Подведение итогов"></i> 26.08.2026 17:00:00
+                                </nobr>
+                                                    </div>
+                        <div class="light mt15">
+                            Номер торгов: <span class="bold"><a class="green-text"
+                                                                href="/oaof/37">37–ОАОФ</a></span>
+                            &nbsp;&nbsp;&nbsp;
+                            <nobr>
+                                <span class="competition-status-round competition-status-4">&nbsp;</span>
+                                <b><span class="competition-status-text-4">Идет прием заявок</span></b>
+                            </nobr>
+                        </div>
+                        <div class="light mt15">
+                            Организатор торгов: <span class="normal">Чамуров Владимир Ильич</span>
+                        </div>
+                    </div>
+                    <div class="col l4 m6 s12 lot-price right-align">
+                        <div style="color: #a3a3a3; font-size: 14px;">
+                            1 лот на сумму
+                        </div>
+                        <div class="fs36 light">
+                            10 950 000.<span class="kopeyki">00
+                        <i class="mdi mdi-currency-rub"></i>  </span>
+                        </div>
+                        <div style="margin-top: 15px;">
+                                                                                                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="competition-separator" style="background-color: #dadada; margin-top: 20px"  />
+</li>                                            <li class="collection-item lot-item">
+    <div class="block-lot">
+        <div class="row">
+            <div class="col s12 m6 l3">
+                                                    <div class="lot-gallery-list-all">
+                        <img src="/images/no-photo.png" />
+                    </div>
+                            </div>
+            <div class="col s12 m6 l9">
+                <div class="row">
+                    <div class="col l8 m6 s12">
+                        <div class="lot-list-title">Лот №2
+                            <a href="/oacf/34/lots/44" class="black-text bold green-hover">
+                                Право требования дебиторской задолженности к ООО «Крымагроинвест» ИНН 9109012635 по неисполненным денежным обязательствам в общем размере 33 084 123,37 рублей и проценты за пользование займом в размере ключевой ставки Центрального Банка Российской Федерации за каждый день просрочки исполнения обязат...
+                            </a>
+                        </div>
+                        <div class="light mt15">
+                            <nobr><i class="mdi ti ti-applications-start"
+                                     title="Начало приема заявок"></i> 16.03.2026 10:00:00
+                            </nobr>
+                            &nbsp;&nbsp;&nbsp;
+                            <nobr><i class="mdi ti ti-applications-end"
+                                     title="Окончание приема заявок"></i> 20.04.2026 16:00:00
+                            </nobr>
+                            &nbsp;&nbsp;&nbsp;
+                                                            <nobr><i class="mdi ti ti-calendar"
+                                         title="Подведение итогов"></i> 22.04.2026 13:00:00
+                                </nobr>
+                                                    </div>
+                        <div class="light mt15">
+                            Номер торгов: <span class="bold"><a class="green-text"
+                                                                href="/oacf/34">34–ОАЗФ</a></span>
+                            &nbsp;&nbsp;&nbsp;
+                            <nobr>
+                                <span class="competition-status-round competition-status-9">&nbsp;</span>
+                                <b><span class="competition-status-text-9">Торги по лоту отменены</span></b>
+                            </nobr>
+                        </div>
+                        <div class="light mt15">
+                            Организатор торгов: <span class="normal">Общество с ограниченной ответственностью «РусГрупКонсалтинг»</span>
+                        </div>
+                    </div>
+                    <div class="col l4 m6 s12 lot-price right-align">
+                        <div style="color: #a3a3a3; font-size: 14px;">
+                            1 лот на сумму
+                        </div>
+                        <div class="fs36 light">
+                            9 974 482.<span class="kopeyki">00
+                        <i class="mdi mdi-currency-rub"></i>  </span>
+                        </div>
+                        <div style="margin-top: 15px;">
+                                                                                                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="competition-separator" style="background-color: #dadada; margin-top: 20px"  />
+</li>                                            <li class="collection-item lot-item">
+    <div class="block-lot">
+        <div class="row">
+            <div class="col s12 m6 l3">
+                                                    <div class="lot-gallery-list-all">
+                        <img src="/images/no-photo.png" />
+                    </div>
+                            </div>
+            <div class="col s12 m6 l9">
+                <div class="row">
+                    <div class="col l8 m6 s12">
+                        <div class="lot-list-title">Лот №1
+                            <a href="/oacf/34/lots/43" class="black-text bold green-hover">
+                                Единый объект недвижимости (ЕОН): нежилые строения (склады), благоустройство, право аренды земельного участка. Адрес: Республика Крым, Симферопольский район, с. Урожайное, квартал Молодежный, 9а. Кадастровые номера ОКС: 90:12:190103:3431; 90:12:190102:3516
+                            </a>
+                        </div>
+                        <div class="light mt15">
+                            <nobr><i class="mdi ti ti-applications-start"
+                                     title="Начало приема заявок"></i> 16.03.2026 10:00:00
+                            </nobr>
+                            &nbsp;&nbsp;&nbsp;
+                            <nobr><i class="mdi ti ti-applications-end"
+                                     title="Окончание приема заявок"></i> 20.04.2026 16:00:00
+                            </nobr>
+                            &nbsp;&nbsp;&nbsp;
+                                                            <nobr><i class="mdi ti ti-calendar"
+                                         title="Подведение итогов"></i> 22.04.2026 13:00:00
+                                </nobr>
+                                                    </div>
+                        <div class="light mt15">
+                            Номер торгов: <span class="bold"><a class="green-text"
+                                                                href="/oacf/34">34–ОАЗФ</a></span>
+                            &nbsp;&nbsp;&nbsp;
+                            <nobr>
+                                <span class="competition-status-round competition-status-9">&nbsp;</span>
+                                <b><span class="competition-status-text-9">Торги по лоту отменены</span></b>
+                            </nobr>
+                        </div>
+                        <div class="light mt15">
+                            Организатор торгов: <span class="normal">Общество с ограниченной ответственностью «РусГрупКонсалтинг»</span>
+                        </div>
+                    </div>
+                    <div class="col l4 m6 s12 lot-price right-align">
+                        <div style="color: #a3a3a3; font-size: 14px;">
+                            1 лот на сумму
+                        </div>
+                        <div class="fs36 light">
+                            11 700 000.<span class="kopeyki">00
+                        <i class="mdi mdi-currency-rub"></i>  </span>
+                        </div>
+                        <div style="margin-top: 15px;">
+                                                                                                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="competition-separator" style="background-color: #dadada; margin-top: 20px"  />
+</li>                                    </ul>
+                
+                    </div>
+
+    
+                </div>
+            </div>
+        </div>
+
+
+    </main>
+    </div>
+</main>
+
+
+<footer class="page-footer grey darken-4" style="background-color: #3a3f43;">
+    <div class="container">
+        <div class="row">
+            <div class="col s12 m12 l12">
+                <div class="row" style="margin-top: 36px">
+                    <div class="col s12 m6 l8">
+                        <div>
+                            <img src="/images/flogo.svg" />
+                        </div>
+                        <div class="white-text fs14 half-transparent">
+                            С заботой о Вашей выгоде!
+                        </div>
+                    </div>
+                    <div class="col s12 m6 l4">
+                        <div class="fs17 white-text">
+                            Служба поддержки:
+                        </div>
+                        <div style="margin-top: 17px;">
+                            <div style="display: inline-flex; align-items: center; margin-right: 20px;">
+                                <div style="width: 32px; height: 32px; background-color: #5d656b; display: inline-flex; justify-content: center; align-items: center">
+                                    <img src="/images/icons/mail.svg" />
+                                </div>
+                                <div class="white-text" style="display: inline-flex; margin-left: 10px">lot@torgi82.ru</div>
+                            </div>
+                            <div style="display: inline-flex; align-items: center;">
+                                <div style="width: 32px; height: 32px; background-color: #5d656b; display: inline-flex; justify-content: center; align-items: center">
+                                    <img src="/images/icons/phone.svg" />
+                                </div>
+                                <div class="white-text" style="display: inline-flex; margin-left: 10px">8(800) 100-25-15</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <hr style="background-color: #5d656b; margin-top: 31px" class="half-transparent" />
+                </div>
+                <div class="row" style="margin-top: 31px;">
+                    <div class="col s12 m6 l8">
+                        <span class="light white-text fs12">Все права защищены и принадлежат ООО «ЭТР» © 2015 — 2026</span>
+                    </div>
+                    <div class="col s12 m6 l4">
+                        <a class="light white-text fs12" href="/instructions/Согласие_на_обработку_персональных_данных.pdf">Согласие на обработку персональных данных</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+<div id="serverTimeModal" class="modal">
+    <div class="modal-content">
+        <ul>
+            <li><a class="grey-text text-darken-4"><span class="thin">Сегодня:</span> <b>22.07.2026</b></a></li>
+            <li><a class="grey-text text-darken-4"><span class="thin">Серверное время:</span> <b><span
+                                class="server-time">19:24:25</span></b></a></li>
+        </ul>
+    </div>
+    <div class="modal-footer">
+        <a class="modal-action modal-close waves-effect waves-blue btn-flat green-text">Закрыть</a>
+    </div>
+</div>
+<ul id="mainMenu" class="side-nav green darken-2">
+    <a class="top-navbar green darken-3" onclick="$(this).sideNav('hide')">
+        <div class="inner">
+            <img src="/images/icons/menu/close.svg" width="30">
+            <div class="title">Меню</div>
+        </div>
+    </a>
+    <a class="time-navbar hide-on-med-and-up">
+        <div class="inner">
+            <img src="/images/icons/menu/clock.svg" width="30">
+            <div class="title">
+                <span class="green-text text-lighten-3">22.07.2026 </span>
+                <span class="server-time green-text text-lighten-3">19:24:25</span>
+                <span class="green-text text-lighten-3">&nbsp;(МСК)</span>
+            </div>
+        </div>
+    </a>
+    <a href="https://lot.torgi82.ru/register">
+        <div class="inner">
+            <i class="mdi ti ti-register"></i>
+            <div class="title">Регистрация</div>
+        </div>
+    </a>
+    <a href="https://lot.torgi82.ru/login">
+        <div class="inner">
+            <i class="mdi ti ti-login"></i>
+            <div class="title">Вход</div>
+        </div>
+    </a>
+
+
+<a href="https://lot.torgi82.ru/instruction">
+    <div class="inner">
+        <i class="mdi ti ti-reglament"></i>
+        <div class="title">Документы</div>
+    </div>
+</a>
+<a href="/lots">
+    <div class="inner">
+        <i class="mdi ti ti-hammer"></i>
+        <div class="title">Торги</div>
+    </div>
+</a>
+<a href="/signature-settings">
+    <div class="inner">
+        <i class="mdi ti ti-ep-check"></i>
+        <div class="title">Настроить ЭП</div>
+    </div>
+</a>
+<a href="/tarifs">
+    <div class="inner">
+        <i class="mdi ti ti-tarifs"></i>
+        <div class="title">Тарифы</div>
+    </div>
+</a>
+<a href="/contacts">
+    <div class="inner">
+        <i class="mdi ti ti-contacts"></i>
+        <div class="title">Контакты</div>
+    </div>
+</a></ul>
+<script src="/js/jquery-3.2.1.min.js?28b09a32" type="text/javascript"></script>
+<script src="/js/bluebird.min.js?28b09a32" type="text/javascript"></script>
+<script src="/js/jquery.cookie.js?28b09a32" type="text/javascript"></script>
+<script src="/js/libs/jquery.validate.min.js?28b09a32" type="text/javascript"></script>
+<script src="/js/jquery.maskedinput.min.js?28b09a32" type="text/javascript"></script>
+<script src="/js/jquery.validate.ru.js?28b09a32" type="text/javascript"></script>
+<script src="/js/kendo.all.min.js?28b09a32" type="text/javascript"></script>
+<script src="/js/kendo.culture.ru-RU.min.js?28b09a32" type="text/javascript"></script>
+<script src="/js/moment.min.js?28b09a32" type="text/javascript"></script>
+<script src="/js/moment.ru.js?28b09a32" type="text/javascript"></script>
+<script src="/js/materialize.min.js?28b09a32" type="text/javascript"></script>
+<script src="/js/app.js?28b09a32" type="text/javascript"></script>
+<script src="/widgets/daterangepicker/js/daterangepicker.js?28b09a32" type="text/javascript"></script>
+<script src="/vendor/jsvalidation/js/jsvalidation.js?28b09a32" type="text/javascript"></script>
+<script src="/js/lots/show.js?28b09a32" type="text/javascript"></script>
+<script src="/js/etpslider.umd.js?28b09a32" type="text/javascript"></script>
+<script src="/js/lot_gallery.js?28b09a32" type="text/javascript"></script>
+
+
+
+<script type="text/javascript">
+        $(function () {
+            $('input[name="applications_start_date"]').daterangepicker({
+                    startDate: "22.07.26 00:01",
+                    endDate: "22.07.26 23:59",
+                    autoApply: true,
+                    autoUpdateInput: false,
+                    format: "DD.MM.YYYY HH:mm",
+                 	opens: "left",
+                    timePicker: true,
+                    timePicker24Hour: true,
+                    locale: {
+                        format: 'DD.MM.YYYY HH:mm',
+                        language: "ru",
+                        separator: " ⇆  ",
+                        applyLabel: "Ок",
+                        cancelLabel: "Отмена",
+                    }
+
+                }
+            ).addClass('daterange');
+            $('input[name="applications_start_date"]').on('apply.daterangepicker', function(ev, picker) {
+                    $("#applications_start_date_from").val(picker.startDate.format('DD.MM.YYYY HH:mm'));
+                    $("#applications_start_date_to").val(picker.endDate.format('DD.MM.YYYY HH:mm'));
+                    $("#applications_start_date").val(picker.startDate.format('DD.MM.YYYY HH:mm') + ' ⇆ ' + picker.endDate.format('DD.MM.YYYY HH:mm'));
+            });
+        });
+</script><script type="text/javascript">
+        $(function () {
+            $('input[name="applications_end_date"]').daterangepicker({
+                    startDate: "22.07.26 00:01",
+                    endDate: "22.07.26 23:59",
+                    autoApply: true,
+                    autoUpdateInput: false,
+                    format: "DD.MM.YYYY HH:mm",
+                 	opens: "left",
+                    timePicker: true,
+                    timePicker24Hour: true,
+                    locale: {
+                        format: 'DD.MM.YYYY HH:mm',
+                        language: "ru",
+                        separator: " ⇆  ",
+                        applyLabel: "Ок",
+                        cancelLabel: "Отмена",
+                    }
+
+                }
+            ).addClass('daterange');
+            $('input[name="applications_end_date"]').on('apply.daterangepicker', function(ev, picker) {
+                    $("#applications_end_date_from").val(picker.startDate.format('DD.MM.YYYY HH:mm'));
+                    $("#applications_end_date_to").val(picker.endDate.format('DD.MM.YYYY HH:mm'));
+                    $("#applications_end_date").val(picker.startDate.format('DD.MM.YYYY HH:mm') + ' ⇆ ' + picker.endDate.format('DD.MM.YYYY HH:mm'));
+            });
+        });
+</script><script>
+    jQuery(document).ready(function () {
+        $("#search_form").validate({
+            errorElement: 'span',
+            errorClass: 'field-error-absolute',
+            errorPlacement: function (error, element) {
+                var container = $(element).closest('.col');
+
+                error.appendTo(container);
+            },
+            highlight: function (element) {
+                var container = $(element).closest('.field-row');
+                $(element).addClass('error');
+                container.addClass('error');
+            },
+
+                        ignore: ":hidden, [contenteditable='true']",
+            
+            unhighlight: function (element) {
+                var container = $(element).closest('.field-row');
+                $(element).removeClass('error');
+                container.removeClass('error');
+            },
+
+            success: function (element) {
+                var container = $(element).closest('.field-row');
+                $(element).removeClass('error');
+                container.removeClass('error');
+            },
+
+            focusInvalid: false,
+            rules: {"id":{"laravelValidation":[["Max",["2147483647"],"\u041f\u043e\u043b\u0435 id \u043d\u0435 \u043c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 2147483647.",false,"id"],["Integer",[],"\u041f\u043e\u043b\u0435 id \u0434\u043e\u043b\u0436\u0435\u043d \u0431\u044b\u0442\u044c \u0447\u0438\u0441\u043b\u043e\u043c.",false,"id"],["Nullable",[],"validation.nullable",false,"id"]]},"competition":{"laravelValidation":[["Max",["2147483647"],"\u041f\u043e\u043b\u0435 \u0442\u043e\u0440\u0433\u0438 \u043d\u0435 \u043c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 2147483647.",false,"competition"],["Integer",[],"\u041f\u043e\u043b\u0435 \u0442\u043e\u0440\u0433\u0438 \u0434\u043e\u043b\u0436\u0435\u043d \u0431\u044b\u0442\u044c \u0447\u0438\u0441\u043b\u043e\u043c.",false,"competition"],["Nullable",[],"validation.nullable",false,"competition"]]},"status_id":{"laravelValidation":[["Max",["2147483647"],"\u041f\u043e\u043b\u0435 status id \u043d\u0435 \u043c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 2147483647.",false,"status_id"],["Integer",[],"\u041f\u043e\u043b\u0435 status id \u0434\u043e\u043b\u0436\u0435\u043d \u0431\u044b\u0442\u044c \u0447\u0438\u0441\u043b\u043e\u043c.",false,"status_id"],["Nullable",[],"validation.nullable",false,"status_id"]]},"order":{"laravelValidation":[["Max",["2147483647"],"\u041f\u043e\u043b\u0435 \u043f\u043e\u0440\u044f\u0434\u043a\u043e\u0432\u044b\u0439 \u043d\u043e\u043c\u0435\u0440 \u043d\u0435 \u043c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 2147483647.",false,"order"],["Integer",[],"\u041f\u043e\u043b\u0435 \u043f\u043e\u0440\u044f\u0434\u043a\u043e\u0432\u044b\u0439 \u043d\u043e\u043c\u0435\u0440 \u0434\u043e\u043b\u0436\u0435\u043d \u0431\u044b\u0442\u044c \u0447\u0438\u0441\u043b\u043e\u043c.",false,"order"],["Nullable",[],"validation.nullable",false,"order"]]},"initial_price_from":{"laravelValidation":[["Max",["2147483647"],"\u041f\u043e\u043b\u0435 \u043d\u0430\u0447\u0430\u043b\u044c\u043d\u0430\u044f \u0446\u0435\u043d\u0430, \u043e\u0442 \u043d\u0435 \u043c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 2147483647.",false,"initial_price_from"],["Integer",[],"\u041f\u043e\u043b\u0435 \u043d\u0430\u0447\u0430\u043b\u044c\u043d\u0430\u044f \u0446\u0435\u043d\u0430, \u043e\u0442 \u0434\u043e\u043b\u0436\u0435\u043d \u0431\u044b\u0442\u044c \u0447\u0438\u0441\u043b\u043e\u043c.",false,"initial_price_from"],["Nullable",[],"validation.nullable",false,"initial_price_from"]]},"initial_price_to":{"laravelValidation":[["Max",["2147483647"],"\u041f\u043e\u043b\u0435 \u043a\u043e\u043d\u0435\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u0430, \u0434\u043e \u043d\u0435 \u043c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 2147483647.",false,"initial_price_to"],["Integer",[],"\u041f\u043e\u043b\u0435 \u043a\u043e\u043d\u0435\u0447\u043d\u0430\u044f \u0446\u0435\u043d\u0430, \u0434\u043e \u0434\u043e\u043b\u0436\u0435\u043d \u0431\u044b\u0442\u044c \u0447\u0438\u0441\u043b\u043e\u043c.",false,"initial_price_to"],["Nullable",[],"validation.nullable",false,"initial_price_to"]]},"search_text":{"laravelValidation":[["Max",["5000"],"\u041f\u043e\u043b\u0435 search text \u043d\u0435 \u043c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 5000 \u0441\u0438\u043c\u0432\u043e\u043b\u043e\u0432.",false,"search_text"],["Nullable",[],"validation.nullable",false,"search_text"]]},"debtor":{"laravelValidation":[["Max",["500"],"\u041f\u043e\u043b\u0435 debtor \u043d\u0435 \u043c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 500 \u0441\u0438\u043c\u0432\u043e\u043b\u043e\u0432.",false,"debtor"],["Nullable",[],"validation.nullable",false,"debtor"]]}}        });
+
+    });
+</script>
+
+
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(95857039, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true,
+        webvisor:true
+    });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/95857039" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+
+</body>
+</html>

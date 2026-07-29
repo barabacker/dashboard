@@ -12,7 +12,7 @@ read, not an import-order accident.
 from __future__ import annotations
 
 from collectors import schemas
-from collectors.runners import example_api_v1, example_api_v2
+from collectors.runners import example_api_v1, example_api_v2, tender_site_v1
 from collectors.runners.base import Runner
 from collectors.schemas import (
     CollectorDescriptor,
@@ -35,6 +35,10 @@ __all__ = [
 _RUNNERS: dict[tuple[str, str], type[Runner]] = {
     (example_api_v1.KEY, example_api_v1.VERSION): example_api_v1.ExampleApiV1,
     (example_api_v2.KEY, example_api_v2.VERSION): example_api_v2.ExampleApiV2,
+    # One per parser family. The four differ only in which engine they crawl with, so they are
+    # generated from the same list the schemas are — `check_registry` still holds each of them
+    # to the key it declares.
+    **tender_site_v1.RUNNERS,
 }
 
 
