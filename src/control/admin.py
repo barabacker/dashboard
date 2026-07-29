@@ -19,13 +19,14 @@ from django.utils.html import format_html
 from django.utils.safestring import SafeString
 
 from collectors import schemas
-from control.forms import ConfigForm
+from control.forms import ConfigForm, PlatformForm
 from control.models import (
     Collector,
     Config,
     Job,
     JobOrigin,
     JobStatus,
+    Platform,
     Schedule,
 )
 
@@ -278,6 +279,90 @@ class ConfigAdmin(admin.ModelAdmin):
     def action_disable(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
         n = self._bulk(request, queryset, enabled=False)
         self.message_user(request, f"Выключено конфигураций: {n}.", messages.SUCCESS)
+
+    @admin.action(description="В архив (мягкое удаление)")
+    def action_archive(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
+        n = self._bulk(request, queryset, archived=True)
+        self.message_user(request, f"Отправлено в архив: {n}.", messages.SUCCESS)
+
+    @admin.action(description="Вернуть из архива")
+    def action_unarchive(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
+        n = self._bulk(request, queryset, archived=False)
+        self.message_user(request, f"Возвращено из архива: {n}.", messages.SUCCESS)
+
+
+@admin.register(Platform)
+class PlatformAdmin(ConfigAdmin):
+    """The platform tab: the same Configs, asked for as sites.
+
+    Everything behind it — enqueue, snapshots, schedules, history — is `ConfigAdmin`'s, which is
+    why this subclasses it rather than reimplementing the surface. What changes is the form and
+    the shape of the page.
+    """
+
+    form = PlatformForm
+    list_display = (
+        "name",
+        "engine",
+        "site",
+        "enabled",
+        "archived",
+        "last_status_badge",
+        "last_run_at",
+        "last_job_link",
+    )
+    list_filter = ("collector_key", "enabled", "archived", "last_status")
+    search_fields = ("name",)
+    fieldsets = (
+        ("Площадка", {"fields": ("name", "collector_key", "domain", "listing_path")}),
+        ("Обход", {"fields": ("max_pages", "only_active", "concurrency", "fetch_details")}),
+        (
+            "TLS",
+            {
+                "fields": ("extra_ca_cert", "skip_tls_verify"),
+                "classes": ("collapse",),
+                "description": "Костыли под сайты со сломанной цепочкой сертификатов. "
+                "По умолчанию не нужны.",
+            },
+        ),
+        ("Состояние", {"fields": ("enabled", "archived", "tags", "owner")}),
+        (
+            "Что уйдёт в задачу",
+            {"fields": ("resolved_preview",), "classes": ("collapse",)},
+        ),
+        (
+            "Последний запуск (кэш-колонки)",
+            {"fields": ("last_status", "last_run_at", "last_job_link"), "classes": ("collapse",)},
+        ),
+        (
+            "Аудит",
+            {
+                "fields": ("revision", "created_by", "created_at", "updated_at"),
+                "classes": ("collapse",),
+            },
+        ),
+    )
+
+    @admin.display(description="Движок", ordering="collector_key")
+    def engine(self, obj: Platform) -> str:
+        try:
+            return schemas.get_collector(obj.collector_key).display_name
+        except schemas.UnknownCollector:
+            return f"{obj.collector_key} — нет в кодовой базе"
+
+    @admin.display(description="Сайт")
+    def site(self, obj: Platform) -> str:
+        return obj.domain or "—"
+
+    @admin.action(description="Включить выбранные площадки")
+    def action_enable(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
+        n = self._bulk(request, queryset, enabled=True)
+        self.message_user(request, f"Включено площадок: {n}.", messages.SUCCESS)
+
+    @admin.action(description="Выключить выбранные площадки")
+    def action_disable(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
+        n = self._bulk(request, queryset, enabled=False)
+        self.message_user(request, f"Выключено площадок: {n}.", messages.SUCCESS)
 
     @admin.action(description="В архив (мягкое удаление)")
     def action_archive(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:

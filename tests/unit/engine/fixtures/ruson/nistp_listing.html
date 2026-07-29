@@ -1,0 +1,663 @@
+ <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ru" xml:lang="ru" dir="ltr" class="js chrome win">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link rel="shortcut icon" href="https://nistp.ru/inc/images/icons/nistp_favicon.ico" type="image/x-icon">
+	<link rel="stylesheet" href="https://nistp.ru/inc/css/style.css?v=16">
+	<link rel="stylesheet" href="https://nistp.ru/inc/css/lightbox.css?v=16">
+
+	<title>
+		Новые информационные сервисы	</title>
+
+	<script src="https://nistp.ru/inc/js/jquery-3.5.1.min.js"></script>
+	<script src="https://nistp.ru/inc/js/lightbox.js"></script>
+	<script src="https://nistp.ru/inc/js/script.js"></script>
+	<script src='https://api-maps.yandex.ru/2.1/?lang=ru_RU&apikey=ed24a6ef-4d26-4341-b524-ad545aacff5a&suggest_apikey=9454ad0f-1c8e-4e8a-8d32-0c38a174e668' type='text/javascript'></script>
+
+	<script>
+		function redirector(new_url) {
+			window.location.href=new_url;
+		}
+
+		function table_shower(id) {
+			table_id="#"+id;
+			$(table_id).toggleClass('collapse');
+		}
+	</script>
+	<!-- Yandex.Metrika counter -->
+	<script type="text/javascript" >
+		(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+			m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+		(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+		ym(53841571, "init", {
+			clickmap:true,
+			trackLinks:true,
+			accurateTrackBounce:true,
+			webvisor:true
+		});
+	</script>
+	<noscript><div><img src="https://mc.yandex.ru/watch/53841571" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+	<!-- /Yandex.Metrika counter -->
+
+</head>
+
+<body class="front not-logged-in page-trades one-sidebar sidebar-left">
+<div id="art-main">
+	<div class="art-sheet">
+		<div class="art-sheet-body">
+			<div class="art-header">
+				<div class="art-header-center">
+					<div class="art-header-jpeg"></div>
+				</div>
+				<div class="currentdate">
+					<span id="currentdate">
+					<span id="topdate">
+						22.07.2026 20:50 (время московское)
+					</span>
+					</span>
+				</div>
+
+				<div class="art-logo">
+				</div>
+
+			</div>
+			<div class="art-nav">
+				<ul class="links">
+					<li class=""><a href="https://nistp.ru/common/page.php?id=1">Новости</a></li>
+					<li class=""><a href="https://nistp.ru/bankrot/trade_list.php">Торги</a></li>
+
+					<li class=""><a href="https://nistp.ru/common/page.php?id=2">Подключение к системе</a></li>
+					<li class=""><a href="https://nistp.ru/common/page.php?id=3">Регламент</a></li>
+					<li class=""><a href="https://nistp.ru/common/page.php?id=4">Тарифы</a></li>
+					<li class=""><a href="https://nistp.ru/common/page.php?id=5">Контакты</a></li>
+					<li class=""><a href="https://nistp.ru/common/page.php?id=6">Услуги</a></li>
+					<li class=""><a href="https://nistp.ru/common/page.php?id=13">О нас</a></li>
+					<li class=""><a href="https://nistp.ru/common/page.php?id=14">Партнеры</a></li>
+					<li class=""><a href="https://nistp.ru/common/bank_trade.php">Продажа имущества банков</a></li>
+				</ul>
+			</div>
+			<div class="art-content-layout">
+				<div class="art-content-layout-row">
+					<div class="art-layout-cell art-sidebar1">
+						<div class="art-block clear-block block block-user" id="block-user-0">
+							<div class="art-block-body">
+								<div class="art-blockcontent content">
+
+									<table class="block_table">
+	<tbody>
+	<tr>
+		<td class="block_header_no_ico" rowspan="1" colspan="1">Вход для участников системы</td>
+	</tr>
+	<tr>
+		<td class="corner-box-style1" style="padding: 10px 10px 5px 0" rowspan="1" colspan="1">
+			<form action="https://nistp.ru/common/login.php" method="post">
+				<table class="login-block" width="95%">
+					<tbody>
+					<tr>
+						<td class="logform_label">E-mail: </td>
+						<td class="logform_container">
+							<input type="email" class="logform_input" id="lfEmail" placeholder="E-mail" name='user_mail'>
+						</td>
+					</tr>
+					<tr>
+						<td class="logform_label">Пароль: </td>
+						<td class="logform_container">
+							<input type="password" class="logform_input" id="lfPassword" placeholder="Пароль" name='user_password'>
+						</td>
+					</tr>
+					</tbody>
+				</table>
+				<table class="login-block" style="margin-top: 5px" width="95%">
+					<tbody>
+					<tr>
+						<td>
+							<a class="logform_link" href="https://nistp.ru/common/passwd_remainer.php">Забыли пароль?</a>
+							<br>
+							<a class="logform_link" href="https://nistp.ru/common/reg.php">Регистрация</a>
+						</td>
+						<td valign="center" align="center">
+							<input value="Войти" class="art-button" name="submit" type="submit">
+						</td>
+					</tr>
+					</tbody>
+				</table>
+			</form>
+		</td>
+	</tr>
+	</tbody>
+</table>
+				<table class='block_table'>
+				<tbody>
+					<tr valign='top'>
+						<td class='block_header'>СПРАВОЧНАЯ ИНФОРМАЦИЯ</td>
+					</tr><tr valign='top'>
+						<td class='block_menu_link_cont'><a href='http://nistp.ru/common/page.php?id=7'>Законодательство</a></td>
+					</tr><tr valign='top'>
+						<td class='block_menu_link_cont'><a href='http://nistp.ru/common/page.php?id=9'>Центр поддержки пользователей</a></td>
+					</tr><tr valign='top'>
+						<td class='block_menu_link_cont'><a href='http://nistp.ru/common/page.php?id=10'>Аккредитация в СРО</a></td>
+					</tr><tr valign='top'>
+						<td class='block_menu_link_cont'><a href='https://nistp.ru/ecp_check/ecp_check.php'>Проверка ЭП</a></td>
+					</tr></tbody>
+				</table>
+								</div>
+
+							</div>
+						</div>
+
+
+						<div class="art-vmenublock">
+							<p class='rtecenter'><br>
+	<a class='link' href='https://ca.tensor.ru/petition.html?agent_code=1009' title='Получить ЭЦП' target='_blank'>
+		<img src='https://nistp.ru//inc/images/get-ecp.jpg' style='width: 130px; height: 74px;' /><br />
+		<span style='color: #5a5a5a;font-weight:normal;font-size:16px;font-face:Arial;text-align: center;text-transform: uppercase;'>Получить ЭЦП</span></a>
+</p>						</div>
+
+
+
+						<div class="art-vmenublock">
+							<table class='block_table'>
+		<tr valign='top'>
+			<td class='block_header'>СТАТИСТИКА<br></td>
+		</tr>
+		<tr>
+			<td class='block_menu_stat_cont'><span class='label'>Участников</span><span class='value'>109 271</span></td>
+		</tr>
+		<tr>	
+			<td class='block_menu_stat_cont'><span class='label'>Всего</span><span class='value'>166 969</span> <span class='label'>лотов</span></td>
+		</tr>
+		<tr>
+			<td class='block_menu_stat_cont'><span class='label'>На сумму</span><span class='value'>3 602 373 282 316</span> <span class='label'>руб.</span></td>
+		</tr>
+		<tr>
+			<td class='block_menu_stat_cont'><span class='label'>Проведено</span><span class='value'>151 529</span> <span class='label'>лотов</span></td>
+		</tr>
+		<tr>
+			<td class='block_menu_stat_cont'><span class='label'>На сумму</span><span class='value'>3 205 181 577 170</span> <span class='label'>руб.</span></td>
+		</tr>
+	</table>
+							</div>
+
+
+
+
+						<div class="art-vmenublock">
+							
+<p class='rtecenter'>
+	<a href='https://agentbankrot.ru/?erid=CQH36pWzJqNKM18k286SrgHkWaYMsBkiM57AT2ANySi8W8' target='_blank' title=''>
+		<img src='https://nistp.ru/sites/default/files/banners/agentbankrot.gif'>
+	</a>
+</p>
+<p class='rtecenter'>
+	<a href='https://nistp.ru/sites/default/files/banners/volga.pdf' target='_blank' title=''>
+		<img src='https://nistp.ru/sites/default/files/banners/banner_volga.jpg'>
+	</a>
+</p>
+<p class='rtecenter'>
+	<a href='https://www.diadoc.ru/lp-nistp?p=w01834' target='_blank' title=''>
+		<img src='https://nistp.ru/sites/default/files/banners/diadok.png'>
+	</a>
+</p>
+<p class='rtecenter'>
+	<a href='https://fedresurs.ru/?attempt=1' target='_blank' title=''>
+		<img src='https://nistp.ru/sites/default/files/banners/efrsb.jpg'>
+	</a>
+</p>
+
+						</div>
+					</div>
+
+
+
+
+					<div class="art-layout-cell art-content">
+						<div class="art-post">
+							<div class="art-post-body">
+								<form action='' method='GET' id='nodesearch'>
+	<div id='search_block'>
+
+	<div id='search_block_header'>Поиск торгов</div>
+	
+	<div class='search_flex_cont_input'>
+		<div class='search_elem_input'>
+			<div class='search_label'>Предмет торгов</div>
+			<div class='search_field'><input class='search_field' id='' placeholder='' type='text' name='lot_description' value=''></div>
+		</div>
+		<div class='search_elem_input'>
+			<div class='search_label'>Номер торгов</div>
+			<div class='search_field'><input class='search_field' id='' placeholder='' type='text' name='trade_number' value=''></div>
+		</div>
+		<div class='search_elem_input'>
+			<div class='search_label'>Номер лота</div>
+			<div class='search_field'><input class='search_field' id='' placeholder='' type='text' name='lot_number' value=''></div>
+		</div>
+		<div class='search_elem_input'>
+			<div class='search_label'>Организатор торгов</div>
+			<div class='search_field'><input class='search_field' id='' placeholder='ИНН, ФИО (через пробел, ФЛ,ИП), Наименование (ЮЛ)' type='text' name='trade_org' value=''></div>
+		</div>
+		<div class='search_elem_input'>
+			<div class='search_label'>Арбитражный управляющий</div>
+			<div class='search_field'><input class='search_field' id='' placeholder='Фамилия, инн, рег. номер' type='text' name='arbitr_info' value=''></div>		
+		</div>
+		<div class='search_elem_input'>
+			<div class='search_label'>Должник</div>
+			<div class='search_field'><input class='search_field' id='' placeholder='Наименование, фамилия, инн, огрн' type='text' name='debtor_info' value=''></div>	
+		</div>
+		<div class='search_elem_input'>
+			<div class='search_label'>Дата начала приема заявок</div>
+			<div class='search_date_cont'>
+				<input class='search_field_short' id='' placeholder='С' type='datetime_short' name='app_start_from' value=''> - 
+				<input class='search_field_short' id='' placeholder='ПО' type='datetime_short' name='app_start_to' value=''>
+			</div>
+		</div>
+		<div class='search_elem_input'>
+			<div class='search_label'>Дата окончания приема заявок</div>
+			<div class='search_date_cont'>
+				<input class='search_field_short' id='' placeholder='С' type='datetime_short' name='app_end_from' value=''> - 
+				<input class='search_field_short' id='' placeholder='ПО' type='datetime_short' name='app_end_to' value=''>
+			</div>
+		</div>
+		
+		<div class='search_elem_input'>
+		<div class='search_label'>Способ вывода</div>
+		<span style='padding:auto;display:inline-block;vertical-align:bottom;' class='switch_buttons'>
+			Торги
+			<span style='padding:0 0 1px 0;display:inline-block;vertical-align:bottom;'><input type='radio' name='view_type' value='trade' checked>
+			<input type='radio' name='view_type' value='lot' ></span>
+			Лоты
+		</span>
+		</div></div>
+	<div class='search_flex_cont_button'>
+		<div class='search_elem'>
+			<div class=''>
+			<button type='button' class='art-button button_search' id='button_search_trade_type' value='Виды торгов' onclick='shower("select_trade_type")'>Виды торгов</button>
+				<div id='select_trade_type' class='hidden_search_cont'><ul id='trade_type'><li class='search_first_li'><label><input type='checkbox' id='trade_type_all_1' onclick='check_children("trade_type","1")' value='Банкротные торги'> Банкротные торги</label></li><li><ul id='trade_type_child_1'><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","1")' value='Аукцион с открытой формой представления цены' > Аукцион с открытой формой представления цены</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","1")' value='Аукцион с закрытой формой представления цены' > Аукцион с закрытой формой представления цены</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","1")' value='Конкурс с открытой формой представления цены' > Конкурс с открытой формой представления цены</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","1")' value='Конкурс с закрытой формой представления цены' > Конкурс с закрытой формой представления цены</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","1")' value='Публичное предложение' > Публичное предложение</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","1")' value='Закрытый аукцион с открытой формой представления цены' > Закрытый аукцион с открытой формой представления цены</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","1")' value='Закрытый аукцион с закрытой формой представления цены' > Закрытый аукцион с закрытой формой представления цены</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","1")' value='Закрытый конкурс с открытой формой представления цены' > Закрытый конкурс с открытой формой представления цены</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","1")' value='Закрытый конкурс с закрытой формой представления цены' > Закрытый конкурс с закрытой формой представления цены</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","1")' value='Закрытое публичное предложение' > Закрытое публичное предложение</label></li></li></ul><li class='search_first_li'><label><input type='checkbox' id='trade_type_all_2' onclick='check_children("trade_type","2")' value='Коммерческие торги'> Коммерческие торги</label></li><li><ul id='trade_type_child_2'><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","2")' value='Коммерческий аукцион с открытой формой представления цены' > Коммерческий аукцион с открытой формой представления цены</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","2")' value='Коммерческий аукцион с закрытой формой представления цены' > Коммерческий аукцион с закрытой формой представления цены</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","2")' value='Коммерческий запрос предложений' > Коммерческий запрос предложений</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","2")' value='Аукцион на понижение и повышение цены (Голландский аукцион)' > Аукцион на понижение и повышение цены (Голландский аукцион)</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_type[]' onclick='getCheckedValue("trade_type","2")' value='Коммерческое публичное предложение' > Коммерческое публичное предложение</label></li></li></ul></ul>
+				</div>
+			</div>
+		</div>
+		
+		<div class='search_elem'>
+			<div class=''>
+			<button type='button' class='art-button button_search' id='button_search_trade_state' value='Состояние торгов' onclick='shower("select_trade_state")'>Состояние торгов</button>
+				<div id='select_trade_state' class='hidden_search_cont'><ul id='trade_state'><li class='search_first_li'><label><input type='checkbox' id='trade_state_all_1' onclick='check_children("trade_state","1")' value='Все'> Все</label></li><li><ul id='trade_state_child_1'><li class='search_second_li'><label><input type='checkbox' name='trade_state[]' onclick='getCheckedValue("trade_state","1")' value='Торги объявлены' > Торги объявлены</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_state[]' onclick='getCheckedValue("trade_state","1")' value='Прием заявок' > Прием заявок</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_state[]' onclick='getCheckedValue("trade_state","1")' value='Прием заявок завершен' > Прием заявок завершен</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_state[]' onclick='getCheckedValue("trade_state","1")' value='Идут торги' > Идут торги</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_state[]' onclick='getCheckedValue("trade_state","1")' value='Подведение итогов' > Подведение итогов</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_state[]' onclick='getCheckedValue("trade_state","1")' value='Торги завершены' > Торги завершены</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_state[]' onclick='getCheckedValue("trade_state","1")' value='Торги не состоялись' > Торги не состоялись</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_state[]' onclick='getCheckedValue("trade_state","1")' value='Торги приостановлены' > Торги приостановлены</label></li><li class='search_second_li'><label><input type='checkbox' name='trade_state[]' onclick='getCheckedValue("trade_state","1")' value='Торги отменены' > Торги отменены</label></li></li></ul></ul>
+				</div>
+			</div>
+		</div>
+		
+		<div class='search_elem'>
+			<div class=''>
+			<button type='button' class='art-button button_search' id='button_search_price' value='Цена' onclick='shower("select_price")'>Цена</button>
+				<div id='select_price' class='hidden_search_cont'>Доступно только для <a href='https://nistp.ru/common/premium.php' style='text-decoration:underline;'>премиум аккаунта</a>
+				</div>
+			</div>
+		</div>
+		
+		<div class='search_elem'>
+			<div class=''>
+			<button type='button' class='art-button button_search' id='button_search_debtor_region' value='Регион должника' onclick='shower("select_debtor_region")'>Регион должника</button>
+				<div id='select_debtor_region' class='hidden_search_cont'>Доступно только для <a href='https://nistp.ru/common/premium.php' style='text-decoration:underline;'>премиум аккаунта</a></div>
+			</div>
+		</div>
+		
+		<div class='search_elem'>
+			<div class=''>
+			<button type='button' class='art-button button_search' id='button_search_cat' value='Категории имущества' onclick='shower("select_cat")'>Категории имущества</button>
+				<div id='select_cat' class='hidden_search_cont' style='width:550px;'>Доступно только для <a href='https://nistp.ru/common/premium.php' style='text-decoration:underline;'>премиум аккаунта</a></div>
+			</div>
+		</div>
+		
+		<div class='search_elem' style='align-self:flex-end;margin-left: auto;'>
+			<div class='search_buttons_cont'>
+				<button type='submit' class='art-button' style='font-weight:bold' value='Поиск'>Поиск</button>
+				<button type='button' class='art-button' style='font-weight:bold' onclick='nodelist_reload()'>Очистить</button>
+			</div>
+		</div>
+	</div>
+	
+	<input type='hidden' name='pagenum' id='pagenum'>
+	</div>
+	</form>
+	
+	 <script>
+	 function set_flex_width() {
+		cont_flex_width=$('.search_flex_cont_input').width();
+		cont_elem_width=$('.search_elem').width();
+		if (cont_flex_width>2*cont_elem_width) {
+			$('.search_flex_cont_button').width(cont_flex_width);
+		}
+		else {
+			$('.search_flex_cont_button').width(cont_elem_width);
+		}
+	}
+	set_flex_width();
+	</script><div class='estate_map'><a class='estate_map' href='https://nistp.ru/common/ym.php'>Карта Недвижимости</a></div><nav class='pagnav' aria-label='Постраничная навигация'>
+			<div class='header' >Страница:</div>
+			<ul class='pagination'><li class='active'><a onclick='pagenum_send(1)'>1</a></li><li><a onclick='pagenum_send(2)'>2</a></li><li><a onclick='pagenum_send(3)'>3</a></li><li><a onclick='pagenum_send(4)'>4</a></li><li><a onclick='pagenum_send(5)'>5</a></li><li><a onclick='pagenum_send(6)'>6</a></li><li><a onclick='pagenum_send(7)'>7</a></li><li><a onclick='pagenum_send(8)'>8</a></li><li><a onclick='pagenum_send(9)'>9</a></li><li><a onclick='pagenum_send(10)'>10</a></li>
+			</ul>
+		</nav>
+		
+		<table class='data'>
+			<thead>
+				<tr>
+				<th>Код торгов</th>
+				<th>Организатор</th>
+				<th>Должник, предмет торгов</th>
+				<th>Начало приема заявок</th>
+				<th>Конец приема заявок</th>
+				<th>Состояние</th>
+				</tr>
+			</thead>
+			
+			<tbody><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484796'>68240-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484796'>Чахоян Кима Самвеловна</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484796'><span style='font-weight:bold;'>Ионов Павел Олегович</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484796#lot1'><span style='font-weight:bold;'>Лот № 1: </span>MERSEDES-BENZ GLK 220 CDI 4MATIC 2013 года выпуска (VIN) WDC2049841G118016</a><br></td>
+			<td>23.07.2026 15:00</td>
+			<td>28.08.2026 15:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484779'>68236-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484779'>Никитин Александр Георгиевич</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484779'><span style='font-weight:bold;'>Хуснуллин Ильнар Тахирович</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484779#lot1'><span style='font-weight:bold;'>Лот № 1: </span>Легковой автомобиль</a><br></td>
+			<td>23.07.2026 10:00</td>
+			<td>28.08.2026 10:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484774'>68235-ОТПП</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484774'>ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ АССЕТ МЕНЕДЖМЕНТ</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484774'><span style='font-weight:bold;'>Исайкин Роман Анатольевич</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484774#lot1'><span style='font-weight:bold;'>Лот № 1: </span>Земельный участок, общей площадью 20,94 Га, категория земель: земли населенных пунктов, ВРИ: для жилищного строительства, кадастровый номер: 40:01:030201:355. Основные виды использования: жилая застройка, для ИЖС, малоэтажная многоквартирная застройка, общежития, предпринимательство, объекты торговли, магазины, гостиничное обслуживание, отдых (рекреация), и прочее, согласно ГПЗУ. Адрес (местонахождение): Калужская область, . . .<br></td>
+			<td>01.08.2026 00:00</td>
+			<td>30.08.2026 23:59</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484773'>68234-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484773'>Боднар Дарья Алексеевна</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484773'><span style='font-weight:bold;'>Трофимов Евгений Анатольевич</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484773#lot1'><span style='font-weight:bold;'>Лот № 1: </span>Дебиторская задолженность ООО «Глобус» перед Трофимовым Евгением Анатольевичем в размере 214 375,02 рублей на основании исполнительного листа № 37RS0019#2-1306/2024#2 от 03.03.2025 г.</a><br></td>
+			<td>24.07.2026 00:00</td>
+			<td>28.08.2026 00:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484770'>68233-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484770'>Мосина Ксения Рудольфовна</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484770'><span style='font-weight:bold;'>Вишневская Тамара Алексеевна</span><br><span style='font-weight:bold;'>Всего лотов: 2</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484770#lot1'><span style='font-weight:bold;'>Лот № 1: </span>Земельный участок</a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484770#lot2'><span style='font-weight:bold;'>Лот № 2: </span>Земельный участок</a><br></td>
+			<td>23.07.2026 10:00</td>
+			<td>27.08.2026 10:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484766'>68231-ОТПП</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484766'>НЕВОСТРУЕВ АНДРЕЙ СЕРГЕЕВИЧ</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484766'><span style='font-weight:bold;'>Лощилов Александр Петрович</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484766#lot1'><span style='font-weight:bold;'>Лот № 1: </span>Легковой автомобиль ВАЗ 21074, год выпуска – 2010, VIN XTA210740B3036967, гос.номер У550ХА</a><br></td>
+			<td>23.07.2026 10:00</td>
+			<td>19.11.2026 19:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484763'>68230-ОТПП</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484763'>ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ АССЕТ МЕНЕДЖМЕНТ</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484763'><span style='font-weight:bold;'>ООО «Апсара»</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484763#lot1'><span style='font-weight:bold;'>Лот № 1: </span>Двухэтажное административное здание общей площадью: 1395.9 кв. м.,  кад. номер 50:07:0000000:6110, земельный участок общей площадью: 3110 кв м., кад. номер 50:07:0030403:86, газопровод, протяженность — 11 м, кад. номер 50:07:0030403:1576.  Адрес (местонахождение): Московская область, г. Волоколамск, Рижское шоссе, д.20, стр.2.  Обеспечено центральными коммуникациями. В здании имеются арендаторы по краткосрочным договорам аренды. Имущество реализуется . . .<br></td>
+			<td>03.08.2026 00:00</td>
+			<td>01.09.2026 23:59</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484755'>68228-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484755'>Чахоян Кима Самвеловна</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484755'><span style='font-weight:bold;'>Лыс Таисия Анатольевна</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484755#lot1'><span style='font-weight:bold;'>Лот № 1: </span>автомобиль КIА RIO, VIN: Z94C241BBLR188316, 2020 г.в.</a><br></td>
+			<td>23.07.2026 15:00</td>
+			<td>28.08.2026 15:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484754'>68227-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484754'>Печурина Елена Сергеевна</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484754'><span style='font-weight:bold;'>Руф Вероника Павловна</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484754#lot1'><span style='font-weight:bold;'>Лот № 1: </span>автомобиль легковой марки TOYOTA COROLLA, ,2002 г.в., цвет серый, VIN отсутствует</a><br></td>
+			<td>23.07.2026 10:00</td>
+			<td>26.08.2026 13:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484746'>68226-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484746'>Москалев Григорий Юрьевич</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484746'><span style='font-weight:bold;'>Никитина Мария Витальевна</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484746#lot1'><span style='font-weight:bold;'>Лот № 1: </span>Жилое помещение (квартира), расположенная по адресу: Саратовская область, г Саратов, ул Перспективная, д 27, кв 9, кадастровый номер: 64:48:040408:1901, площадь: 58.5 кв. м., доля в праве: 1/5</a><br></td>
+			<td>27.07.2026 09:00</td>
+			<td>28.08.2026 18:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484741'>68223-ОТПП</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484741'>Печурина Елена Сергеевна</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484741'><span style='font-weight:bold;'>Кузьмина Елена Александровна</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484741#lot1'><span style='font-weight:bold;'>Лот № 1: </span>гараж с кадастровым номером 74:33:0121001:1865, расположенный по адресу: Россия, Челябинская область, г. Магнитогорск, АГСК «Северная-1», стоянка №6, бокс №1106</a><br></td>
+			<td>23.07.2026 10:00</td>
+			<td>16.08.2026 10:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484737'>68222-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484737'>ИП САУТКИН ПАВЕЛ ВИТАЛЬЕВИЧ</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484737'><span style='font-weight:bold;'>Общество с ограниченной ответственностью Инвестмент Айкон</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484737#lot1'><span style='font-weight:bold;'>Лот № 1: </span>Жилое помещение (квартира)</a><br></td>
+			<td>27.07.2026 00:00</td>
+			<td>03.09.2026 00:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484736'>68221-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484736'>ИП Микрюкова Ксения Вячеславовна</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484736'><span style='font-weight:bold;'>Жижина Ольга Владимировна</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484736#lot1'><span style='font-weight:bold;'>Лот № 1: </span>Легковой автмобиль</a><br></td>
+			<td>30.07.2026 10:00</td>
+			<td>03.09.2026 10:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484733'>68220-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484733'>Мезенцев Виталий Юрьевич</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484733'><span style='font-weight:bold;'>Ильина Наталья Сергеевна</span><br><span style='font-weight:bold;'>Всего лотов: 2</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484733#lot1'><span style='font-weight:bold;'>Лот № 1: </span>67/500 доли в праве общей долевой собственности на квартиру с кадастровым номером 21:01:020801:3712, площадью 24.3 кв.м., расположенную по адресу: Чувашская Республика, г. Чебоксары, пр-кт. Мира, д. 82, к. 79.</a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484733#lot2'><span style='font-weight:bold;'>Лот № 2: </span>1/4 доля в праве общей долевой собственности на жилое помещение с кадастровым номером 21:17:091401:274, площадью 137.7 кв.м., расположенное по адресу: Чувашская Респ. - Чувашия, р-н Моргаушский, с/пос. Москакасинское, д. Эхветкасы, ул. Большая, дом 12 и 1/4 доля в праве общей долевой собственности на земельного участка с кадастровым номером 21:17:091401:59, площадью 4400 кв.м., расположенный по адресу: Чувашская Респ. - Чувашия, р-н Моргаушский, . . .<br></td>
+			<td>23.07.2026 10:00</td>
+			<td>26.08.2026 13:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484729'>68219-ОТПП</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484729'>Степанов Роман Сергеевич</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484729'><span style='font-weight:bold;'>Тимчишина Ольга Сергеевна</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484729#lot1'><span style='font-weight:bold;'>Лот № 1: </span>Chery Tiggo 7, год выпуска - 2023; Идентификационный номер (VIN): LVVDB21B9RD785122</a><br></td>
+			<td>24.07.2026 00:00</td>
+			<td>21.08.2026 23:59</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484728'>68218-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484728'>Зуев Максим Владимирович</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484728'><span style='font-weight:bold;'>Тарасова Елена Михайловна</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484728#lot1'><span style='font-weight:bold;'>Лот № 1: </span>1/5 общей долевой собственности на жилое помещение и земельный участок</a><br></td>
+			<td>23.07.2026 10:00</td>
+			<td>26.08.2026 16:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484725'>68217-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484725'>Земцов Никита Вадимович</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484725'><span style='font-weight:bold;'>Тарасов Денис Игоревич</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484725#lot1'><span style='font-weight:bold;'>Лот № 1: </span>Земельный участок Кадастровый номер: 69:24:0133301:157</a><br></td>
+			<td>23.07.2026 12:00</td>
+			<td>27.08.2026 12:00</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484723'>68216-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484723'>Степанов Роман Сергеевич</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484723'><span style='font-weight:bold;'>Багаутдинов Ильфат Рафаилевич</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484723#lot1'><span style='font-weight:bold;'>Лот № 1: </span>Транспортное средство, легковой а/м Фольксваген Поло 2013 г.в., VIN XW8ZZZ61ZDG055390,  государственный рег. номер А761МЕ716</a><br></td>
+			<td>24.07.2026 00:00</td>
+			<td>28.08.2026 23:59</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484721'>68215-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484721'>Степанов Роман Сергеевич</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484721'><span style='font-weight:bold;'>Сафронова Ирина Дмитриевна</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484721#lot1'><span style='font-weight:bold;'>Лот № 1: </span>Автомобиль GEELY COOLRAY VIN: Y4K8622Z6MB909494.</a><br></td>
+			<td>24.07.2026 00:00</td>
+			<td>28.08.2026 23:59</td>
+			<td>Торги объявлены</td>
+			</tr><tr><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484716'>68213-ОАОФ</a></td>
+			<td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484716'>Земцов Никита Вадимович</a></td><td><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484716'><span style='font-weight:bold;'>Подлевских Антон Викторович</span><br><span style='font-weight:bold;'>Всего лотов: 1</span></a><br><a href='https://nistp.ru/bankrot/trade_view.php?trade_nid=484716#lot1'><span style='font-weight:bold;'>Лот № 1: </span>автомобиль LADA VESTA</a><br></td>
+			<td>23.07.2026 12:00</td>
+			<td>27.08.2026 12:00</td>
+			<td>Торги объявлены</td>
+			</tr></tbody></table><nav class='pagnav' aria-label='Постраничная навигация'>
+			<div class='header' >Страница:</div>
+			<ul class='pagination'><li class='active'><a onclick='pagenum_send(1)'>1</a></li><li><a onclick='pagenum_send(2)'>2</a></li><li><a onclick='pagenum_send(3)'>3</a></li><li><a onclick='pagenum_send(4)'>4</a></li><li><a onclick='pagenum_send(5)'>5</a></li><li><a onclick='pagenum_send(6)'>6</a></li><li><a onclick='pagenum_send(7)'>7</a></li><li><a onclick='pagenum_send(8)'>8</a></li><li><a onclick='pagenum_send(9)'>9</a></li><li><a onclick='pagenum_send(10)'>10</a></li>
+			</ul>
+		</nav>
+									</div>
+						</div>
+					</div>
+
+				</div>
+			</div>
+			<div class="cleared"></div>
+
+			<div class="art-footer">
+				<div class="art-footer-t"></div>
+				<div class="art-footer-l"></div>
+				<div class="art-footer-b"></div>
+				<div class="art-footer-r"></div>
+				<div class="art-footer-body">
+					<div class="art-footer-text">
+					Используя сайт вы подтверждаете 
+					<a href="https://nistp.ru/files/upload/809-851f45e82c8ef0587883f02405a3e098.pdf" style="color:#0000ff">согласие на обработку персональных данных</a> 
+					и 
+					<a href="https://nistp.ru/files/upload/42-1a0f7ea015b0b21eb868f240c0b9c4b3.pdf" style="color:#0000ff">политику конфиденциальности АО "НИС"</a><br>
+											</div>
+					<div class="cleared"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="cleared"></div>
+	<p class="art-page-footer"></p>
+
+</div><script>
+		function pagenum_send(pagenum) {
+			$('#pagenum').val(pagenum);
+			$('#nodesearch').submit();
+		}
+		function nodelist_reload(){
+			window.location='https://nistp.ru/bankrot/trade_list.php';
+		}
+		function node_delete(nid) {
+			$('#nid_delete').val(nid);
+			$('#nodedelete_form').submit();
+		}
+		</script>
+		<script src='https://nistp.ru/inc/js/jquery.datetimepicker.js'></script>
+		<link href='https://nistp.ru/inc/css/jquery.datetimepicker.css' rel='stylesheet'>
+		<script>
+		$('input[type=datetime_full]').datetimepicker({dayOfWeekStart : 1,format:'d.m.Y H:i',lang:'ru'});
+		$('input[type=datetime_short]').datetimepicker({timepicker:false,dayOfWeekStart : 1,format:'d.m.Y',lang:'ru',closeOnDateSelect:true});
+		</script>
+<script>
+	function view_search_cat() {
+		$("#cat_search_container").toggle();
+	}
+	function shower(id) {
+		need_id="#"+id;
+		if ($(need_id).css("display")=="block") {
+			$(".hidden_search_cont").fadeOut(300);
+		}
+		else {
+			$(".hidden_search_cont").fadeOut(300);
+			$(need_id).fadeIn(300);
+		}
+
+	}
+	function getCheckedValue(search_key) {
+		button_id="#button_search_"+search_key;
+		check_string="input[name='"+search_key+"[]']";
+		check_string_count=$(check_string).length;
+		counter=0;
+		$(check_string).each(function() {
+			if (this.checked) {
+				counter++;
+				$(this).parent().parent().addClass("alw");
+			}
+			else {
+				$(this).parent().parent().removeClass("alw");
+			}
+		});
+		if (counter>0) {
+			$(button_id).html($(button_id).val() + " (" + counter + " из " + check_string_count + ")");
+		}
+		else {
+			$(button_id).html($(button_id).val());
+		}
+		if (search_key=="cat") {
+			max_inner_level = 6;
+		}
+		else {
+			max_inner_level = 2;
+		}
+		for (i=1;i<=max_inner_level;i++) {
+			group_input_id="#"+search_key+"_all_"+i;
+			count_children=($("#"+search_key+"_child_"+i+" input[name='"+search_key+"[]']").length);
+			count_children_checked=($("#"+search_key+"_child_"+i+" input[name='"+search_key+"[]']:checked").length);
+			if (count_children==count_children_checked) {
+				$(group_input_id).prop('checked', true);
+			}
+			else {
+				$(group_input_id).prop('checked', false);
+			}
+		}
+	}
+
+	function check_children(search_key,block_number) {
+		input_selector_parent="#"+search_key + "_all_"+block_number;
+		input_selector="#"+search_key + "_child_"+block_number+" input[type='checkbox']";
+		$(input_selector).prop('checked', $(input_selector_parent).prop('checked'));
+		getCheckedValue(search_key);
+	}
+
+	function check_prices() {
+		counter=0;
+		$(".search_price").each(function(){
+			if ($(this).val()!="") {
+				counter++;
+			}
+		});
+		button_id="#button_search_price";
+		if (counter>0) {
+			$(button_id).html($(button_id).val() + " <span style='color:#f00;'>*</span> ");
+		}
+		else {
+			$(button_id).html($(button_id).val());
+		}
+	}
+
+
+	function show_all_regions() {
+		$(".region_search_element").show();
+	}
+
+	function reset_region_search() {
+		show_all_regions();
+		$("#sro_filter").val("");
+	}
+
+	function region_filter() {
+		show_all_regions();
+		search_val=$("#debtor_search").val();
+		$(".region_search_element").each(function( index ) {
+			if ($( this ).html().toLowerCase().indexOf(search_val)==-1) {
+				$(this).hide();
+			}
+		});
+	}
+	function cat_toggler(id) {
+		ul_id="#cat_child_"+id;
+		span_id="#toggler_cat_"+id;
+		if ($(ul_id).hasClass("hidden")) {
+			$(ul_id).removeClass("hidden");
+			$(span_id).removeClass("cat_toggler_right");
+			$(span_id).addClass("cat_toggler_down");
+		}
+		else {
+			$(ul_id).addClass("hidden");
+			$(span_id).removeClass("cat_toggler_down");
+			$(span_id).addClass("cat_toggler_right");
+		}
+	}
+
+	check_prices();
+	getCheckedValue("trade_type");
+	getCheckedValue("trade_state");
+	getCheckedValue("debtor_region");
+	getCheckedValue("cat");
+
+
+	$( window ).on( 'resize', function() {
+		set_flex_width();
+		//set_search_width();
+	});
+
+	function set_search_width() {
+		content_width=$(".art-content").width();
+		if (content_width<=1240) {
+			$(".search_elem_input").width(500);
+			$(".search_label").width(200);
+			$(".search_date_cont").width(300);
+			$(".search_field").width(300);
+			$(".search_field").css("max-width","300px");
+			$(".search_field_short").width(130);
+		}
+		else if (content_width<=1550) {
+			$(".search_elem_input").width(400);
+			$(".search_label").width(195);
+			$(".search_date_cont").width(200);
+			$(".search_field").width(200);
+			$(".search_field").css("max-width","200px");
+			$(".search_field_short").width(80);
+		}
+		else if (content_width>1550) {
+			$(".search_elem_input").width(500);
+			$(".search_label").width(200);
+			$(".search_date_cont").width(300);
+			$(".search_field").width(300);
+			$(".search_field").css("max-width","300px");
+			$(".search_field_short").width(130);
+		}
+
+
+	}
+
+	//set_search_width();
+
+
+
+
+</script>

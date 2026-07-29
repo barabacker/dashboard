@@ -12,6 +12,11 @@ dependencies = [
     "psycopg[binary]>=3.2",
     "django-environ>=0.12",
     "croniter>=6.0",
+    "curl-cffi>=0.15.0",
+    "parsel>=1.11.0",
+    "pydantic>=2.13.4",
+    "certifi>=2026.7.22",
+    "tenacity>=9.1.4",
 ]
 
 [dependency-groups]
@@ -65,7 +70,7 @@ forbidden_modules = ["execution"]
 name = "control does not import collectors.runners"
 type = "forbidden"
 source_modules = ["control"]
-forbidden_modules = ["collectors.runners", "collectors.registry"]
+forbidden_modules = ["collectors.runners", "collectors.registry", "collectors.engine"]
 
 # --- Contract 3: collectors is a pure leaf package (§13) ---
 [[tool.importlinter.contracts]]
@@ -73,3 +78,20 @@ name = "collectors is a pure leaf"
 type = "forbidden"
 source_modules = ["collectors"]
 forbidden_modules = ["control", "execution", "django"]
+
+# --- Contract 4: the schema side stays pure ---
+# `control` imports `collectors.schemas`, so anything the schemas import lands in the web
+# process. Keeping the scraping engine (and curl_cffi, and lxml) out of them is what makes
+# "control gets its answers from schemas" true at run time and not only on paper.
+[[tool.importlinter.contracts]]
+name = "collectors.schemas does not import the engine or runners"
+type = "forbidden"
+source_modules = ["collectors.schemas"]
+forbidden_modules = [
+    "collectors.engine",
+    "collectors.runners",
+    "collectors.registry",
+    "curl_cffi",
+    "parsel",
+    "pydantic",
+]

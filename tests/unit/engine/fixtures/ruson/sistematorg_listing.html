@@ -1,0 +1,772 @@
+<!DOCTYPE HTML>
+<html >
+	<head>
+		
+		<meta charset="utf-8">
+		<title>Объединенные системы торгов</title>
+		<meta name="keywords" content="Объединенные системы торгов">
+		<meta name="description" content="Объединенные системы торгов">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<link rel="stylesheet" href="inc/css/main.css?0706">
+		<script src="inc/js/jquery-3.3.1.min.js"></script>
+		<script src="inc/js/bootstrap.3.3.7.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+		<script src="inc/js/main.js"></script>
+		<script src="inc/js/jquery.datetimepicker.js"></script>
+		<link href="inc/css/jquery.datetimepicker.css" rel="stylesheet">
+		<link rel="stylesheet" href="inc/css/font-awesome.min.css">
+		<script>
+            function redirector(new_url) {
+                window.location.href=new_url;
+            }
+		</script>
+
+		<script>
+            function table_shower(id) {
+                table_id="#"+id;
+                $(table_id).toggleClass('collapse');
+            }
+		</script>
+			<script>
+        
+        		function openTopMenu(){
+        			console.log('open')
+        			$('.mob_header .top_menu').toggle()
+        		}
+        		function openEnterForm(){
+        			$('#mob_enter_form, #mob_shadow').slideDown()
+        		}
+        		function close_mob_enter_form(){
+        			$('#mob_enter_form, #mob_shadow').slideUp()
+        		}
+        	
+        	
+
+        </script>
+		 <style>
+           body, html{background: #f5f5f5;}
+            .wrapper{width:100%;}
+            .header{ position: fixed; z-index: 99; top:0; }
+            .header, .mob_header{background-color: #000; width:100%;   }
+            .header>div{width:1200px; margin: 0 auto;}
+            .header .top_logo{ background: url(/img/l02.png) no-repeat center ; background-size: contain; width:300px; height: 82px; float:left; margin-right: 30px; z-index: 999; position: relative;}
+            .header .top_menu{padding:25px 0 0px;}
+            .header .top_menu a{ font-size: 14px; color:#fff; text-decoration: none; font-weight: bold;}
+
+            .header .top_menu a:hover{#fff}
+            .header .top_menu .active{background: #a97d2e; padding:27px 15px 50px 15px; margin-top:-27px; border-left-color: #a97d2e; position: relative; z-index: 99; margin-right: -2px; margin-bottom: -10px; }
+            .header .banner{}
+            .header .nav{position: relative;}
+            .header li{float: left; display:block;  padding:0px 15px; border-left: 2px #fff solid;  position: relative;}
+            .header li .active{}
+            .header .top_menu li:nth-child(1){border-left-width: 0;}
+            .header li > a > span{display: none;}
+
+            .mob_header{display: none;}
+            .mob_header .top_logo{ background: url(/img/l02.png) no-repeat center ; background-size: contain; width:90%; margin-left:40px; height: 82px; float:left; margin-right: 30px; z-index: 999; position: relative;}
+            .mob_header .top_menu{padding:30px 25px;}
+            .mob_header .top_menu a{ font-size: 14px; color:#fff; text-decoration: none; font-weight: bold;}
+            .mob_header .top_menu li{padding:10px 0;}
+
+            .banner{height: 500px; width:100%; background:  url(/img/header.png) no-repeat center  ; background-size: cover; position: fixed; top:0; z-index: 97; }
+            .banner.hidden{display: none;}
+            .banner .slogan{position: absolute; top:300px; right: 200px; font-size: 30px; color: #fff; font-weight: bold; line-height: 100%; }
+            .banner .shadow{width:100%; height: 500px; background: #222330; opacity: .5;}
+
+            
+
+            content{width:100%; position: relative; z-index: 98; display: block; background: #f5f5f5;}
+            content.has-banner{top:550px;}
+            content.no-banner{top:82px;}
+            content > div {width:1200px; margin: 0 auto; padding: 80px 0;}
+            .form-control {border-radius: 8px; border:1px #e3e4eb solid; padding:6px 15px;}
+
+            @media (min-width: 980px) and (max-width: 1280px) {
+							.banner{height: 350px;}
+							.banner .slogan{top:150px;}
+
+							content.has-banner{top:350px;}
+							content.no-banner{top:82px;}
+						}
+						@media (max-width: 980px) {
+							.header, .banner{display: none;}
+							.mob_header{display:block;}
+							content{top:50px;}
+							content>div{width:100%; padding-top:15px;}
+							.banner .shadow{display: none;}
+							.sidebar{width: 100%; margin-bottom: 30px; display: none;}
+							.main{width:100%; overflow: auto;}
+							h1.node_header{padding-left: 0;}
+							.table_search td.search_label{padding-left: 0;}
+							table.node_view tr td.label, table.node_view tr th.label, table.data tr td.label, table.data tr th.label {padding-left: 0;}
+							.menu-sb .nav>li>a { font-family: 'Roboto Slab';}
+                                                        .menu-sb .nav>li>a hover{ color: #fff;}
+
+							 a.icon {
+								  background: black;
+								  display: block;
+								  position: absolute;
+								  left: 15px;
+								  top: 25px;
+								  font-size: 30px;
+								}
+								a.icon:hover {
+								  color: #fff;
+								}
+								header .top_menu{display: none;}
+								
+
+
+						}
+						.main b, .main strong{font-weight: bold; color:#000;}
+						.main{color: #68686a;}
+						.main h1.node_header{padding-left:0;}
+
+						.main table th, .main table td{color: #68686a;}
+						#mob_enter_form, #mob_shadow{display: none;}
+						#mob_enter_form .loginform{width: 100%;}
+						footer .menu-sb .nav>li>a { font-family: 'Roboto Slab'; font-size: 13px; color: #fff;}
+						footer .menu-sb .nav>li{margin-bottom: 0;}
+						footer .menu-sb .nav>li>a:hover{color: #d77500;}
+
+            footer{  width:100%; background: #222330; }
+            footer>div{width:1024px; margin: 0 auto; padding:20px ;}
+            footer p, footer a{color: #fff; font-size: 12px;}
+            .partner_table{
+            	border:1px #ccc solid;
+            }
+            .partner_table td{
+            		text-align: center;
+							  padding: 10px;
+							  border: 1px #ccc solid;
+							  margin: 1px 2px;
+            }
+            .tarif_table{
+            	border:1px #ccc solid;
+            }
+            .tarif_table td{
+            		text-align: left;
+							  padding: 10px;
+							  border: 1px #ccc solid;
+							  margin: 1px 2px;
+            }
+            .pagination li a{
+					    border: 1px #ccc solid;
+					    display: block;
+					    float: left;
+					    background: #fff;
+					    border-radius: 5px;
+					    padding: 3px 8px;
+					    margin-right: 8px;
+					}
+					input[type="checkbox"]{
+						margin-left: -25px;
+						float: left;
+						width: 20px;
+						height: 20px;
+						/*position: absolute;*/
+						top:0;
+
+					}
+					 .label {position: relative;}
+					 #reg_button:disabled{
+					 	opacity: 0.4;
+					 	cursor: no-drop;
+					 }
+					 #reg_reg_btm:disabled{
+					 	opacity: 0.4;
+					 	cursor: no-drop;
+					 }
+
+        </style>
+        
+	</head>
+	<body>
+		<div class="wrapper">
+		<!-- 	<header class="row">
+				<div class="logo-h">
+					<a href="/" title="Объединенные системы торгов">
+					<img class="logo-img" src="images/nistp-logo.png" alt="ВТЦ">
+					<span>объединенные системы торгов</span>
+					</a>
+				</div>
+				<div class="slogan-h">Электронная площадка по продаже имущества должников</div>
+				<aside class="time-h">
+					<dl class="dl-horizontal">
+						<dt>Время московское</dt>
+						
+					</dl>
+				</aside>
+				<nav class="menu-h">
+					
+				</nav>
+			</header> -->
+			<header>
+                <div class="header">
+                    <div>
+                    <a class="top_logo" href="/"></a>
+                    
+                        <nav class="top_menu">
+                            <ul class='nav'><li class='item-1 '><a href='/page.php?id=1' title='Главная'>Главная <span class='sr-only'>(выбран)</span></a></li><li class='item-2  active'><a href='/tradelist.php' title='Торги'>Торги <span class='sr-only'>(выбран)</span></a></li><li class='item-3 '><a href='/reg.php' title='Подключение к системе'>Подключение к системе <span class='sr-only'>(выбран)</span></a></li><li class='item-4 '><a href='/page.php?id=2' title='Регламент'>Регламент <span class='sr-only'>(выбран)</span></a></li><li class='item-5 '><a href='/page.php?id=3' title='Тарифы'>Тарифы <span class='sr-only'>(выбран)</span></a></li><li class='item-6 '><a href='/page.php?id=4' title='Контакты'>Контакты <span class='sr-only'>(выбран)</span></a></li></ul><!--//        <ul class="nav">
+            <li class="item-1 active"><a href="index.html" title="Главная">Главная <span class="sr-only">(выбран)</span></a></li>
+            <li class="item-2"><a href="torgi.html" title="Реестр торгов">Торги</a></li>
+            <li class="item-3"><a href="registraciya.html" title="Регистрация">Подключение к системе</a></li>
+            <li class="item-4"><a href="#" title="Регламент">Регламент</a></li>
+            <li class="item-5"><a href="#" title="Тарифы">Тарифы</a></li>
+            <li class="item-6"><a href="kontakty.html" title="Контакты">Контакты</a></li>
+        </ul>//-->                        </nav>
+                    </div>
+                    
+                </div>
+                <div class="mob_header">
+                		<a href="javascript:void(0);" class="icon" onclick="openTopMenu()">
+									    <i class="fa fa-bars"></i>
+									  </a>
+                		<a class="top_logo" href="/"></a>
+                		<div style=" width: 100%; padding-left:25px; ">
+													<div style="color: #68686a; font-size: 15px; font-family: 'Roboto'; color:#fff; float: left; margin-right: 20px;">Время московское</div>
+													<!-- <div style="color: #68686a; font-size: 15px; font-family: 'Roboto Slab'; padding-bottom: 15px; color:#fff;"></div> -->
+			                    <div id="clockMob" style="color: #68686a; font-size: 15px; font-family: 'Roboto Slab'; padding-bottom: 15px; color:#fff;">
+													  <span class="hour">hh</span>:<span class="min">mm</span>:<span class="sec">ss</span>
+													</div>
+													<div style="color: #68686a; font-size: 15px; font-family: 'Roboto'; color:#fff; float: left; margin-right: 20px; ">Сегодня</div>
+													<div style="color: #68686a; font-size: 15px; font-family: 'Roboto Slab'; color:#fff;">22.07.2026</div>
+												</div>
+                		<nav class="top_menu">
+                            <ul class='nav'><li class='item-1 '><a href='/page.php?id=1' title='Главная'>Главная <span class='sr-only'>(выбран)</span></a></li><li class='item-2  active'><a href='/tradelist.php' title='Торги'>Торги <span class='sr-only'>(выбран)</span></a></li><li class='item-3 '><a href='/reg.php' title='Подключение к системе'>Подключение к системе <span class='sr-only'>(выбран)</span></a></li><li class='item-4 '><a href='/page.php?id=2' title='Регламент'>Регламент <span class='sr-only'>(выбран)</span></a></li><li class='item-5 '><a href='/page.php?id=3' title='Тарифы'>Тарифы <span class='sr-only'>(выбран)</span></a></li><li class='item-6 '><a href='/page.php?id=4' title='Контакты'>Контакты <span class='sr-only'>(выбран)</span></a></li></ul><!--//        <ul class="nav">
+            <li class="item-1 active"><a href="index.html" title="Главная">Главная <span class="sr-only">(выбран)</span></a></li>
+            <li class="item-2"><a href="torgi.html" title="Реестр торгов">Торги</a></li>
+            <li class="item-3"><a href="registraciya.html" title="Регистрация">Подключение к системе</a></li>
+            <li class="item-4"><a href="#" title="Регламент">Регламент</a></li>
+            <li class="item-5"><a href="#" title="Тарифы">Тарифы</a></li>
+            <li class="item-6"><a href="kontakty.html" title="Контакты">Контакты</a></li>
+        </ul>//-->                            
+					<nav class='menu-sb'>
+					<ul class='nav'><li class='item-2'><a href='/page.php?id=5'>Руководство пользователя</a></li><li class='item-2'><a href='/page.php?id=9'>Ответы на вопросы</a></li><li class='item-2'><a href='/page.php?id=6'>Центр поддержки пользователей</a></li><li class='item-2'><a href='/page.php?id=7'>Список Удостоверяющих Центров</a></li><li class='item-2'><a href='/page.php?id=8'>Партнеры</a></li></ul></nav>														                        </nav>
+                        <div style="width: 100%; background: #a97d2e; padding: 25px; text-align: center; color: #fff; font-size: 16px; cursor: pointer; margin-top: 15px;" onclick="openEnterForm()">войти</div>                      
+                </div>
+                <div class="banner hidden">
+                    <div class="shadow"></div>
+                    <div class="slogan">Электронная площадка <br>по продаже имущества<br>должников</div>
+
+                </div>
+
+
+      </header>
+      <content class="no-banner">
+			<div class="row">
+				
+				<div class="col sidebar">
+					<div style=" width: 210px;">
+					<div style="color: #68686a; font-size: 15px; font-family: 'Roboto';">Время московское</div>
+					<!-- <div style="color: #68686a; font-size: 15px; font-family: 'Roboto Slab'; padding-bottom: 15px;"></div> -->
+					<!--  <div style="color: #68686a; font-size: 15px; font-family: 'Roboto Slab'; padding-bottom: 15px;">16:12</div> -->
+                       <div id="clock" style="color: #68686a; font-size: 15px; font-family: 'Roboto Slab'; padding-bottom: 15px;">
+												  <span class="hour">hh</span>:<span class="min">mm</span>:<span class="sec">ss</span>
+												</div>
+					<div style="color: #68686a; font-size: 15px; font-family: 'Roboto' ">Сегодня</div>
+					<div style="color: #68686a; font-size: 15px; font-family: 'Roboto Slab'">22.07.2026</div>
+				</div>
+					
+						
+				
+					<aside class="loginform">
+    <header class="h2">Вход</header>
+    <form action="login.php" method="post">
+        <div class="form-group">
+            <input type="email" class="form-control" id="lfEmail" placeholder="E-mail" name='user_mail'>
+        </div>
+        <div class="form-group">
+            <input type="password" class="form-control" id="lfPassword" placeholder="пароль" name='user_password'>
+        </div>
+        <div class="form-group clearfix">
+            <ul class="nav help-block">
+                <li><a href="reg.php" title="Регистрация">Регистрация</a></li>
+                <li><a href="passwd_remainer.php" title="Восстановление доступа">Забыли пароль?</a></li>
+            </ul>
+            <button type="submit" class="btn btn-primary">Вход</button>
+        </div>
+    </form>
+</aside>					
+					<nav class='menu-sb'>
+					<ul class='nav'><li class='item-2'><a href='/page.php?id=5'>Руководство пользователя</a></li><li class='item-2'><a href='/page.php?id=9'>Ответы на вопросы</a></li><li class='item-2'><a href='/page.php?id=6'>Центр поддержки пользователей</a></li><li class='item-2'><a href='/page.php?id=7'>Список Удостоверяющих Центров</a></li><li class='item-2'><a href='/page.php?id=8'>Партнеры</a></li></ul></nav>				</div>
+				<div class="col main">
+					<div id="browser_warning"></div>
+							
+<h1 class='node_header'>Поиск торгов</h1>
+<form action='' method='GET' id='tradesearch'>
+<table class='table_search'>
+<tbody>
+<!--		<tr>
+			<td>Предмет торгов</td>
+			<td><input class='form-control' id='' placeholder='' type='text'></td>
+		</tr>-->
+		<tr>
+			<td class='search_label'>Номер торгов</td>
+			<td><input class='form-control search_full' id='' placeholder='' type='text' name='trade_number' autocomplete='off'></td>
+		</tr><tr>
+			<td class='search_label'>Ключевое слово</td>
+			<td><input class='form-control search_full' id='' placeholder='Слово для поиска из описания лота' type='text' name='key_word'></td>
+		</tr><tr>
+			<td class='search_label'>Должник</td>
+			<td><input class='form-control search_full' id='' placeholder='Наименование, фамилия, инн, огрн' type='text' name='debtor_info'></td>
+		</tr><tr>
+			<td class='search_label'>Арбитражный управляющий</td>
+			<td><input class='form-control search_full' id='' placeholder='Фамилия, инн, рег. номер' type='text'  name='arbitr_info'></td>
+		</tr>
+		<tr>
+			<td class='search_label'>Дата начала приема заявок</td>
+			<td>
+				<input class='form-control search_short' id='' placeholder='С' type='datetime_short' name='app_start_from'>&nbsp;&nbsp;&nbsp;
+				<input class='form-control search_short' id='' placeholder='ПО' type='datetime_short' name='app_start_to'>
+
+			</td>
+		</tr>
+		<tr>
+			<td class='search_label'>Дата окончания приема заявок</td>
+			<td>
+				<input class='form-control search_short' id='' placeholder='С' type='datetime_short' name='app_end_from'>&nbsp;&nbsp;&nbsp;
+				<input class='form-control search_short' id='' placeholder='ПО' type='datetime_short' name='app_end_to'>
+
+			</td>
+		</tr>
+		<tr>
+			<td class='search_label'>Способ торгов</td>
+			<td>
+				<select class='form-control search_full' id='t1-5' name='trade_type'><option>Любой</option><option>Аукцион с открытой формой представления цены</option><option>Аукцион с закрытой формой представления цены</option><option>Конкурс с открытой формой представления цены</option><option>Конкурс с закрытой формой представления цены</option><option>Публичное предложение</option><option>Закрытый аукцион с открытой формой представления цены</option><option>Закрытый аукцион с закрытой формой представления цены</option><option>Закрытый конкурс с открытой формой представления цены</option><option>Закрытый конкурс с закрытой формой представления цены</option><option>Закрытое публичное предложение</option></select>
+			</td>
+		</tr>
+		<tr>
+			<td class='search_label'>Состояние</td>
+			<td>
+				<select class='form-control search_full' id='t1-5' name='trade_state'><option>Любой</option><option>Торги объявлены</option><option>Прием заявок</option><option>Прием заявок завершен</option><option>Идут торги</option><option>Подведение итогов</option><option>Торги завершены</option><option>Торги не состоялись</option></select>
+
+			</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>
+			<button type='submit' class='btn btn-primary'>Поиск</button>
+			<button type='button' class='btn btn-default' onclick='tradelist_reload()'>Очистить</button>
+			</td>
+		</tr>
+</tbody>
+</table>
+<input type='hidden' name='pagenum' id='pagenum'>
+</form>
+
+<header style='position:relative;'>
+	<h1 class='node_header'>Реестр торгов</h1>
+	<nav class='pagnav' aria-label='Постраничная навигация'>
+		<div style='float: left;
+    padding-top: 4px;
+    margin-right: 10px;' >Страница:</div>
+		<ul class='pagination'><li class='active'><a onclick='pagenum_send(1)'>1</a></li><li><a onclick='pagenum_send(2)'>2</a></li><li><a onclick='pagenum_send(3)'>3</a></li><li><a onclick='pagenum_send(4)'>4</a></li><li><a onclick='pagenum_send(5)'>5</a></li><li><a onclick='pagenum_send(6)'>6</a></li><li><a onclick='pagenum_send(7)'>7</a></li><li><a onclick='pagenum_send(8)'>8</a></li><li><a onclick='pagenum_send(9)'>9</a></li><li><a onclick='pagenum_send(10)'>10</a></li>
+		</ul>
+	</nav>
+</header>
+<table class='data'>
+	<thead>
+		<tr>
+		<th>№</th>
+		<th>Организатор</th>
+		<th>Должник, предмет торгов</th>
+		<th>Состояние</th>
+		<th>Начало приема заявок</th>
+		<th>Окончание приема заявок</th>
+
+		</tr>
+	</thead><tbody><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63467','_blank'); } else { window.location='/trade_view.php?trade_nid=63467'; }">
+		<td>19294-ОАОФ</td>
+		<td>Хабиров Максим Рустемович</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Юмагулова Ирина  Владимировна</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Легковой автомобиль, марка: Лада
+111740, год изготовления: 2011, цвет:
+темно-вишневый, VIN:
+XTA111740B0101121, ПТС: 63 MX
+667701, г/н: В685УМ102, модель
+двигателя: 11194, тип двигателя:
+бензиновый, двигатель №: 2647133,
+мощность двигателя, л. с. (кВт): 89.1
+(65.5), рабочий объем двигателя, куб.
+см: 1390, кузов №:
+XTA111740B0101121, . . .<br></td>
+		<td>Торги объявлены</td>
+		<td>27.07.2026 11:00<br><br>Время московское</td>
+		<td>28.08.2026 11:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63465','_blank'); } else { window.location='/trade_view.php?trade_nid=63465'; }">
+		<td>19293-ОАОФ</td>
+		<td>Макарова Юлия Сергеевна</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Стешина Елена Сергеевна</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>НИССАН ТЕАНА,
+Идентификационный номер (VIN номер):
+Z8NBBUJ32BS016271,
+Год изготовления: 2011
+гос. номер А807ВВ252
+На Имущество зарегистрированы ограничения (обременения) права: В залоге в АО «ТБАНК»
+<br></td>
+		<td>Торги объявлены</td>
+		<td>23.07.2026 10:00<br><br>Время московское</td>
+		<td>27.08.2026 18:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63463','_blank'); } else { window.location='/trade_view.php?trade_nid=63463'; }">
+		<td>19292-ОТПП</td>
+		<td>Веприцкая Кристина Евгеньевна</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Мелик-Мурадова  Жанна Артуровна </div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Состояние удовлетворительное<br></td>
+		<td>Прием заявок</td>
+		<td>22.07.2026 10:00<br><br>Время московское</td>
+		<td>21.08.2026 18:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63459','_blank'); } else { window.location='/trade_view.php?trade_nid=63459'; }">
+		<td>19291-ОТПП</td>
+		<td>Курносова Виктория Валентиновна</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Николаенко Дмитрий Игоревич</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Имущество находится в залоге АО ОТП Банк.<br></td>
+		<td>Торги объявлены</td>
+		<td>24.07.2026 10:00<br><br>Время московское</td>
+		<td>18.08.2026 10:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63457','_blank'); } else { window.location='/trade_view.php?trade_nid=63457'; }">
+		<td>19290-ОТПП</td>
+		<td>Хабиров Максим Рустемович</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Алфутина  Оксана  Владимировна</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>земельный участок, площадью 1 600 кв.м., с
+кадастровым номером: 23:04:0511002:548. Адрес: Российская
+Федерация, Краснодарский край, Брюховецкий муниципальный,
+Брюховецкое сельское поселение, хутор Красная Нива, ул.
+Олимпийская,д.72А.<br></td>
+		<td>Торги объявлены</td>
+		<td>27.07.2026 11:00<br><br>Время московское</td>
+		<td>13.09.2026 11:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63455','_blank'); } else { window.location='/trade_view.php?trade_nid=63455'; }">
+		<td>19289-ОАОФ</td>
+		<td>Шашков Руслан Валерьевич</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Порфирьева   Марина Геннадьевна</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Легковой автомобиль VIN: MX1J7AGGXMK052957 Марка, модель JAC J7 Год выпуска 2021 г. Пробег 141 273 км Двигатель Бензин 1 499 см.куб. 136 л.с. КПП Автоматическая. Имущество находится в залоге у публичного акционерного общества Сбербанк России.<br></td>
+		<td>Торги объявлены</td>
+		<td>24.07.2026 10:00<br><br>Время московское</td>
+		<td>28.08.2026 16:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63453','_blank'); } else { window.location='/trade_view.php?trade_nid=63453'; }">
+		<td>19288-ОТПП</td>
+		<td>Волконский Григорий Геворгович</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Саликова Анастасия Вадимовна</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Автомобиль ВАЗ 11193 LADA KALINA, год выпуска: 2007, VIN: XTA11193070022365, цвет кузова: Серебристый<br></td>
+		<td>Торги объявлены</td>
+		<td>27.07.2026 10:00<br><br>Время московское</td>
+		<td>09.09.2026 10:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63451','_blank'); } else { window.location='/trade_view.php?trade_nid=63451'; }">
+		<td>19287-ОТПП</td>
+		<td>Волконский Григорий Геворгович</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Бренделева Елена Геннадьевна</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Помещение жилое. Кадастровый номер: 16:46:030102:2199. Местоположение: Республика Татарстан, р-н. Бугульминский, г. Бугульма, ул. Газинура Гафиатуллина, д. 32/2, кв. 75. Площадь: 24.2<br></td>
+		<td>Торги объявлены</td>
+		<td>27.07.2026 10:00<br><br>Время московское</td>
+		<td>09.09.2026 10:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63449','_blank'); } else { window.location='/trade_view.php?trade_nid=63449'; }">
+		<td>19286-ОТПП</td>
+		<td>Власова Татьяна  Алексеевна</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Арапова Юлия Викторовна</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Квартира, площадью45,5 кв.м., с кадастровым номером
+14:16:030402:862, расположенная по адресу:РОССИЯ, Республика
+Саха(Якутия),п.Айхал,п.Айхал,Юбилейнаяул,д.12,кв.410, являющееся предметом залога ПАО Сбербанк<br></td>
+		<td>Торги объявлены</td>
+		<td>27.07.2026 00:00<br><br>Время московское</td>
+		<td>30.08.2026 23:59<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63445','_blank'); } else { window.location='/trade_view.php?trade_nid=63445'; }">
+		<td>19284-ОТПП</td>
+		<td>Волконский Григорий Геворгович</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Левашова Оксана Владимировна</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Автомобиль: : ЛАДА ГРАНТА 219010, год выпуска: 2013, VIN: XTA219010DY032244, цвет кузова: серебристо-серый<br></td>
+		<td>Торги объявлены</td>
+		<td>27.07.2026 10:00<br><br>Время московское</td>
+		<td>09.09.2026 10:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63443','_blank'); } else { window.location='/trade_view.php?trade_nid=63443'; }">
+		<td>19283-ОТПП</td>
+		<td>Абукаев Андрей Александрович</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Дилдебаев Эрлан  Нуралиевич</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Легковой автомобиль Марка – AUDI Модель: A 3 Год изготовления – 2009; Идентификационный номер: VIN WAUZZZ8P49A142519
+<br></td>
+		<td>Торги объявлены</td>
+		<td>28.07.2026 10:00<br><br>Время московское</td>
+		<td>13.10.2026 10:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63440','_blank'); } else { window.location='/trade_view.php?trade_nid=63440'; }">
+		<td>19282-ОАОФ</td>
+		<td>Волконский Григорий Геворгович</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Тимергазин Руслан Рафаилович</div><span style='font-weight:bold;'>Всего лотов: 2</span><br><span style='font-weight:bold;'>Лот № 1: </span>Земельный участок для ведения садоводства. Кадастровый номер: 02:55:051003:2090. Местоположение установлено относительно ориентира, расположенного в границах участка. Ориентир садовый дом. Почтовый адрес ориентира: респ Башкортостан, г Уфа, Кировский р-н, СНТ Пчелка, участок 8. Площадь: . . .<br><span style='font-weight:bold;'>Лот № 2: </span>Прицеп 712501, год изготовления: 2020, идентификационный номер: XEZ712501L0018671<br></td>
+		<td>Прием заявок</td>
+		<td>22.07.2026 10:00<br><br>Время московское</td>
+		<td>25.08.2026 14:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63438','_blank'); } else { window.location='/trade_view.php?trade_nid=63438'; }">
+		<td>19281-ОТПП</td>
+		<td>Абукаев Андрей Александрович</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Габышева Анна  Михайловна</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Земельный участок и жилое помещение, расположенные по адресу: Республика Саха, г. Якутск, ул. Клары Цеткин, д. 1, кв. 3 , кадастровый номер: 14:36:103013:2861-земельный участок, 14:36:104016:260-жилое помещение, площадь 319 +/- 4 кв.м. земельный участок, 26.8 кв.м.-жилое помещение. вид права, доля в праве: . . .<br></td>
+		<td>Торги объявлены</td>
+		<td>24.07.2026 10:00<br><br>Время московское</td>
+		<td>03.08.2026 10:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63436','_blank'); } else { window.location='/trade_view.php?trade_nid=63436'; }">
+		<td>19280-ОАОФ</td>
+		<td>Волгин Владимир Валентинович</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Дорошко Александр Николаевич</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Здание, назначение: Жилой дом, наименование: Жилой дом, площадь: 34,3 кв.м., количество этажей 1, в том числе подземных 0, с кадастровым номером: 23:30:0101003:324, адрес (местоположение) объекта): Российская Федерация, Краснодарский край, м.р-н Темрюкский, с.п. Запорожское, п Приазовский, ул . . .<br></td>
+		<td>Торги объявлены</td>
+		<td>27.07.2026 10:00<br><br>Время московское</td>
+		<td>31.08.2026 10:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63434','_blank'); } else { window.location='/trade_view.php?trade_nid=63434'; }">
+		<td>19279-ОТПП</td>
+		<td>Костина  Вероника Владимировна</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Борышнева Наталья Владимировна</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Легковой автомобиль Форд Фокус, 2016 г.в.; цвет – Белый; VIN Z6F5XXEEC5GA13564; ПТС 63 УС 688389; г/н - Т499РУ152; изготовитель (страна) - Россия; мощность двигателя, л. с. (кВт) - 149,6 (110); рабочий объем двигателя, куб. см – 1498; разрешенная максимальная масса - 1900 кг; масса без нагрузки - 1364 кг; вид собственности . . .<br></td>
+		<td>Торги объявлены</td>
+		<td>23.07.2026 00:00<br><br>Время московское</td>
+		<td>10.09.2026 23:59<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63432','_blank'); } else { window.location='/trade_view.php?trade_nid=63432'; }">
+		<td>19278-ОАОФ</td>
+		<td>Хабиров Максим Рустемович</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Савельева Маратовна Ольга  Маратовна</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>транспортное средство: CHERY Tiggo 7 Pro Max, Идентификационный номер (VIN номер): LVVDD21B0PD813025, Год выпуска: 2023 гос.номер Е505ОМ156<br></td>
+		<td>Торги объявлены</td>
+		<td>27.07.2026 11:00<br><br>Время московское</td>
+		<td>28.08.2026 11:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63424','_blank'); } else { window.location='/trade_view.php?trade_nid=63424'; }">
+		<td>19274-ОАОФ</td>
+		<td>Шарафутдинова Венера Исмаиловна</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Сафронюк Сергей Николаевич</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Недвижимое имущество (двухкомнатная квартира 68б90 кв,м, расположенная по адресу: РФ, Cамарская область, г. Самара, р-н Куйбышевский, б-р Засамарская слобода, д. 8, кв. 18<br></td>
+		<td>Торги отменены</td>
+		<td>27.07.2026 11:00<br><br>Время московское</td>
+		<td>31.08.2026 11:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63420','_blank'); } else { window.location='/trade_view.php?trade_nid=63420'; }">
+		<td>19273-ОАОФ</td>
+		<td>Шарафутдинова Венера Исмаиловна</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Сафронюк Сергей Николаевич</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Недвижимое имущество (двухкомнатная квартира 68б90 кв,м, расположенная по адресу: РФ, Cамарская область, г. Самара, р-н Куйбышевский, б-р Засамарская слобода, д. 8, кв. 18<br></td>
+		<td>Торги отменены</td>
+		<td>27.07.2026 11:00<br><br>Время московское</td>
+		<td>31.08.2026 11:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63418','_blank'); } else { window.location='/trade_view.php?trade_nid=63418'; }">
+		<td>19272-ОАОФ</td>
+		<td>Шарафутдинова Венера Исмаиловна</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Сафронюк Сергей Николаевич</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Недвижимое имущество (двухкомнатная квартира 68б90 кв,м, расположенная по адресу: РФ, Cамарская область, г. Самара, р-н Куйбышевский, б-р Засамарская слобода, д. 8, кв. 18<br></td>
+		<td>Торги отменены</td>
+		<td>27.07.2026 11:00<br><br>Время московское</td>
+		<td>31.08.2026 11:00<br><br>Время московское</td>
+	</tr><tr style='cursor: pointer' onclick="if (event.ctrlKey || event.button == 1) { window.open('/trade_view.php?trade_nid=63394','_blank'); } else { window.location='/trade_view.php?trade_nid=63394'; }">
+		<td>19266-ОАОФ</td>
+		<td>Шашков Руслан Валерьевич</td>
+		<td><div style='padding:0 0 5px 0;font-weight:bold;'>Мишина Александра Викторовна</div><span style='font-weight:bold;'>Всего лотов: 1</span><br><span style='font-weight:bold;'>Лот № 1: </span>Земельный участок, площадью 2997+/-19 кв.м. Категория земель: земли населенных пунктов. Разрешенное использование: для ведения личного подсобного хозяйства. Местоположение установлено относительно ориентира, расположенного в границах участка. Почтовый адрес ориентира: Россия, . . .<br></td>
+		<td>Прием заявок</td>
+		<td>21.07.2026 10:00<br><br>Время московское</td>
+		<td>25.08.2026 16:00<br><br>Время московское</td>
+	</tr></tbody></table>
+<header style='position:relative;'>
+	
+	<nav class='pagnav' aria-label='Постраничная навигация'>
+		<div style='float: left;
+    padding-top: 4px;
+    margin-right: 10px;' >Страница:</div>
+		<ul class='pagination'><li class='active'><a onclick='pagenum_send(1)'>1</a></li><li><a onclick='pagenum_send(2)'>2</a></li><li><a onclick='pagenum_send(3)'>3</a></li><li><a onclick='pagenum_send(4)'>4</a></li><li><a onclick='pagenum_send(5)'>5</a></li><li><a onclick='pagenum_send(6)'>6</a></li><li><a onclick='pagenum_send(7)'>7</a></li><li><a onclick='pagenum_send(8)'>8</a></li><li><a onclick='pagenum_send(9)'>9</a></li><li><a onclick='pagenum_send(10)'>10</a></li>
+		</ul>
+	</nav>
+</header>							
+
+				</div>
+			</div>
+			
+			 <footer>
+                
+                <div>
+                    <div>
+                    	<nav class="top_menu">
+                            <ul class='nav'><li class='item-1 '><a href='/page.php?id=1' title='Главная'>Главная <span class='sr-only'>(выбран)</span></a></li><li class='item-2  active'><a href='/tradelist.php' title='Торги'>Торги <span class='sr-only'>(выбран)</span></a></li><li class='item-3 '><a href='/reg.php' title='Подключение к системе'>Подключение к системе <span class='sr-only'>(выбран)</span></a></li><li class='item-4 '><a href='/page.php?id=2' title='Регламент'>Регламент <span class='sr-only'>(выбран)</span></a></li><li class='item-5 '><a href='/page.php?id=3' title='Тарифы'>Тарифы <span class='sr-only'>(выбран)</span></a></li><li class='item-6 '><a href='/page.php?id=4' title='Контакты'>Контакты <span class='sr-only'>(выбран)</span></a></li></ul><!--//        <ul class="nav">
+            <li class="item-1 active"><a href="index.html" title="Главная">Главная <span class="sr-only">(выбран)</span></a></li>
+            <li class="item-2"><a href="torgi.html" title="Реестр торгов">Торги</a></li>
+            <li class="item-3"><a href="registraciya.html" title="Регистрация">Подключение к системе</a></li>
+            <li class="item-4"><a href="#" title="Регламент">Регламент</a></li>
+            <li class="item-5"><a href="#" title="Тарифы">Тарифы</a></li>
+            <li class="item-6"><a href="kontakty.html" title="Контакты">Контакты</a></li>
+        </ul>//-->                            
+					<nav class='menu-sb'>
+					<ul class='nav'><li class='item-2'><a href='/page.php?id=5'>Руководство пользователя</a></li><li class='item-2'><a href='/page.php?id=9'>Ответы на вопросы</a></li><li class='item-2'><a href='/page.php?id=6'>Центр поддержки пользователей</a></li><li class='item-2'><a href='/page.php?id=7'>Список Удостоверяющих Центров</a></li><li class='item-2'><a href='/page.php?id=8'>Партнеры</a></li></ul></nav>													</nav>
+                    </div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+                <div>
+                    <p class="">&copy; все права защищены – <a href="https://sistematorg.com/" title="Объединенные системы торгов &quot;система Торг&quot; - Объединенные системы торгов" rel="nofollow">СИСТЕМАТОРГ</a> 2026 год ||  Адрес: 125284 Г. Москва, 1-й Боткинский проезд, д. 8/31, к.3</p>
+                </div>
+            </footer>
+            </content>
+			<!-- Кнопка "На верх" -->
+			<!-- <a href="#" id="backtotop" title="На верх" style="display: none;">На верх</a> -->
+		</div>
+		<div id="mob_shadow" style="position: absolute; z-index: 99998; background: #000; opacity: .5; top: 0; width: 100%; height: 100%;">
+		</div>
+
+		<div id="mob_enter_form" style="position: absolute; z-index: 99999;  width: 100%; height: 100%; top:0;">
+			
+									    <i id="close_mob_enter_form" class="fa fa-window-close" onclick="close_mob_enter_form()" style="position: relative; top:130px; left:92%; font-size: 18px; "></i>
+									  
+			<div style="background: #fff; margin-top: 100px; padding: 50px;">
+			<aside class="loginform">
+    <header class="h2">Вход</header>
+    <form action="login.php" method="post">
+        <div class="form-group">
+            <input type="email" class="form-control" id="lfEmail" placeholder="E-mail" name='user_mail'>
+        </div>
+        <div class="form-group">
+            <input type="password" class="form-control" id="lfPassword" placeholder="пароль" name='user_password'>
+        </div>
+        <div class="form-group clearfix">
+            <ul class="nav help-block">
+                <li><a href="reg.php" title="Регистрация">Регистрация</a></li>
+                <li><a href="passwd_remainer.php" title="Восстановление доступа">Забыли пароль?</a></li>
+            </ul>
+            <button type="submit" class="btn btn-primary">Вход</button>
+        </div>
+    </form>
+</aside>		</div>
+		</div>
+
+	
+	</body>
+
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript" >
+   (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+   m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+   (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+   ym(64489534, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true,
+        webvisor:true
+   });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/64489534" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-168081921-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-168081921-1');
+
+</script>
+<script>
+
+	var btm = document.getElementById('reg_button')
+	var reg_btm = document.getElementById('reg_reg_btm')
+	var ch1 = document.getElementById('check_reg_1')
+	var ch2 = document.getElementById('check_reg_2')
+	var ch3 = document.getElementById('check_reg_3')
+	var dgof = document.getElementById('check_oferta')
+	if (dgof === null) dgof = document.getElementById('check_reg_3')
+	var reg_ch = document.getElementById('check_reg_reg')
+	var ch = document.getElementById("check__box")
+	if(ch){
+	ch.addEventListener('click', function(e){
+		
+		if (e.target.type === 'checkbox'){
+			if(ch1.checked === true && ch2.checked === true && ch3.checked === true && dgof.checked === true){
+				btm.disabled = false
+			} else {
+				btm.disabled = true
+			}
+		}
+	}
+	)
+}
+if(reg_ch){
+	reg_ch.addEventListener('click', function(e){
+		console.log(reg_ch.checked)
+		
+		if (e.target.type === 'checkbox'){
+			if(reg_ch.checked === true ){
+				reg_btm.disabled = false
+			} else {
+				reg_btm.disabled = true
+			}
+		}
+	}
+	)
+}
+
+</script>
+<script src="./js/ua-parser.js"></script>
+<!-- clock function start -->
+<script>
+
+	
+function update() {
+	var parser = new UAParser();
+  var result = parser.getResult();
+  let clock = document.getElementById('clock');
+  let clockMob = document.getElementById('clockMob');
+  let date = new Date(); // (*)
+//  if(result.browser.name != 'Edge' && result.browser.name != 'IE'){
+  	//console.log(result.browser.name)
+//	 date.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })
+//	}
+  let hours = date.getUTCHours() + 3;
+  if (hours > 23) hours = hours - 24;
+  if (hours < 10) hours = '0' + hours;
+  clock.children[0].innerHTML = hours;
+  clockMob.children[0].innerHTML = hours;
+
+  let minutes = date.getMinutes();
+  if (minutes < 10) minutes = '0' + minutes;
+  clock.children[1].innerHTML = minutes;
+  clockMob.children[1].innerHTML = minutes;
+
+  let seconds = date.getSeconds();
+  if (seconds < 10) seconds = '0' + seconds;
+  clock.children[2].innerHTML = seconds;
+  clockMob.children[2].innerHTML = seconds;
+}
+
+let timerId;
+
+function clockStart() { // запустить часы
+  timerId = setInterval(update, 1000);
+  update(); // (*)
+}
+clockStart()
+</script>
+<!-- clock function end -->
+
+    <script type="text/javascript">
+    	var parser = new UAParser();
+ 			var result = parser.getResult();
+        
+
+        if(result.browser.name != 'Edge' && result.browser.name != 'IE'){
+           
+
+            var warning = document.getElementById('browser_warning')
+
+
+            warning.innerHTML = '<div style="margin: 0 0 20px -10px; border:1px #fbeed5 solid; padding:20px; border-radius:8px; background-color:#fcf8e3; box-sizing:border-box;"><div style="font-weight:900; font-size: 16px;">Вы используете браузер '+result.browser.name+' версии '+result.browser.major+'</div>'
+//            warning.innerHTML = '<div style="margin: 0 0 20px -10px; border:1px #fbeed5 solid; padding:20px; border-radius:8px; background-color:#fcf8e3; box-sizing:border-box;"><div style="font-weight:900; font-size: 16px;">Вы используете браузер '+result.browser.name+' версии '+result.browser.major+'</div><p style="font-size:12px;">Электронная площадка оптимизирована для просмотра обозревателем Microsoft Internet Explorer версии 8 и выше. При использовании других обозревателей отдельные элементы могут отображаться некорректно.</p></div>'
+
+        } else {
+        	//warning.innerHTML = '<div style="margin: 0 0 20px -10px; border:1px #fbeed5 solid; padding:20px; border-radius:8px; background-color:#fcf8e3; box-sizing:border-box;"><div style="font-weight:900; font-size: 16px;">Поздравляем с Днём арбитражного управляющего!</div><br>Хотим пожелать уверенности, настойчивости, морального и физического здоровья!<br><br>Неутомимой энергии, блестящей интуиции, отменного таланта и безупречного мастерства! И пусть в деятельности, в жизни, в каждом деле всегда сопутствует поддержка и успех!<br><br>Пусть цели достигаются быстро, а задачи решаются легко!</p></div>'
+        }
+
+
+
+    </script> 
+
+</html><script>
+    function pagenum_send(pagenum) {
+        $("#pagenum").val(pagenum);
+        $("#tradesearch").submit();
+
+    }
+
+    function tradelist_reload() {
+        window.location = 'tradelist.php';
+    }
+</script>
+<script>
+    $('input[type=datetime_full]').datetimepicker({dayOfWeekStart: 1, format: 'd.m.Y H:i', lang: 'ru'});
+    $('input[type=datetime_short]').datetimepicker({timepicker: false, dayOfWeekStart: 1, format: 'd.m.Y', lang: 'ru'});
+</script>
+
+<script>
+    function opentrade(trade_nid) {
+        var link_href = "/trade_view.php?trade_nid=" + trade_nid;
+        alert(event);
+        if (event.ctrlKey || event.button == 1) {
+            window.open('/trade_view.php?trade_nid=119', '_blank');
+        } else {
+            window.location = link_href;
+        }
+    }
+</script>

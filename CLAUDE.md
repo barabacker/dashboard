@@ -25,11 +25,15 @@ src/
   project/              Django settings/urls/wsgi — framework glue only
   collectors/           collector CODE, pure leaf, depends on NOTHING else in the project
     schemas/              pure descriptors: key, versions, parameter schema per version
+      tender.py             the four tender-site collectors (one per parser family)
     runners/              run() implementations, one module per (key, version)
+    engine/               the vendored scraping engine — core/ http/ sources/, no framework
+    certs/                extra intermediate certificates, named by `extra_ca_cert`
     registry.py           resolve (key, version) -> runner  [imports runners — control must not]
   control/              everything authored/stored + admin/dashboard surface. ALL models here.
-    models.py             Collector projection, Config, Schedule, Job
+    models.py             Collector projection, Config, Platform (proxy), Schedule, Job
     services/             the single shared enqueue function
+    forms/                authoring forms: Config (JSON) and Platform (a field per site attribute)
     dashboard/            small HTMX dashboard
   execution/            runtime that CONSUMES jobs. Owns behavior, owns NO models.
     queue/                claim + lease + reclaim (one function)
@@ -85,11 +89,14 @@ that reaches terminal `failed` is *not* auto-re-enqueued. History must let you t
 
 Forbidden:
 - `control ↛ execution` — control never imports worker/queue/scheduler runtime.
-- `control ↛ collectors.runners` and `control ↛ collectors.registry` — control may import
-  `collectors.schemas` only. (`registry` is forbidden too because it imports runners; letting
-  control import it would smuggle runner code in transitively.)
+- `control ↛ collectors.runners`, `control ↛ collectors.registry`, `control ↛ collectors.engine` —
+  control may import `collectors.schemas` only. (`registry` is forbidden too because it imports
+  runners; letting control import it would smuggle runner code in transitively.)
 - `collectors ↛ control`, `collectors ↛ execution`, `collectors ↛ django` — collectors is a pure
   leaf with no framework dependency.
+- `collectors.schemas ↛ collectors.engine` (and not `curl_cffi` / `parsel` / `pydantic`) — the
+  schemas are what `control` imports, so anything they import lands in the web process. This is
+  what keeps "control gets its answers from schemas" true at run time and not only on paper.
 
 Allowed:
 - `execution → control` (models), `execution → collectors` (registry + runners),
@@ -131,6 +138,11 @@ full extent of "projection" allowed.
 | D14 | The Collector projection's `enabled=False` blocks new enqueues. A collector with no projection row is treated as enabled. | Otherwise the field has no behavior at all. A missing row is a deployment gap (run `sync_collectors`), not a decision to disable. |
 
 | D15 | The UI is Russian, written **directly in the code** — no gettext, no `.po`/`.mo`. | `LANGUAGE_CODE = "ru"` makes Django's own admin chrome Russian from the locale files it ships. For our own strings there is no `msgfmt`/`xgettext` on the target machine, so `compilemessages` cannot run; a catalogue nobody can compile is worse than plain literals. If a second language is ever needed, wrap the strings listed below in `gettext_lazy` and generate the catalogue then. |
+| D16 | The tender-site parsers are **vendored** into `collectors/engine/`, framework-free. A *collector* is a parser family (`tender_fogsoft`, `tender_kendo`, `tender_btorg`, `tender_ruson`, all v1.0); a *site* is authored data — domain, listing path and TLS quirks are ordinary parameters. No `platforms.toml`. | See ADR 0002. Keeping sites as parameters is what preserves snapshot completeness: the site is resolved into `effective_parameters` at enqueue, so execution never reads authored state afterwards. The alternative — a code-side site table — would mean either snapshotting a *reference* to a mutable row or one collector key per site. |
+| D17 | The «Площадки» tab is `control.models.Platform`, a **proxy of Config** with its own form, not a table. | A platform *is* "what to collect". A second table would duplicate authored intent and need syncing back into the Config that actually runs. The proxy adds a tab and a per-field form with no new state. |
+| D18 | **Collected lots are not stored.** A run crawls for real and reports counts (`rows`, `calls`, `listing_pages`) plus a few lot ids in `Job.result`, which carries `"stored": false`. | The user's call, taken knowingly. The engine's `LotSink` protocol is untouched and the runner injects a `CountingSink`, so adding storage later is writing one sink — a `Lot` model in `control`, its sink in `execution` — not reopening the design. |
+| D19 | For the tender collectors, **v1.0 promises the parameter contract, not byte-identical extraction.** A markup fix lands in place; a change to what a site must be *told* is v2.0. | Sites rewrite their HTML on their own schedule. Under a stricter reading every renamed column would fork a runner module, and the `(key, version)` invariant would protect a promise nobody made. What a snapshot must keep meaning is *which site, crawled how* — and that is the parameters. |
+| D20 | `extra_ca_cert` names a PEM file shipped in `collectors/certs/`, never a path. | The value arrives from an admin form. An arbitrary path would let whoever fills it splice any file the worker can read into the trusted CA bundle. |
 
 ### What is Russian and what is deliberately not
 
