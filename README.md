@@ -1,5 +1,7 @@
 # Data-collection back office
 
+*Русская версия: [`README.ru.md`](README.ru.md)*
+
 Humans author **what** to collect (`Config`) and optionally **when** (`Schedule`). The system
 records **what actually ran** (`Job`). Collector algorithms are code, not data.
 
