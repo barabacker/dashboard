@@ -6,6 +6,7 @@ One deployment, one database, one settings module. Environment-driven via django
 from pathlib import Path
 
 import environ
+from django.urls import reverse_lazy
 
 #: The repository root — src/project/settings.py -> src/project -> src -> repo root.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -33,6 +34,7 @@ DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 
 INSTALLED_APPS = [
+    "unfold",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -58,7 +60,11 @@ ROOT_URLCONF = "project.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # Filesystem loader runs before the per-app one, so a same-path template placed here wins
+        # over the matching template shipped inside an installed app (e.g. unfold's own) — that is
+        # what lets control/templates/unfold/... override an unfold template without depending on
+        # INSTALLED_APPS ordering.
+        "DIRS": [BASE_DIR / "src" / "control" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -104,6 +110,88 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_REDIRECT_URL = "/dashboard/"
 LOGIN_URL = "/admin/login/"
+
+# Unfold reads its own chrome strings from here rather than from admin.site.site_header.
+#
+# The sidebar is fully hand-authored (Unfold's per-model auto-listing is off the moment
+# SIDEBAR.navigation is non-empty), grouped the way the work actually flows: what to collect,
+# then what ran, then the read-only projection of code, then who gets to administer the admin
+# itself. "Пользователи"/"Группы" carry an explicit `permission` check — `has_permission` defaults
+# to True for an item that omits it, so leaving it off would show the item to everyone regardless
+# of Django permissions. The dotted path is a string, not an import, so it is resolved lazily per
+# request rather than at settings load time, when `control.admin` may not exist yet.
+UNFOLD = {
+    "SITE_TITLE": "Сбор данных",
+    "SITE_HEADER": "Сбор данных",
+    "SHOW_LANGUAGES": False,
+    "SIDEBAR": {
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": "Обзор",
+                "items": [
+                    {
+                        "title": "Дашборд",
+                        "icon": "dashboard",
+                        "link": reverse_lazy("dashboard:index"),
+                    },
+                ],
+            },
+            {
+                "title": "Сбор данных",
+                "items": [
+                    {
+                        "title": "Площадки",
+                        "icon": "language",
+                        "link": reverse_lazy("admin:control_platform_changelist"),
+                    },
+                    {
+                        "title": "Конфигурации",
+                        "icon": "tune",
+                        "link": reverse_lazy("admin:control_config_changelist"),
+                    },
+                    {
+                        "title": "Расписания",
+                        "icon": "calendar_month",
+                        "link": reverse_lazy("admin:control_schedule_changelist"),
+                    },
+                    {
+                        "title": "Задачи",
+                        "icon": "list_alt",
+                        "link": reverse_lazy("admin:control_job_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "Код",
+                "items": [
+                    {
+                        "title": "Сборщики",
+                        "icon": "extension",
+                        "link": reverse_lazy("admin:control_collector_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "Доступ",
+                "items": [
+                    {
+                        "title": "Пользователи",
+                        "icon": "person",
+                        "link": reverse_lazy("admin:auth_user_changelist"),
+                        "permission": "control.admin.can_view_users",
+                    },
+                    {
+                        "title": "Группы",
+                        "icon": "group",
+                        "link": reverse_lazy("admin:auth_group_changelist"),
+                        "permission": "control.admin.can_view_groups",
+                    },
+                ],
+            },
+        ],
+    },
+}
 
 # --- Execution runtime knobs (§7, §9) -------------------------------------------------
 # A generous lease is preferred over frequent renewal; renewal exists but is not a heartbeat.

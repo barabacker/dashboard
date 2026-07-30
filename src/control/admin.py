@@ -19,6 +19,7 @@ from django.shortcuts import render
 from django.urls import URLPattern, path, reverse
 from django.utils.html import format_html
 from django.utils.safestring import SafeString
+from unfold.admin import ModelAdmin, TabularInline
 
 from collectors import schemas
 from control.forms import ConfigForm, PlatformForm
@@ -35,6 +36,18 @@ from control.models import (
 admin.site.site_header = "Сбор данных"
 admin.site.site_title = "Сбор данных"
 admin.site.index_title = "Управление сбором"
+
+
+# --- sidebar visibility (settings.UNFOLD["SIDEBAR"]) --------------------------------------
+# Referenced from settings.py by dotted path, not imported there: a real permission check, not
+# just a hidden menu entry, so a user without it also can't reach auth.User/auth.Group by URL.
+def can_view_users(request: HttpRequest) -> bool:
+    return request.user.has_perm("auth.view_user")
+
+
+def can_view_groups(request: HttpRequest) -> bool:
+    return request.user.has_perm("auth.view_group")
+
 
 _STATUS_COLORS = {
     JobStatus.PENDING: "#8a8a8a",
@@ -54,7 +67,7 @@ def _status_badge(status: str) -> SafeString:
 
 
 @admin.register(Collector)
-class CollectorAdmin(admin.ModelAdmin):
+class CollectorAdmin(ModelAdmin):
     list_display = (
         "key",
         "display_name",
@@ -136,7 +149,7 @@ class CollectorAdmin(admin.ModelAdmin):
         )
 
 
-class ScheduleInline(admin.TabularInline):
+class ScheduleInline(TabularInline):
     model = Schedule
     extra = 0
     fields = ("cron", "timezone", "enabled", "overlap_policy", "catchup_policy", "last_fired_at")
@@ -145,7 +158,7 @@ class ScheduleInline(admin.TabularInline):
 
 
 @admin.register(Config)
-class ConfigAdmin(admin.ModelAdmin):
+class ConfigAdmin(ModelAdmin):
     form = ConfigForm
     inlines = [ScheduleInline]
     list_display = (
@@ -378,7 +391,7 @@ class PlatformAdmin(ConfigAdmin):
 
 
 @admin.register(Schedule)
-class ScheduleAdmin(admin.ModelAdmin):
+class ScheduleAdmin(ModelAdmin):
     list_display = (
         "config",
         "cron",
@@ -395,7 +408,7 @@ class ScheduleAdmin(admin.ModelAdmin):
 
 
 @admin.register(Job)
-class JobAdmin(admin.ModelAdmin):
+class JobAdmin(ModelAdmin):
     list_display = (
         "id",
         "status_badge",
