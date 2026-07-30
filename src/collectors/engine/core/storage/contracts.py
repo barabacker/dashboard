@@ -51,3 +51,27 @@ def lot_fingerprint(item: Mapping[str, Any]) -> str:
     canonical = {field: _canonicalize(item.get(field)) for field in FINGERPRINT_FIELDS}
     payload = json.dumps(canonical, sort_keys=True, default=str)
     return hashlib.sha1(payload.encode("utf-8")).hexdigest()
+
+
+def fingerprint_of(lot: Any) -> str:
+    """The fingerprint of an already-normalized ``Lot``.
+
+    Exists because the two sides of the comparison see different shapes. A listing parser hashes
+    its **raw** row, where the dates are ``bidding_date`` / ``event_date``; a sink is handed a
+    ``Lot``, where ``_normalize`` has moved those strings to ``*_raw`` and parsed copies into
+    ``bidding_deadline`` / ``result_date``. Hashing the ``Lot``'s own field names would produce a
+    value that can never equal the listing's, so every lot would read as changed forever and the
+    skip-the-detail-page shortcut would never fire — silently, since nothing else breaks.
+
+    Kept next to `lot_fingerprint` so the mapping between the two shapes stays in one place: a
+    field added to `FINGERPRINT_FIELDS` has to be answered here too.
+    """
+    return lot_fingerprint(
+        {
+            "status": lot.status,
+            "price": lot.price,
+            "bidding_date": lot.bidding_date_raw,
+            "event_date": lot.event_date_raw,
+            "trade_number": lot.trade_number,
+        }
+    )

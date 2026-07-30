@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 
 from collectors import registry
-from collectors.engine import CrawlOutcome
+from collectors.engine import CountingSink, CrawlOutcome
 from collectors.runners import tender_site_v1
 from collectors.runners.base import RunContext, RunResult
 from collectors.schemas import resolve_parameters
@@ -19,7 +19,9 @@ from collectors.schemas.tender import UnknownCertificate, collector_key
 class FakeContext(RunContext):
     """A RunContext that answers from memory, the way DbRunContext answers from a Job."""
 
-    def __init__(self, key: str, parameters: dict, *, cancelled: bool = False, lease=None):
+    def __init__(
+        self, key: str, parameters: dict, *, cancelled: bool = False, lease=None, sink=None
+    ):
         super().__init__(
             job_id=1,
             attempt_no=1,
@@ -31,6 +33,7 @@ class FakeContext(RunContext):
         self.cancelled = cancelled
         self.lease_error = lease
         self.lease_calls = 0
+        self.sink = sink
 
     def is_cancel_requested(self) -> bool:
         return self.cancelled
@@ -42,6 +45,9 @@ class FakeContext(RunContext):
         self.lease_calls += 1
         if self.lease_error is not None:
             raise self.lease_error
+
+    def open_lot_sink(self):
+        return self.sink
 
 
 def _params(engine: str, **overrides):
@@ -167,6 +173,41 @@ def test_fogsoft_can_skip_the_detail_pages(monkeypatch):
 def test_the_dive_engines_always_get_a_sink(engine, monkeypatch):
     _result, seen = _run(engine, monkeypatch)
     assert seen["sink"] is not None
+
+
+@pytest.mark.parametrize("engine", ["fogsoft", "kendo", "btorg", "ruson"])
+def test_the_context_supplies_the_storage_when_it_has_any(engine, monkeypatch):
+    """Storage is the context's to provide.
+
+    The runner lives in `collectors`, which may not import Django, so it cannot build a sink that
+    writes anywhere. `execution` can, and hands it over here — which is also what keeps a
+    deployment that stores nothing working unchanged.
+    """
+    storing = object()
+    ctx = FakeContext(collector_key(engine), _params(engine), sink=storing)
+
+    _result, seen = _run(engine, monkeypatch, ctx=ctx)
+
+    assert seen["sink"] is storing
+
+
+def test_without_storage_the_run_still_counts(monkeypatch):
+    """A counting sink is not "collect nothing" — it is what makes the crawl real."""
+    _result, seen = _run("kendo", monkeypatch)
+
+    assert isinstance(seen["sink"], CountingSink)
+
+
+def test_fogsoft_skipping_details_beats_the_offered_storage(monkeypatch):
+    """`fetch_details=False` means no detail request is worth making, and `None` is how the
+    fogsoft engine is told that. Handing it storage instead would undo the whole point."""
+    ctx = FakeContext(
+        collector_key("fogsoft"), _params("fogsoft", fetch_details=False), sink=object()
+    )
+
+    _result, seen = _run("fogsoft", monkeypatch, ctx=ctx)
+
+    assert seen["sink"] is None
 
 
 def test_a_site_the_snapshot_cannot_describe_fails_without_a_traceback(monkeypatch):

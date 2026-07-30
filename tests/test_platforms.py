@@ -189,8 +189,15 @@ class TestEndToEnd:
 
         job.refresh_from_db()
         assert job.status == JobStatus.SUCCEEDED
-        assert job.metrics == {"rows": 12, "calls": 5, "listing_pages": 2}
+        assert job.metrics == {
+            "rows": 12,
+            "calls": 5,
+            "listing_pages": 2,
+            "new": 0,
+            "changed": 0,
+        }
         assert job.result["source"] == "lot.torgi82.ru"
+        assert job.result["stored"] is True
         # The site the engine crawled came from the snapshot, not from the Config.
         assert seen["spec"].domain == "https://lot.torgi82.ru"
         assert seen["params"]["max_pages"] == "2"

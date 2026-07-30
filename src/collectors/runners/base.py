@@ -148,6 +148,18 @@ class RunContext(abc.ABC):
         One UPDATE, called rarely. This is not a heartbeat: prefer a generous lease and few calls.
         """
 
+    def open_lot_sink(self) -> Any | None:
+        """Storage for the items this run collects, or `None` if the deployment keeps none.
+
+        Deliberately the context's job rather than the runner's. A runner lives in `collectors`,
+        which may not import Django, so it cannot build something that writes to a table; only
+        `execution` can. Returning `None` is a real answer, not a failure — a run then counts what
+        it found and discards it.
+
+        Not abstract on purpose: a collector that stores nothing needs no opinion here.
+        """
+        return None
+
     def check_cancelled(self) -> None:
         """The cancellation checkpoint. Call it at every safe point."""
         if self.is_cancel_requested():

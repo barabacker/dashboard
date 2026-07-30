@@ -274,6 +274,85 @@ class Platform(Config):
         return str(self.parameters.get("domain") or "")
 
 
+class Lot(models.Model):
+    """One collected lot, as last seen.
+
+    Current state, not history: a crawl updates the row in place. `(source, lot_id)` is the
+    identity, so re-crawling a site converges instead of accumulating.
+
+    **A lot is never retired for being absent.** A crawl is truncated by `max_pages` and filtered
+    by `only_active`, so a lot missing from one pass says something about the pass, not about the
+    lot. `is_active` therefore comes from the site's own status text, and `last_seen_at` is what
+    tells you how stale a row is.
+
+    `fingerprint` is the load-bearing column: the listing parser compares it against the
+    fingerprint of the row it just read and skips the expensive detail request when they match.
+    It must be computed from the same values the listing produces — see
+    `collectors.engine.core.storage.contracts.fingerprint_of`.
+    """
+
+    source = models.CharField("Источник", max_length=255, help_text="Хост площадки.")
+    lot_id = models.CharField("Идентификатор лота", max_length=255)
+
+    trade_id = models.CharField("Идентификатор торга", max_length=255, blank=True, default="")
+    lot_num = models.CharField("Номер лота", max_length=64, blank=True, default="")
+    trade_number = models.CharField("Номер торга", max_length=255, blank=True, default="")
+    trade_type = models.CharField("Тип торгов", max_length=255, blank=True, default="")
+    debtor = models.TextField("Должник", blank=True, default="")
+    organizer = models.TextField("Организатор", blank=True, default="")
+
+    description = models.TextField("Описание", blank=True, default="")
+    lot_url = models.TextField("Ссылка на лот", blank=True, default="")
+    price = models.FloatField("Цена", null=True, blank=True)
+    price_raw = models.CharField("Цена как на сайте", max_length=255, blank=True, default="")
+
+    status = models.CharField("Статус", max_length=255, blank=True, default="")
+    is_active = models.BooleanField(
+        "Идут торги",
+        default=True,
+        help_text="Выведено из статуса самой площадки, а не из присутствия лота в обходе.",
+    )
+    bidding_deadline = models.DateTimeField("Приём заявок до", null=True, blank=True)
+    result_date = models.DateTimeField("Дата результатов", null=True, blank=True)
+    bidding_date_raw = models.CharField("Срок как на сайте", max_length=255, blank=True, default="")
+    event_date_raw = models.CharField("Дата как на сайте", max_length=255, blank=True, default="")
+
+    attachments = models.JSONField("Документы", default=list, blank=True)
+    price_schedule = models.JSONField("График снижения цены", default=list, blank=True)
+    extra = models.JSONField("Прочее с карточки", default=dict, blank=True)
+
+    fingerprint = models.CharField(
+        "Отпечаток",
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Хэш табличных полей. Совпал — карточка лота не перезапрашивается.",
+    )
+    first_seen_at = models.DateTimeField("Впервые увиден", auto_now_add=True)
+    last_seen_at = models.DateTimeField("Последний раз увиден", db_index=True)
+    last_job_id = models.BigIntegerField(
+        "Последняя задача",
+        null=True,
+        blank=True,
+        help_text="Мягкая ссылка, как и у Job на Config: лоты переживают чистку истории задач.",
+    )
+
+    class Meta:
+        ordering = ["-last_seen_at"]
+        verbose_name = "Лот"
+        verbose_name_plural = "Лоты"
+        constraints = [
+            models.UniqueConstraint(fields=["source", "lot_id"], name="uniq_lot_per_source"),
+        ]
+        indexes = [
+            models.Index(fields=["source", "is_active"], name="lot_by_source_active_idx"),
+            models.Index(fields=["-last_seen_at"], name="lot_by_last_seen_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.source} · {self.lot_id}"
+
+
 class Schedule(models.Model):
     """When to run a Config. A containment child: it dies with its Config.
 

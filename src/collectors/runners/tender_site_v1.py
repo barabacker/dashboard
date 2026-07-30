@@ -104,11 +104,13 @@ class TenderSiteRunner(Runner):
 
         control = _JobControl(ctx, renew_interval=LEASE_RENEW_INTERVAL_SECONDS)
 
+        sink = self._sink(ctx, params)
+
         try:
             outcome = crawl_site(
                 spec,
                 params=_engine_params(params),
-                sink=self._sink(params),
+                sink=sink,
                 should_stop=control.should_stop,
                 heartbeat=control.heartbeat,
                 log=ctx.logger.info,
@@ -129,18 +131,25 @@ class TenderSiteRunner(Runner):
             # means — writing an outcome from here would be writing over someone else's run.
             raise control.failure
 
-        return _to_result(outcome)
+        return _to_result(outcome, stored=not isinstance(sink, CountingSink) and sink is not None)
 
-    def _sink(self, params: Any) -> LotSink | None:
-        """A counting sink, or none at all.
+    def _sink(self, ctx: RunContext, params: Any) -> LotSink | None:
+        """Where the collected lots go: the context's storage, a counting sink, or nowhere.
 
         `None` is not "collect nothing": it is what tells the fogsoft engine that no stored
-        fingerprint can differ, so no listing row is worth a detail request. The dive engines
-        have no such choice — their lots only exist on the detail page.
+        fingerprint can differ, so no listing row is worth a detail request. That check comes
+        first for exactly that reason — handing storage to a run that was asked to skip the detail
+        pages would undo the saving it was asked for. The dive engines have no such choice, their
+        lots only exist on the detail page.
+
+        Failing that, whatever the context offers. A `CountingSink` is the fallback rather than
+        `None`, because it answers "nothing known" to every fingerprint query — which is what
+        makes a storage-less run a real crawl instead of a truncated one.
         """
         if self.engine == "fogsoft" and not params.get("fetch_details", True):
             return None
-        return CountingSink()
+        offered = ctx.open_lot_sink()
+        return CountingSink() if offered is None else offered
 
 
 def _engine_params(params: Any) -> dict[str, str]:
@@ -159,18 +168,22 @@ def _engine_params(params: Any) -> dict[str, str]:
     return engine_params
 
 
-def _to_result(outcome: CrawlOutcome) -> RunResult:
+def _to_result(outcome: CrawlOutcome, *, stored: bool) -> RunResult:
     result = {
         "source": outcome.source,
         "start_url": outcome.start_url,
         "sample_lot_ids": list(outcome.sample),
-        "stored": False,
+        "stored": stored,
     }
     metrics = {
         "rows": outcome.lots,
         "calls": outcome.requests,
         "listing_pages": outcome.listing_pages,
     }
+    if stored:
+        # Only meaningful against storage: without it every lot reads as new by definition.
+        metrics["new"] = outcome.new
+        metrics["changed"] = outcome.changed
     if outcome.cancelled:
         return RunResult.cancelled(result=result, metrics=metrics)
     return RunResult.success(result=result, metrics=metrics)
