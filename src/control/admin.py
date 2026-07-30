@@ -22,15 +22,15 @@ from django.utils.safestring import SafeString
 from unfold.admin import ModelAdmin, TabularInline
 
 from collectors import schemas
-from control.forms import ConfigForm, PlatformForm
+from control.forms import ConfigForm, SourceForm
 from control.models import (
     Collector,
     Config,
     Job,
     JobOrigin,
     JobStatus,
-    Platform,
     Schedule,
+    Source,
 )
 
 admin.site.site_header = "Сбор данных"
@@ -284,16 +284,16 @@ class ConfigAdmin(ModelAdmin):
         self.message_user(request, f"Возвращено из архива: {n}.", messages.SUCCESS)
 
 
-@admin.register(Platform)
-class PlatformAdmin(ConfigAdmin):
-    """The platform tab: the same Configs, asked for as sites.
+@admin.register(Source)
+class SourceAdmin(ConfigAdmin):
+    """The source tab: the same Configs, asked for as sites.
 
     Everything behind it — enqueue, snapshots, schedules, history — is `ConfigAdmin`'s, which is
     why this subclasses it rather than reimplementing the surface. What changes is the form and
     the shape of the page.
     """
 
-    form = PlatformForm
+    form = SourceForm
     list_display = (
         "name",
         "engine",
@@ -307,7 +307,7 @@ class PlatformAdmin(ConfigAdmin):
     list_filter = ("collector_key", "enabled", "archived", "last_status")
     search_fields = ("name",)
     fieldsets = (
-        ("Площадка", {"fields": ("name", "collector_key", "domain", "listing_path")}),
+        ("Источник", {"fields": ("name", "collector_key", "domain", "listing_path")}),
         ("Обход", {"fields": ("max_pages", "only_active", "concurrency", "fetch_details")}),
         (
             "TLS",
@@ -337,25 +337,25 @@ class PlatformAdmin(ConfigAdmin):
     )
 
     @admin.display(description="Движок", ordering="collector_key")
-    def engine(self, obj: Platform) -> str:
+    def engine(self, obj: Source) -> str:
         try:
             return schemas.get_collector(obj.collector_key).display_name
         except schemas.UnknownCollector:
             return f"{obj.collector_key} — нет в кодовой базе"
 
     @admin.display(description="Сайт")
-    def site(self, obj: Platform) -> str:
+    def site(self, obj: Source) -> str:
         return obj.domain or "—"
 
-    @admin.action(description="Включить выбранные площадки")
+    @admin.action(description="Включить выбранные источники")
     def action_enable(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
         n = self._bulk(request, queryset, enabled=True)
-        self.message_user(request, f"Включено площадок: {n}.", messages.SUCCESS)
+        self.message_user(request, f"Включено источников: {n}.", messages.SUCCESS)
 
-    @admin.action(description="Выключить выбранные площадки")
+    @admin.action(description="Выключить выбранные источники")
     def action_disable(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
         n = self._bulk(request, queryset, enabled=False)
-        self.message_user(request, f"Выключено площадок: {n}.", messages.SUCCESS)
+        self.message_user(request, f"Выключено источников: {n}.", messages.SUCCESS)
 
     @admin.action(description="В архив (мягкое удаление)")
     def action_archive(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
