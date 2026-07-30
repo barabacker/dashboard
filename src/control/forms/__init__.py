@@ -1,4 +1,4 @@
 from control.forms.config import ConfigForm
-from control.forms.platform import PlatformForm
+from control.forms.source import SourceForm
 
-__all__ = ["ConfigForm", "PlatformForm"]
+__all__ = ["ConfigForm", "SourceForm"]
