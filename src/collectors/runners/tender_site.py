@@ -1,4 +1,4 @@
-"""`tender_<engine>` v1.0 — crawl one trading platform.
+"""`tender_<engine>` — crawl one trading platform.
 
 One runner per parser family, all four sharing this implementation: the difference between them
 is which engine class the site is crawled with, and that is a single attribute. The site itself
@@ -10,18 +10,6 @@ nothing else:
 * snapshot parameters → a `SiteSpec` plus the engine's own string-keyed params;
 * the Job's cancellation flag and lease → the two callables `ParserContext` accepts;
 * crawl counts → a `RunResult`.
-
-**Nothing is stored.** There is no table for collected lots yet (see CLAUDE.md), so a run
-reports what it found — counts, a few lot ids — and discards the lots themselves.
-
-### On this being version 1.0 forever
-
-`(key, version)` must keep resolving, and a shipped version must not be edited to change
-behavior. For these collectors the *parameter contract* is what v1.0 promises: a snapshot from a
-year ago still resolves and still means the same crawl. Extraction is a different matter — sites
-change their markup, and a fix that makes a parser read a renamed column is not a new contract,
-it is the same contract finally honoured. Such fixes land in place. A change to what a site
-*needs to be told* — a new required parameter, a renamed one — is a v2.0.
 """
 
 from __future__ import annotations
@@ -41,8 +29,6 @@ from collectors.engine import (
 )
 from collectors.runners.base import RunContext, Runner, RunResult
 from collectors.schemas.tender import ENGINE_KEYS, UnknownCertificate, collector_key
-
-VERSION = "1.0"
 
 #: How often the lease is pushed out during a crawl. One UPDATE a minute is nothing next to the
 #: HTTP traffic, and it keeps a long crawl from being reclaimed under a generous lease without
@@ -85,7 +71,6 @@ class TenderSiteRunner(Runner):
     """Crawl one site of one parser family. Subclasses set `engine` and `key`."""
 
     engine: ClassVar[str]
-    version: ClassVar[str] = VERSION
 
     def run(self, ctx: RunContext) -> RunResult:
         params = ctx.parameters
@@ -190,25 +175,24 @@ def _to_result(outcome: CrawlOutcome, *, stored: bool) -> RunResult:
 
 
 def _runner_class(engine: str) -> type[TenderSiteRunner]:
-    """One concrete `(key, version)` implementation per engine.
+    """One concrete implementation per engine.
 
     Generated rather than hand-written: four classes whose only difference is two strings are
     four chances for a typo, and the registry check in `collectors.registry` verifies each one
     lands under the key it declares.
     """
     return type(
-        f"Tender{engine.capitalize()}V1",
+        f"Tender{engine.capitalize()}",
         (TenderSiteRunner,),
         {
             "engine": engine,
             "key": collector_key(engine),
-            "version": VERSION,
-            "__doc__": f"`{collector_key(engine)}` v{VERSION} — crawl one {engine} site.",
+            "__doc__": f"`{collector_key(engine)}` — crawl one {engine} site.",
             "__module__": __name__,
         },
     )
 
 
-RUNNERS: dict[tuple[str, str], type[TenderSiteRunner]] = {
-    (collector_key(engine), VERSION): _runner_class(engine) for engine in ENGINE_KEYS
+RUNNERS: dict[str, type[TenderSiteRunner]] = {
+    collector_key(engine): _runner_class(engine) for engine in ENGINE_KEYS
 }

@@ -24,7 +24,6 @@ from collectors.schemas.tender import (
 def test_every_engine_ships_a_collector(engine):
     key = collector_key(engine)
     descriptor = schemas.get_collector(key)
-    assert descriptor.current_version == "1.0"
     assert descriptor.display_name.startswith("Торги: ")
     assert engine_of(key) == engine
 
@@ -34,16 +33,14 @@ def test_the_collectors_are_visible_to_the_projection():
     assert {collector_key(e) for e in ENGINE_KEYS} <= keys
 
 
-def test_every_declared_version_has_a_runner():
-    """The `(key, version)` invariant, checked across both halves of the registry."""
+def test_every_collector_has_a_runner():
+    """Every key resolves to code — the invariant, checked across both halves of the registry."""
     assert registry.check_registry() == []
 
 
 @pytest.mark.parametrize("engine", ENGINE_KEYS)
 def test_a_domain_is_all_a_site_must_be_told(engine):
-    effective = schemas.resolve_parameters(
-        collector_key(engine), "1.0", {"domain": "https://example.com"}
-    )
+    effective = schemas.resolve_parameters(collector_key(engine), {"domain": "https://example.com"})
     assert effective["domain"] == "https://example.com"
     assert effective["listing_path"] == DEFAULT_LISTING_PATHS[engine]
     assert effective["max_pages"] == 0
@@ -56,21 +53,20 @@ def test_a_domain_is_all_a_site_must_be_told(engine):
 @pytest.mark.parametrize("engine", ENGINE_KEYS)
 def test_the_domain_is_required(engine):
     with pytest.raises(schemas.ParameterError) as exc:
-        schemas.resolve_parameters(collector_key(engine), "1.0", {})
+        schemas.resolve_parameters(collector_key(engine), {})
     assert any("domain" in message for message in exc.value.errors)
 
 
 def test_only_fogsoft_offers_skipping_the_detail_pages():
     """For the dive engines the lots live on the detail page — the switch would be a lie."""
-    fogsoft = schemas.schema(collector_key("fogsoft"), "1.0")
+    fogsoft = schemas.get_collector(collector_key("fogsoft"))
     assert fogsoft.param("fetch_details") is not None
 
     for engine in ("kendo", "btorg", "ruson"):
-        assert schemas.schema(collector_key(engine), "1.0").param("fetch_details") is None
+        assert schemas.get_collector(collector_key(engine)).param("fetch_details") is None
         with pytest.raises(schemas.ParameterError):
             schemas.resolve_parameters(
                 collector_key(engine),
-                "1.0",
                 {"domain": "https://example.com", "fetch_details": False},
             )
 
@@ -78,18 +74,18 @@ def test_only_fogsoft_offers_skipping_the_detail_pages():
 def test_concurrency_is_bounded():
     with pytest.raises(schemas.ParameterError):
         schemas.resolve_parameters(
-            collector_key("kendo"), "1.0", {"domain": "https://example.com", "concurrency": 0}
+            collector_key("kendo"), {"domain": "https://example.com", "concurrency": 0}
         )
     with pytest.raises(schemas.ParameterError):
         schemas.resolve_parameters(
-            collector_key("kendo"), "1.0", {"domain": "https://example.com", "concurrency": 99}
+            collector_key("kendo"), {"domain": "https://example.com", "concurrency": 99}
         )
 
 
 def test_no_tender_parameter_is_a_credential_reference():
     """These sites are public: nothing here should ever resolve a secret at run time."""
     for engine in ENGINE_KEYS:
-        assert schemas.schema(collector_key(engine), "1.0").credential_ref_names == ()
+        assert schemas.get_collector(collector_key(engine)).credential_ref_names == ()
 
 
 def test_a_certificate_is_named_not_pathed():

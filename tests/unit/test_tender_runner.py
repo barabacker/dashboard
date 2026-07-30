@@ -10,7 +10,7 @@ import pytest
 
 from collectors import registry
 from collectors.engine import CountingSink, CrawlOutcome
-from collectors.runners import tender_site_v1
+from collectors.runners import tender_site
 from collectors.runners.base import RunContext, RunResult
 from collectors.schemas import resolve_parameters
 from collectors.schemas.tender import UnknownCertificate, collector_key
@@ -26,8 +26,6 @@ class FakeContext(RunContext):
             job_id=1,
             attempt_no=1,
             collector_key=key,
-            collector_version="1.0",
-            schema_version=1,
             parameters=parameters,
         )
         self.cancelled = cancelled
@@ -51,9 +49,7 @@ class FakeContext(RunContext):
 
 
 def _params(engine: str, **overrides):
-    return resolve_parameters(
-        collector_key(engine), "1.0", {"domain": "https://example.com", **overrides}
-    )
+    return resolve_parameters(collector_key(engine), {"domain": "https://example.com", **overrides})
 
 
 def _run(engine: str, monkeypatch, *, outcome=None, raises=None, ctx=None, **overrides):
@@ -67,8 +63,8 @@ def _run(engine: str, monkeypatch, *, outcome=None, raises=None, ctx=None, **ove
             raise raises
         return outcome or CrawlOutcome(source=spec.source, start_url=spec.start_url)
 
-    monkeypatch.setattr(tender_site_v1, "crawl_site", _fake_crawl_site)
-    runner = registry.resolve(collector_key(engine), "1.0")
+    monkeypatch.setattr(tender_site, "crawl_site", _fake_crawl_site)
+    runner = registry.resolve(collector_key(engine))
     context = ctx or FakeContext(collector_key(engine), _params(engine, **overrides))
     return runner.run(context), seen
 
@@ -153,8 +149,8 @@ def test_a_lost_lease_stops_the_crawl_and_is_re_raised(monkeypatch):
         assert kwargs["should_stop"]() is True
         return CrawlOutcome(source=spec.source, start_url=spec.start_url, cancelled=True)
 
-    monkeypatch.setattr(tender_site_v1, "crawl_site", _fake_crawl_site)
-    runner = registry.resolve(collector_key("kendo"), "1.0")
+    monkeypatch.setattr(tender_site, "crawl_site", _fake_crawl_site)
+    runner = registry.resolve(collector_key("kendo"))
 
     with pytest.raises(LeaseLost):
         runner.run(ctx)

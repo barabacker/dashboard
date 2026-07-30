@@ -24,12 +24,12 @@ src/
   manage.py             Django entry point, next to the packages it drives
   project/              Django settings/urls/wsgi — framework glue only
   collectors/           collector CODE, pure leaf, depends on NOTHING else in the project
-    schemas/              pure descriptors: key, versions, parameter schema per version
+    schemas/              pure descriptors: key, parameter schema — one per collector, no version axis
       tender.py             the four tender-site collectors (one per parser family)
-    runners/              run() implementations, one module per (key, version)
+    runners/              run() implementations, one module per collector key
     engine/               the vendored scraping engine — core/ http/ sources/, no framework
     certs/                extra intermediate certificates, named by `extra_ca_cert`
-    registry.py           resolve (key, version) -> runner  [imports runners — control must not]
+    registry.py           resolve key -> runner  [imports runners — control must not]
   control/              everything authored/stored + admin/dashboard surface. ALL models here.
     models.py             Collector projection, Config, Platform (proxy), Schedule, Job
     services/             the single shared enqueue function
@@ -58,25 +58,29 @@ packages on the import path for `manage.py`, `pytest` and `lint-imports` alike. 
 - **Snapshot completeness.** A Job runs from its snapshot alone. Execution never reads mutable
   Config state after enqueue.
 - **Enqueue preconditions.** Config enabled AND not archived AND raw params valid against the
-  resolved collector version's schema.
+  collector's current schema.
 - **Collector deprecate-not-delete.** Collector rows are a projection of code; they are disabled,
   never deleted.
 - **Config editable anytime**; running Jobs are unaffected; deletion is soft (`archived`).
-- **Schedules survive collector upgrades**, but a scheduled run whose params became invalid for
-  the new version fails fast (a `failed` Job with `config_invalid`, never a runnable job).
+- **A Config whose raw params drift out of step with the collector's schema fails fast** — a
+  `failed` Job with `config_invalid`, never a runnable job. (Retired the version axis this used to
+  be framed around — see **D21**.)
 - **Terminal states are terminal.** `succeeded` / `failed` / `cancelled` are never mutated.
   A retry is a *new Job*, never a mutation of a terminal one.
 - **Lease reclaim.** `status='running' AND claimed_until < now` ⇒ claimable again.
-- **`(key, version)` always resolves to runnable code.** Historical runner versions stay in the
-  codebase and are never overwritten in place.
+- **Every collector key always resolves to runnable code.** One schema, one runner, per key —
+  edited in place as requirements change (see **D21**; this replaces the former `(key, version)`
+  invariant).
 - **Secrets are never snapshotted.** Snapshots carry a credential *reference*; the actual secret
   is resolved at execution time from env/secret store.
 
 ### What "reproducible" means here
 
-Same target + same params + same version code. Rotating credentials are the intentional
-exception: the credential *reference* is snapshotted, the credential *value* is not, so a replay
-uses whatever the secret store holds today.
+Same target + same params + the collector's code **as it exists today** — not as it existed when
+the Job was created. See **D21**: this is a deliberate narrowing from the original "same version
+code forever" guarantee. Rotating credentials are a separate, still-standing exception: the
+credential *reference* is snapshotted, the credential *value* is not, so a replay uses whatever
+the secret store holds today regardless.
 
 ### Reclaim ≠ retry
 
@@ -138,11 +142,12 @@ full extent of "projection" allowed.
 | D14 | The Collector projection's `enabled=False` blocks new enqueues. A collector with no projection row is treated as enabled. | Otherwise the field has no behavior at all. A missing row is a deployment gap (run `sync_collectors`), not a decision to disable. |
 
 | D15 | The UI is Russian, written **directly in the code** — no gettext, no `.po`/`.mo`. | `LANGUAGE_CODE = "ru"` makes Django's own admin chrome Russian from the locale files it ships. For our own strings there is no `msgfmt`/`xgettext` on the target machine, so `compilemessages` cannot run; a catalogue nobody can compile is worse than plain literals. If a second language is ever needed, wrap the strings listed below in `gettext_lazy` and generate the catalogue then. |
-| D16 | The tender-site parsers are **vendored** into `collectors/engine/`, framework-free. A *collector* is a parser family (`tender_fogsoft`, `tender_kendo`, `tender_btorg`, `tender_ruson`, all v1.0); a *site* is authored data — domain, listing path and TLS quirks are ordinary parameters. No `platforms.toml`. | See ADR 0002. Keeping sites as parameters is what preserves snapshot completeness: the site is resolved into `effective_parameters` at enqueue, so execution never reads authored state afterwards. The alternative — a code-side site table — would mean either snapshotting a *reference* to a mutable row or one collector key per site. |
+| D16 | The tender-site parsers are **vendored** into `collectors/engine/`, framework-free. A *collector* is a parser family (`tender_fogsoft`, `tender_kendo`, `tender_btorg`, `tender_ruson`); a *site* is authored data — domain, listing path and TLS quirks are ordinary parameters. No `platforms.toml`. | See ADR 0002. Keeping sites as parameters is what preserves snapshot completeness: the site is resolved into `effective_parameters` at enqueue, so execution never reads authored state afterwards. The alternative — a code-side site table — would mean either snapshotting a *reference* to a mutable row or one collector key per site. |
 | D17 | The «Площадки» tab is `control.models.Platform`, a **proxy of Config** with its own form, not a table. | A platform *is* "what to collect". A second table would duplicate authored intent and need syncing back into the Config that actually runs. The proxy adds a tab and a per-field form with no new state. |
 | D18 | **Collected lots are not stored.** A run crawls for real and reports counts (`rows`, `calls`, `listing_pages`) plus a few lot ids in `Job.result`, which carries `"stored": false`. | The user's call, taken knowingly. The engine's `LotSink` protocol is untouched and the runner injects a `CountingSink`, so adding storage later is writing one sink — a `Lot` model in `control`, its sink in `execution` — not reopening the design. |
-| D19 | For the tender collectors, **v1.0 promises the parameter contract, not byte-identical extraction.** A markup fix lands in place; a change to what a site must be *told* is v2.0. | Sites rewrite their HTML on their own schedule. Under a stricter reading every renamed column would fork a runner module, and the `(key, version)` invariant would protect a promise nobody made. What a snapshot must keep meaning is *which site, crawled how* — and that is the parameters. |
+| D19 | ~~For the tender collectors, v1.0 promises the parameter contract, not byte-identical extraction. A markup fix lands in place; a change to what a site must be told is v2.0.~~ **Superseded by D21** — there is no v2.0 any more; every parameter-contract change now lands in place. | Kept for history. The reasoning ("what a snapshot must keep meaning is *which site, crawled how*") is still why parameter changes are safe to make in place — it just no longer needs a version bump to say so. |
 | D20 | `extra_ca_cert` names a PEM file shipped in `collectors/certs/`, never a path. | The value arrives from an admin form. An arbitrary path would let whoever fills it splice any file the worker can read into the trusted CA bundle. |
+| D21 | **Removed the `(key, version)` axis entirely.** `CollectorDescriptor` and `Runner` each carry exactly one schema/implementation per key, edited in place; `Job.collector_version` / `schema_version` are dropped (migration `0005`). Deviates from spec §6, whose `"config invalid for collector vX"` wording presumes a version — the message is now `"config invalid for collector {key}"`. Full narrative: ADR 0003. | User's explicit call, taken knowingly after being walked through the cost: historical Jobs are no longer guaranteed to replay against the exact code that ran them (see the narrowed "reproducible" definition above), and the "schedules survive collector upgrades" scenario is retired along with the upgrade concept itself — `config_invalid` now models a Config's raw params drifting out of step with a schema that changed in place, which needs no version story to stay meaningful or testable. In practice only `example_api` (a demo collector, zero real Configs) and the always-single-version tender collectors were affected; nothing in production data depended on multi-version resolution. |
 
 ### What is Russian and what is deliberately not
 
@@ -156,8 +161,9 @@ parameter descriptions, dashboard templates, seed sample names.
 - stored values of every `TextChoices` (`"pending"`, `"skip"`, …) — the claim SQL, the tests and
   this document all match on them;
 - `EnqueueRefused.reason` codes (`config_disabled`, `params_invalid`, …) — an API, not a message;
-- `structured_error["type"]` codes, and the `"config invalid for collector vX"` message, whose
-  wording §6 of the spec names explicitly;
+- `structured_error["type"]` codes, and the `"config invalid for collector {key}"` message —
+  §6 of the spec names a `vX`-suffixed form; **D21** dropped the version, so this is a deliberate
+  deviation from the spec's literal wording, not an oversight;
 - log lines, exception text for programmer errors, docstrings, comments, and all documentation.
 
 When adding a user-facing string, put the Russian in the code and keep the machine-readable

@@ -1,19 +1,15 @@
-"""Schemas for the `example_api` collector.
+"""Schema for the `example_api` collector.
 
-Two versions ship on purpose so version resolution is exercised end to end:
-
-* **v1.0** — the original contract.
-* **v2.0** — adds a **required** `dataset` parameter. That makes the "schedules survive collector
-  upgrades, but a scheduled run with now-invalid params fails fast" invariant real and testable,
-  rather than a sentence in a document.
-
-Historical versions are never edited in place. A change to v1.0's contract would silently
-invalidate every Job snapshot that references it.
+The reference collector: exercises parameter validation and cooperative cancellation without any
+network I/O, so the tests that drive it stay deterministic. `dataset` is required on purpose — it
+is what lets `EnqueueRefused`/`config_invalid` be exercised: a Config whose raw parameters do not
+satisfy this schema (edited directly, or predating a field that became required) must fail fast
+rather than produce a runnable Job.
 """
 
 from __future__ import annotations
 
-from collectors.schemas.base import CollectorDescriptor, CollectorVersionSchema, ParamSpec
+from collectors.schemas.base import CollectorDescriptor, ParamSpec
 
 KEY = "example_api"
 
@@ -58,18 +54,13 @@ _CREDENTIAL_REF = ParamSpec(
     ),
 )
 
-V1 = CollectorVersionSchema(
+DESCRIPTOR = CollectorDescriptor(
     key=KEY,
-    version="1.0",
-    schema_version=1,
-    summary="Постраничная выгрузка с одного эндпоинта.",
-    params=(_BASE_URL, _PATH, _PAGE_SIZE, _PAGES, _CREDENTIAL_REF),
-)
-
-V2 = CollectorVersionSchema(
-    key=KEY,
-    version="2.0",
-    schema_version=2,
+    display_name="Пример: HTTP API",
+    description=(
+        "Эталонный сборщик: на нём проверяются валидация параметров и кооперативная отмена. "
+        "Вместо сетевых запросов он выдумывает записи, поэтому тесты остаются детерминированными."
+    ),
     summary="Добавлен явный выбор набора данных; записи помечаются им.",
     params=(
         _BASE_URL,
@@ -81,7 +72,7 @@ V2 = CollectorVersionSchema(
             name="dataset",
             kind="str",
             required=True,
-            description="Какой набор данных выгружать. Обязателен начиная с версии 2.0.",
+            description="Какой набор данных выгружать.",
         ),
         ParamSpec(
             name="since",
@@ -99,15 +90,4 @@ V2 = CollectorVersionSchema(
             "увидеть на запуске, который успеваешь поймать.",
         ),
     ),
-)
-
-DESCRIPTOR = CollectorDescriptor(
-    key=KEY,
-    display_name="Пример: HTTP API",
-    description=(
-        "Эталонный сборщик: на нём проверяются разрешение версий, валидация параметров и "
-        "кооперативная отмена. Вместо сетевых запросов он выдумывает записи, поэтому тесты "
-        "остаются детерминированными."
-    ),
-    versions=(V1, V2),
 )

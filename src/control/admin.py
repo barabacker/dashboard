@@ -71,8 +71,6 @@ class CollectorAdmin(ModelAdmin):
     list_display = (
         "key",
         "display_name",
-        "known_versions",
-        "current_version",
         "enabled",
         "synced_at",
     )
@@ -83,8 +81,6 @@ class CollectorAdmin(ModelAdmin):
         "display_name",
         "description",
         "synced_at",
-        "known_versions",
-        "current_version",
         "schema_table",
     )
     fields = (
@@ -92,8 +88,6 @@ class CollectorAdmin(ModelAdmin):
         "display_name",
         "description",
         "enabled",
-        "known_versions",
-        "current_version",
         "schema_table",
         "synced_at",
     )
@@ -105,20 +99,6 @@ class CollectorAdmin(ModelAdmin):
     def has_delete_permission(self, request: HttpRequest, obj: Collector | None = None) -> bool:
         # Deprecate, never delete: Job history references these keys.
         return False
-
-    @admin.display(description="Версии (из кода)")
-    def known_versions(self, obj: Collector) -> str:
-        try:
-            return ", ".join(schemas.get_collector(obj.key).version_names)
-        except schemas.UnknownCollector:
-            return "— нет в кодовой базе —"
-
-    @admin.display(description="Текущая версия")
-    def current_version(self, obj: Collector) -> str:
-        try:
-            return schemas.current_version(obj.key)
-        except schemas.UnknownCollector:
-            return "—"
 
     @admin.display(description="Схема параметров (из кода)")
     def schema_table(self, obj: Collector) -> SafeString:
@@ -226,14 +206,13 @@ class ConfigAdmin(ModelAdmin):
         url = reverse("admin:control_job_change", args=[obj.last_job_id])
         return format_html('<a href="{}">Задача #{}</a>', url, obj.last_job_id)
 
-    @admin.display(description="Итоговые параметры на текущей версии")
+    @admin.display(description="Итоговые параметры")
     def resolved_preview(self, obj: Config) -> SafeString:
         """Show exactly what a Job created right now would snapshot — or why it would not."""
         if not obj.pk:
             return format_html("<i>Сначала сохраните.</i>")
         try:
-            version = schemas.current_version(obj.collector_key)
-            effective = schemas.resolve_parameters(obj.collector_key, version, obj.parameters)
+            effective = schemas.resolve_parameters(obj.collector_key, obj.parameters)
         except schemas.UnknownCollector:
             return format_html(
                 '<b style="color:#c92a2a">Сборщика {} нет в кодовой базе — запустить нельзя.</b>',
@@ -241,8 +220,7 @@ class ConfigAdmin(ModelAdmin):
             )
         except schemas.ParameterError as exc:
             return format_html(
-                '<b style="color:#c92a2a">Не подходит для v{}:</b><ul>{}</ul>',
-                exc.collector_version,
+                '<b style="color:#c92a2a">Не подходит:</b><ul>{}</ul>',
                 format_html("".join(format_html("<li>{}</li>", e) for e in exc.errors)),
             )
         rows = format_html(
@@ -251,7 +229,7 @@ class ConfigAdmin(ModelAdmin):
                 for k, v in sorted(effective.items())
             )
         )
-        return format_html("v{}<table><tbody>{}</tbody></table>", version, rows)
+        return format_html("<table><tbody>{}</tbody></table>", rows)
 
     def _bulk(self, request: HttpRequest, queryset: QuerySet[Config], **updates) -> int:
         # Deliberately per-instance: `revision` is bumped in `Config.save()`, and a bulk
@@ -413,14 +391,13 @@ class JobAdmin(ModelAdmin):
         "id",
         "status_badge",
         "collector_key",
-        "collector_version",
         "config_link",
         "origin",
         "attempt_no",
         "created_at",
         "duration",
     )
-    list_filter = ("status", "collector_key", "collector_version", "origin", "cancel_requested")
+    list_filter = ("status", "collector_key", "origin", "cancel_requested")
     search_fields = ("collector_key", "claimed_by")
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
@@ -437,8 +414,6 @@ class JobAdmin(ModelAdmin):
             {
                 "fields": (
                     "collector_key",
-                    "collector_version",
-                    "schema_version",
                     "effective_parameters",
                     "config_link",
                     "config_id",

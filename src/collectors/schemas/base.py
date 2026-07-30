@@ -13,41 +13,28 @@ from typing import Any
 
 __all__ = [
     "CollectorDescriptor",
-    "CollectorVersionSchema",
     "ParamSpec",
     "ParameterError",
     "UnknownCollector",
-    "UnknownCollectorVersion",
 ]
 
 _MISSING = object()
 
 
 class ParameterError(ValueError):
-    """Authored parameters do not satisfy a collector version's schema.
+    """Authored parameters do not satisfy a collector's schema.
 
     Carries every problem found, not just the first: the admin shows them all at once.
     """
 
-    def __init__(self, key: str, version: str, errors: Sequence[str]) -> None:
+    def __init__(self, key: str, errors: Sequence[str]) -> None:
         self.collector_key = key
-        self.collector_version = version
         self.errors = list(errors)
-        super().__init__(
-            f"параметры не подходят сборщику {key} v{version}: " + "; ".join(self.errors)
-        )
+        super().__init__(f"параметры не подходят сборщику {key}: " + "; ".join(self.errors))
 
 
 class UnknownCollector(LookupError):
     """No collector is registered under this key."""
-
-
-class UnknownCollectorVersion(LookupError):
-    """The collector exists but has no such version.
-
-    Raised only for keys/versions that were never shipped. A version that *was* shipped must stay
-    resolvable forever — see the `(key, version)` invariant in CLAUDE.md.
-    """
 
 
 # --- parameter kinds ------------------------------------------------------------------
@@ -112,14 +99,19 @@ class ParamSpec:
 
 
 @dataclass(frozen=True, slots=True)
-class CollectorVersionSchema:
-    """The parameter contract of exactly one `(collector_key, version)` pair."""
+class CollectorDescriptor:
+    """What a collector is, and the one parameter contract it has ever had.
+
+    There is no version axis here: a collector's schema is edited in place as requirements change,
+    the same as any other code. `control` validates authored parameters against exactly this and
+    snapshots the result into a Job's `effective_parameters`.
+    """
 
     key: str
-    version: str
-    schema_version: int
-    params: tuple[ParamSpec, ...] = ()
+    display_name: str
+    description: str = ""
     summary: str = ""
+    params: tuple[ParamSpec, ...] = field(default_factory=tuple)
 
     def param(self, name: str) -> ParamSpec | None:
         return next((p for p in self.params if p.name == name), None)
@@ -154,46 +146,8 @@ class CollectorVersionSchema:
             effective[spec.name] = spec.coerce(value)
 
         for unknown in sorted(raw):
-            errors.append(f"{unknown}: неизвестный параметр для {self.key} v{self.version}")
+            errors.append(f"{unknown}: неизвестный параметр для {self.key}")
 
         if errors:
-            raise ParameterError(self.key, self.version, errors)
+            raise ParameterError(self.key, errors)
         return effective
-
-
-@dataclass(frozen=True, slots=True)
-class CollectorDescriptor:
-    """What a collector *is*, independent of any version.
-
-    `versions` is ordered oldest → newest; the last entry is the current one. Historical entries
-    are never removed: a Job snapshot must keep resolving forever.
-    """
-
-    key: str
-    display_name: str
-    description: str = ""
-    versions: tuple[CollectorVersionSchema, ...] = field(default_factory=tuple)
-
-    def __post_init__(self) -> None:
-        if not self.versions:
-            raise ValueError(f"collector {self.key}: at least one version is required")
-        for schema in self.versions:
-            if schema.key != self.key:
-                raise ValueError(f"collector {self.key}: version schema declares key {schema.key}")
-
-    @property
-    def version_names(self) -> tuple[str, ...]:
-        return tuple(v.version for v in self.versions)
-
-    @property
-    def current_version(self) -> str:
-        return self.versions[-1].version
-
-    def schema(self, version: str) -> CollectorVersionSchema:
-        for candidate in self.versions:
-            if candidate.version == version:
-                return candidate
-        raise UnknownCollectorVersion(
-            f"collector {self.key} has no version {version!r} "
-            f"(known: {', '.join(self.version_names)})"
-        )

@@ -86,11 +86,10 @@ class Worker:
             return False
 
         logger.info(
-            "worker %s: claimed job %s (%s v%s) attempt %s",
+            "worker %s: claimed job %s (%s) attempt %s",
             self.worker_id,
             job.pk,
             job.collector_key,
-            job.collector_version,
             job.attempt_no,
         )
         self.execute(job)
@@ -110,10 +109,10 @@ class Worker:
             return
 
         try:
-            runner = registry.resolve(job.collector_key, job.collector_version)
-        except (registry.UnknownCollector, registry.UnknownCollectorVersion) as exc:
-            # The `(key, version)` invariant was broken by a deploy — a snapshot pointing at code
-            # that no longer exists. Fail loudly rather than substituting a nearby version.
+            runner = registry.resolve(job.collector_key)
+        except registry.UnknownCollector as exc:
+            # The invariant that every collector key resolves to code was broken by a deploy — a
+            # snapshot pointing at code that no longer exists. Fail loudly rather than guessing.
             logger.error("job %s: %s", job.pk, exc)
             self._finish(
                 job,

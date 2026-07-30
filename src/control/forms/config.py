@@ -1,9 +1,10 @@
 """Authoring form for Config.
 
-Validation here is a *convenience*, not the guarantee: enqueue re-validates against the version it
-actually resolves (§6). Catching a bad parameter set at authoring time is nicer than discovering
-it as a failed Job, but a Config authored against v1 can still become invalid when v2 ships — that
-case is meant to fail fast at enqueue, not to be prevented here.
+Validation here is a *convenience*, not the guarantee: enqueue re-validates against the schema it
+actually resolves (§6). Catching a bad parameter set at authoring time is nicer than discovering it
+as a failed Job, but a Config's raw parameters can still drift out of step with the code — the
+schema is edited in place as requirements change — and that case is meant to fail fast at enqueue,
+not to be prevented here.
 """
 
 from __future__ import annotations
@@ -34,10 +35,7 @@ class ConfigForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        known = [
-            (d.key, f"{d.display_name} — текущая v{d.current_version}")
-            for d in schemas.all_collectors()
-        ]
+        known = [(d.key, d.display_name) for d in schemas.all_collectors()]
         current = self.initial.get("collector_key") or getattr(self.instance, "collector_key", "")
         # A Config may point at a collector that has since been removed from the code. Keep the
         # stale value selectable so editing the rest of the row still works.
@@ -58,14 +56,11 @@ class ConfigForm(forms.ModelForm):
             return cleaned
 
         try:
-            version = schemas.current_version(key)
+            schemas.resolve_parameters(key, parameters)
         except schemas.UnknownCollector:
             self.add_error("collector_key", f"Сборщика {key!r} нет в кодовой базе.")
             return cleaned
-
-        try:
-            schemas.resolve_parameters(key, version, parameters)
         except schemas.ParameterError as exc:
             for message in exc.errors:
-                self.add_error("parameters", f"v{version}: {message}")
+                self.add_error("parameters", message)
         return cleaned

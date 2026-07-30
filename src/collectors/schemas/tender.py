@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from collectors.schemas.base import CollectorDescriptor, CollectorVersionSchema, ParamSpec
+from collectors.schemas.base import CollectorDescriptor, ParamSpec
 
 __all__ = [
     "CERTS_DIR",
@@ -211,15 +211,8 @@ def _descriptor_for(engine: str) -> CollectorDescriptor:
         key=key,
         display_name=f"Торги: {ENGINE_LABELS[engine]}",
         description=_DESCRIPTIONS[engine],
-        versions=(
-            CollectorVersionSchema(
-                key=key,
-                version="1.0",
-                schema_version=1,
-                summary=_SUMMARIES[engine],
-                params=_params_for(engine),
-            ),
-        ),
+        summary=_SUMMARIES[engine],
+        params=_params_for(engine),
     )
 
 

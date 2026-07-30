@@ -1,14 +1,7 @@
-"""`example_api` v2.0 — the current version.
+"""`example_api` — the reference collector.
 
-Differences from v1.0, and why they are a new version rather than an edit:
-
-* `dataset` is **required**. A Config authored against v1.0 no longer resolves, which is exactly
-  the "schedules survive collector upgrades, but a run with now-invalid params fails fast" case.
-* `since` narrows the pull.
-* `page_delay_seconds` exists so cancellation is observable in a running system — a run you can
-  actually catch in the act.
-
-v1.0 keeps running unchanged for every Job that snapshotted it.
+Fabricates rows instead of doing network I/O: the point is to exercise credential references,
+parameter validation and cooperative cancellation deterministically, not to prove that HTTP works.
 """
 
 from __future__ import annotations
@@ -18,12 +11,10 @@ import time
 from collectors.runners.base import CredentialMissing, RunContext, Runner, RunResult
 
 KEY = "example_api"
-VERSION = "2.0"
 
 
-class ExampleApiV2(Runner):
+class ExampleApi(Runner):
     key = KEY
-    version = VERSION
 
     def run(self, ctx: RunContext) -> RunResult:
         params = ctx.parameters
@@ -59,7 +50,7 @@ class ExampleApiV2(Runner):
             calls += 1
             rows += page_size
             ctx.logger.info(
-                "example_api v2.0 job=%s dataset=%s page=%s/%s url=%s%s since=%s",
+                "example_api job=%s dataset=%s page=%s/%s url=%s%s since=%s",
                 ctx.job_id,
                 dataset,
                 page,

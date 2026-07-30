@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 from django.utils import timezone
 
-from collectors import schemas
 from control.models import Collector, Config, Job, JobOrigin, JobStatus
 from control.services import EnqueueRefused, enqueue
 from control.services.enqueue import InvalidParamsPolicy
@@ -45,11 +44,9 @@ class TestPreconditions:
 
 
 class TestSnapshot:
-    def test_pins_the_current_version_and_resolves_parameters(self, config):
+    def test_resolves_parameters_against_the_collectors_schema(self, config):
         job = enqueue(config)
 
-        assert job.collector_version == schemas.current_version("example_api") == "2.0"
-        assert job.schema_version == 2
         assert job.config_id == config.pk
         assert job.config_revision == config.revision
         assert job.status == JobStatus.PENDING
@@ -87,7 +84,8 @@ class TestSnapshot:
 
 
 class TestInvalidParameters:
-    """A Config authored for v1.0 after v2.0 shipped: `dataset` is now required."""
+    """A Config whose raw parameters do not satisfy the collector's schema — edited directly,
+    bypassing the admin form's own validation, or predating a field that later became required."""
 
     @pytest.fixture
     def stale_config(self, make_config) -> Config:
@@ -107,7 +105,7 @@ class TestInvalidParameters:
         # The persisted diagnostic stays English — §6 names this exact wording, and it is data,
         # not UI. Only the human-readable parameter errors are translated.
         assert job.structured_error["type"] == "config_invalid"
-        assert job.structured_error["message"] == "config invalid for collector v2.0"
+        assert job.structured_error["message"] == "config invalid for collector example_api"
         assert job.structured_error["errors"] == ["dataset: обязательный параметр"]
         assert job.finished_at is not None
 

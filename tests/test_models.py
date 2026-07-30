@@ -14,9 +14,7 @@ pytestmark = pytest.mark.django_db
 def _job(config: Config, **overrides) -> Job:
     defaults = {
         "collector_key": config.collector_key,
-        "collector_version": "2.0",
         "effective_parameters": {"base_url": "https://x.test"},
-        "schema_version": 2,
         "config_id": config.pk,
         "config_revision": config.revision,
     }
@@ -67,7 +65,7 @@ class TestJobInvariants:
     def test_snapshot_fields_cannot_be_rewritten(self, config):
         job = _job(config)
         reloaded = Job.objects.get(pk=job.pk)
-        reloaded.collector_version = "1.0"
+        reloaded.collector_key = "something_else"
         with pytest.raises(ValueError, match="snapshot fields are immutable"):
             reloaded.save()
 

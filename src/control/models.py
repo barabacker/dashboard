@@ -434,24 +434,20 @@ class Job(models.Model):
     #: Immutable once the row exists. Guarded in `save()`.
     SNAPSHOT_FIELDS = (
         "collector_key",
-        "collector_version",
         "effective_parameters",
-        "schema_version",
         "config_id",
         "config_revision",
     )
 
     # --- snapshot (§4) ----------------------------------------------------------------
     collector_key = models.CharField("Сборщик", max_length=100, editable=False)
-    collector_version = models.CharField("Версия сборщика", max_length=32, editable=False)
     effective_parameters = models.JSONField(
         "Итоговые параметры",
         default=dict,
         editable=False,
-        help_text="Параметры, разрешённые по схеме версии: подставлены умолчания, пройдена "
+        help_text="Параметры, разрешённые по схеме сборщика: подставлены умолчания, пройдена "
         "проверка. Только *ссылки* на учётные данные — никогда не сами секреты.",
     )
-    schema_version = models.IntegerField("Версия схемы", default=0, editable=False)
     config_id = models.BigIntegerField(
         "Конфигурация",
         db_index=True,
@@ -543,10 +539,7 @@ class Job(models.Model):
         ]
 
     def __str__(self) -> str:
-        return (
-            f"Задача #{self.pk} · {self.collector_key} v{self.collector_version} "
-            f"· {self.get_status_display()}"
-        )
+        return f"Задача #{self.pk} · {self.collector_key} · {self.get_status_display()}"
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         loaded = getattr(self, "_loaded_values", None)

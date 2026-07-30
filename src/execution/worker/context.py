@@ -69,8 +69,6 @@ class DbRunContext(RunContext):
             job_id=job.pk,
             attempt_no=job.attempt_no,
             collector_key=job.collector_key,
-            collector_version=job.collector_version,
-            schema_version=job.schema_version,
             parameters=job.effective_parameters,
             logger=logging.getLogger(f"collectors.{job.collector_key}"),
         )

@@ -9,7 +9,7 @@ import pytest
 from django.utils import timezone
 
 from collectors.runners.base import Cancelled, RunResult
-from collectors.runners.tender_site_v1 import _JobControl
+from collectors.runners.tender_site import _JobControl
 from control.models import Config, Job, JobStatus
 from control.services import enqueue, request_cancel
 from execution.queue import LeaseLost, claim_job
@@ -48,34 +48,11 @@ class TestHappyPath:
         assert reloaded.last_run_at is not None
         assert reloaded.revision == 1, "a cache write is not an authored edit"
 
-    def test_runs_the_version_the_snapshot_pinned_not_the_current_one(self, config, worker):
-        """A Job snapshotted at v1.0 keeps running v1.0 after v2.0 shipped."""
-        job = enqueue(config)
-        Job.objects.filter(pk=job.pk).update(
-            collector_version="1.0",
-            schema_version=1,
-            effective_parameters={
-                "base_url": "https://x.test",
-                "path": "/items",
-                "page_size": 10,
-                "pages": 2,
-                "credential_ref": "",
-            },
-        )
-
-        worker.run_once()
-
-        reloaded = Job.objects.get(pk=job.pk)
-        assert reloaded.status == JobStatus.SUCCEEDED
-        # v1.0 knows nothing about datasets; v2.0 would have put one in the result.
-        assert "dataset" not in reloaded.result
-        assert reloaded.metrics["bytes"] == 20 * 128
-
 
 class TestFailures:
     def test_a_snapshot_pointing_at_missing_code_fails_loudly(self, config, worker):
         job = enqueue(config)
-        Job.objects.filter(pk=job.pk).update(collector_version="9.9")
+        Job.objects.filter(pk=job.pk).update(collector_key="gone")
 
         worker.run_once()
 
@@ -86,12 +63,12 @@ class TestFailures:
     def test_an_unhandled_runner_error_becomes_a_structured_failure(
         self, config, worker, monkeypatch
     ):
-        from collectors.runners import example_api_v2
+        from collectors.runners import example_api
 
         def boom(self, ctx):
             raise RuntimeError("upstream exploded")
 
-        monkeypatch.setattr(example_api_v2.ExampleApiV2, "run", boom)
+        monkeypatch.setattr(example_api.ExampleApi, "run", boom)
         job = enqueue(config)
 
         worker.run_once()
@@ -143,10 +120,10 @@ class TestFailures:
         assert "s3cr3t-value" not in str(reloaded.result)
 
     def test_a_failed_job_is_never_re_enqueued(self, config, worker, monkeypatch):
-        from collectors.runners import example_api_v2
+        from collectors.runners import example_api
 
         monkeypatch.setattr(
-            example_api_v2.ExampleApiV2,
+            example_api.ExampleApi,
             "run",
             lambda self, ctx: RunResult.failure(type="upstream", message="429"),
         )
@@ -208,14 +185,14 @@ class TestLeaseLoss:
             ctx.extend_lease()
 
     def test_a_worker_that_lost_its_lease_writes_nothing(self, config, worker, monkeypatch):
-        from collectors.runners import example_api_v2
+        from collectors.runners import example_api
 
         def steal_then_extend(self, ctx):
             Job.objects.filter(pk=ctx.job_id).update(claimed_by="someone-else")
             ctx.extend_lease()
             return RunResult.success()
 
-        monkeypatch.setattr(example_api_v2.ExampleApiV2, "run", steal_then_extend)
+        monkeypatch.setattr(example_api.ExampleApi, "run", steal_then_extend)
         job = enqueue(config)
 
         worker.run_once()

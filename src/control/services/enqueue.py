@@ -22,15 +22,15 @@ from control.models import Collector, Config, Job, JobOrigin, JobStatus, Schedul
 
 
 class InvalidParamsPolicy(Enum):
-    """What to do when the Config no longer satisfies the collector's current schema.
+    """What to do when the Config's raw parameters do not satisfy the collector's schema.
 
     §6 allows either. Which one is right depends on who asked:
 
     * ``REFUSE`` — an interactive "Run now". The user is right there; tell them and change
       nothing.
     * ``RECORD_FAILURE`` — a scheduled fire. Nobody is watching, and a silently skipped run is
-      worse than a visible failed one. This is what makes "schedules survive collector upgrades,
-      but a run with now-invalid params fails fast" observable.
+      worse than a visible failed one. This is what makes "a Config drifting out of step with the
+      code fails fast, rather than silently" observable.
 
     Neither ever enqueues a *runnable* job with a mismatched schema.
     """
@@ -89,7 +89,7 @@ def enqueue(
 
     # --- precondition 2: the collector exists in code and is not deprecated ------------
     try:
-        version = schemas.current_version(config.collector_key)
+        descriptor = schemas.get_collector(config.collector_key)
     except schemas.UnknownCollector:
         raise EnqueueRefused(
             "collector_unknown",
@@ -102,22 +102,18 @@ def enqueue(
             f"Сборщик {config.collector_key!r} выключен — новые задачи для него не создаются.",
         )
 
-    version_schema = schemas.schema(config.collector_key, version)
-
-    # --- precondition 3: params are valid for the version we just resolved -------------
+    # --- precondition 3: params are valid for the collector's current schema -----------
     try:
-        effective = version_schema.resolve(config.parameters)
+        effective = descriptor.resolve(config.parameters)
     except schemas.ParameterError as exc:
         if on_invalid_params is InvalidParamsPolicy.REFUSE:
             raise EnqueueRefused(
                 "params_invalid",
-                f"параметры не подходят версии сборщика v{version}",
+                "параметры не подходят схеме сборщика",
                 exc.errors,
             ) from None
         return _record_invalid_config_job(
             config=config,
-            version=version,
-            schema_version=version_schema.schema_version,
             errors=exc.errors,
             origin=origin,
             requested_by=requested_by,
@@ -129,9 +125,7 @@ def enqueue(
     return Job.objects.create(
         # snapshot (§4): everything needed to reproduce the run from this row alone
         collector_key=config.collector_key,
-        collector_version=version,
         effective_parameters=effective,
-        schema_version=version_schema.schema_version,
         config_id=config.pk,
         config_revision=config.revision,
         # origin
@@ -158,8 +152,6 @@ def _collector_enabled(key: str) -> bool:
 def _record_invalid_config_job(
     *,
     config: Config,
-    version: str,
-    schema_version: int,
     errors: Sequence[str],
     origin: str,
     requested_by: AbstractBaseUser | None,
@@ -180,9 +172,7 @@ def _record_invalid_config_job(
     now = timezone.now()
     job = Job.objects.create(
         collector_key=config.collector_key,
-        collector_version=version,
         effective_parameters={},
-        schema_version=schema_version,
         config_id=config.pk,
         config_revision=config.revision,
         origin=origin,
@@ -197,7 +187,7 @@ def _record_invalid_config_job(
         result={"raw_parameters": config.parameters},
         structured_error={
             "type": "config_invalid",
-            "message": f"config invalid for collector v{version}",
+            "message": f"config invalid for collector {config.collector_key}",
             "trace": "",
             "errors": list(errors),
         },

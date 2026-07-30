@@ -40,7 +40,7 @@ PARAM_FIELDS = (
 
 
 def _spec(engine: str, name: str):
-    return schemas.schema(collector_key(engine), "1.0").param(name)
+    return schemas.get_collector(collector_key(engine)).param(name)
 
 
 def _help(name: str, *, engine: str = "kendo") -> str:
@@ -139,7 +139,7 @@ class PlatformForm(forms.ModelForm):
 
         parameters = self._collect_parameters(key, cleaned)
         try:
-            schemas.resolve_parameters(key, schemas.current_version(key), parameters)
+            schemas.resolve_parameters(key, parameters)
         except schemas.UnknownCollector:
             self.add_error("collector_key", f"Сборщика {key!r} нет в кодовой базе.")
             return cleaned

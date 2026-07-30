@@ -50,8 +50,7 @@ class TestForm:
         platform = form.save()
 
         assert "listing_path" not in platform.parameters
-        version = schemas.current_version(platform.collector_key)
-        effective = schemas.resolve_parameters(platform.collector_key, version, platform.parameters)
+        effective = schemas.resolve_parameters(platform.collector_key, platform.parameters)
         assert effective["listing_path"] == "public/purchases-all/"
 
     def test_a_per_site_listing_path_is_stored(self):
@@ -138,7 +137,6 @@ class TestEnqueue:
 
         assert job.status == JobStatus.PENDING
         assert job.collector_key == "tender_kendo"
-        assert job.collector_version == "1.0"
         assert job.effective_parameters["domain"] == "https://bankrupt.seltim.ru"
         assert job.effective_parameters["listing_path"] == "lots"
         assert job.effective_parameters["concurrency"] == 1
@@ -164,7 +162,7 @@ class TestEndToEnd:
 
     def test_a_worker_runs_a_platform_and_records_what_it_found(self, monkeypatch):
         from collectors.engine import CrawlOutcome
-        from collectors.runners import tender_site_v1
+        from collectors.runners import tender_site
         from execution.worker import Worker
 
         seen = {}
@@ -176,7 +174,7 @@ class TestEndToEnd:
                 source=spec.source, start_url=spec.start_url, lots=12, requests=5, listing_pages=2
             )
 
-        monkeypatch.setattr(tender_site_v1, "crawl_site", _fake_crawl_site)
+        monkeypatch.setattr(tender_site, "crawl_site", _fake_crawl_site)
 
         platform = Platform.objects.create(
             name="Торги82",
@@ -208,7 +206,7 @@ class TestEndToEnd:
 
     def test_a_cancelled_crawl_lands_as_a_cancelled_job(self, monkeypatch):
         from collectors.engine import CrawlOutcome
-        from collectors.runners import tender_site_v1
+        from collectors.runners import tender_site
         from execution.worker import Worker
 
         def _fake_crawl_site(spec, **kwargs):
@@ -221,7 +219,7 @@ class TestEndToEnd:
                 source=spec.source, start_url=spec.start_url, lots=3, cancelled=True
             )
 
-        monkeypatch.setattr(tender_site_v1, "crawl_site", _fake_crawl_site)
+        monkeypatch.setattr(tender_site, "crawl_site", _fake_crawl_site)
 
         platform = Platform.objects.create(
             name="Аукционы Сибири",
@@ -311,5 +309,4 @@ class TestSeed:
         call_command("seed_platforms", verbosity=0)
 
         for platform in Platform.objects.all():
-            version = schemas.current_version(platform.collector_key)
-            schemas.resolve_parameters(platform.collector_key, version, platform.parameters)
+            schemas.resolve_parameters(platform.collector_key, platform.parameters)

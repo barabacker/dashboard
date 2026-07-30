@@ -127,7 +127,7 @@ class TestTick:
     def test_a_stale_config_records_a_failed_job_rather_than_silently_skipping(
         self, make_config, make_schedule
     ):
-        """The collector moved to v2.0 and the Config never gained `dataset`."""
+        """The Config's raw parameters never satisfied the schema's required `dataset`."""
         config = make_config(parameters={"base_url": "https://x.test"})
         make_schedule(config, cron="0 * * * *", last_fired_at=at(9))
 

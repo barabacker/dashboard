@@ -117,16 +117,12 @@ class RunContext(abc.ABC):
         job_id: int,
         attempt_no: int,
         collector_key: str,
-        collector_version: str,
-        schema_version: int,
         parameters: Mapping[str, Any],
         logger: logging.Logger | None = None,
     ) -> None:
         self.job_id = job_id
         self.attempt_no = attempt_no
         self.collector_key = collector_key
-        self.collector_version = collector_version
-        self.schema_version = schema_version
         self.parameters: Mapping[str, Any] = dict(parameters)
         self.logger = logger or logging.getLogger(f"collectors.{collector_key}")
 
@@ -167,14 +163,9 @@ class RunContext(abc.ABC):
 
 
 class Runner(abc.ABC):
-    """One `(key, version)` pair's implementation.
-
-    Historical versions stay in the tree unchanged forever: a Job snapshot from a year ago must
-    still resolve to runnable code.
-    """
+    """One collector's implementation. Exactly one per key — no version axis."""
 
     key: ClassVar[str]
-    version: ClassVar[str]
 
     @abc.abstractmethod
     def run(self, ctx: RunContext) -> RunResult:
