@@ -79,7 +79,15 @@ PLATFORMS: list[dict[str, Any]] = [
         "title": "ЭТП Регион (GloriaService)",
         "domain": "https://gloriaservice.ru",
     },
-    {"engine": "fogsoft", "title": "ЭТП Заказ РФ", "domain": "http://bankrot.zakazrf.ru"},
+    {
+        "engine": "fogsoft",
+        "title": "ЭТП Заказ РФ",
+        "domain": "http://bankrot.zakazrf.ru",
+        "enabled": False,
+        "note": "Пагинация работает исправно (проверено вживую 2026-07-30), но за 200 страниц "
+        "нашёлся только один лот, не помеченный как завершённый, — площадка фактически архив "
+        "закрытых торгов. Включить, если появятся живые лоты.",
+    },
     {"engine": "fogsoft", "title": "ЕЭТП / ets24.ru", "domain": "http://bankrupt.ets24.ru"},
     # --- Kendo-ETP ---------------------------------------------------------------------
     {"engine": "kendo", "title": "Альянс Трэйд", "domain": "https://trade-alliance.ru"},
