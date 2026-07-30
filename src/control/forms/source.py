@@ -1,8 +1,8 @@
-"""Authoring form for a trading platform.
+"""Authoring form for a source (a site to crawl).
 
-A platform *is* a Config — see `control.models.Platform`. What differs is how it is filled in:
-one field per site attribute instead of a JSON object, with the choices and defaults read from
-the collector's own schema so the form cannot drift from what enqueue will accept.
+A source *is* a Config — see `control.models.Source`. What differs is how it is filled in: one
+field per site attribute instead of a JSON object, with the choices and defaults read from the
+collector's own schema so the form cannot drift from what enqueue will accept.
 
 The fields are the union of the four tender schemas, and `clean()` keeps only the ones the
 chosen engine actually declares. That is why a Config authored here always validates: the same
@@ -23,7 +23,7 @@ from collectors.schemas.tender import (
     collector_key,
     engine_of,
 )
-from control.models import Platform
+from control.models import Source
 
 #: Site attributes, in the order they are asked for. Every name is a parameter of at least one
 #: tender schema; `_schema_params` decides which of them the chosen engine keeps.
@@ -52,7 +52,7 @@ def _help(name: str, *, engine: str = "kendo") -> str:
     return ""
 
 
-class PlatformForm(forms.ModelForm):
+class SourceForm(forms.ModelForm):
     collector_key = forms.ChoiceField(
         label="Движок",
         help_text="Семейство площадок, к которому относится сайт. От него зависит, "
@@ -110,9 +110,9 @@ class PlatformForm(forms.ModelForm):
     )
 
     class Meta:
-        model = Platform
+        model = Source
         fields = ["name", "collector_key", "enabled", "archived", "tags", "owner"]
-        labels = {"name": "Название площадки"}
+        labels = {"name": "Название источника"}
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -172,10 +172,10 @@ class PlatformForm(forms.ModelForm):
             parameters[name] = value
         return parameters
 
-    def save(self, commit: bool = True) -> Platform:
-        platform = super().save(commit=False)
-        platform.parameters = self.cleaned_data.get("parameters", platform.parameters)
+    def save(self, commit: bool = True) -> Source:
+        source = super().save(commit=False)
+        source.parameters = self.cleaned_data.get("parameters", source.parameters)
         if commit:
-            platform.save()
+            source.save()
             self.save_m2m()
-        return platform
+        return source
