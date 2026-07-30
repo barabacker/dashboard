@@ -241,15 +241,15 @@ class Config(models.Model):
         )
 
 
-class PlatformManager(models.Manager):
+class SourceManager(models.Manager):
     """Only the Configs that describe a trading platform."""
 
     def get_queryset(self) -> models.QuerySet[Config]:
         return super().get_queryset().filter(collector_key__startswith=TENDER_KEY_PREFIX)
 
 
-class Platform(Config):
-    """A trading platform to crawl — a Config, seen through a form built for sites.
+class Source(Config):
+    """A site to crawl — a Config, seen through a form built for sites.
 
     Deliberately **not** a table of its own. A site is "what to collect": its domain, listing
     path and TLS quirks are exactly the parameters the collector's schema declares, so storing
@@ -258,16 +258,21 @@ class Platform(Config):
     prevent.
 
     What this proxy adds is the surface: its own tab, and a form with a field per site attribute
-    instead of a JSON blob (see `control.forms.PlatformForm`).
+    instead of a JSON blob (see `control.forms.SourceForm`).
+
+    Named `Source` (not `Platform`, its original name): the manager still only shows tender
+    trading-platform sites for now (see the `collector_key__startswith` filter below), but the
+    label had to stop implying that every future kind of collected site is a "trading platform" —
+    it will not be, once a non-auction source is added.
     """
 
-    objects = PlatformManager()
+    objects = SourceManager()
 
     class Meta:
         proxy = True
         ordering = ["name"]
-        verbose_name = "Площадка"
-        verbose_name_plural = "Площадки"
+        verbose_name = "Источник"
+        verbose_name_plural = "Источники"
 
     @property
     def domain(self) -> str:
