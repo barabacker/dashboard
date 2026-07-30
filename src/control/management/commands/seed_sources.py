@@ -1,9 +1,9 @@
-"""Initial data: the platforms the temporary parser project already crawled.
+"""Initial data: the sites the temporary parser project already crawled.
 
 Typing thirty-one sites into a form is nobody's idea of onboarding, so the list the temporary
 project kept in `platforms.toml` is carried over once, here. This is *initial data*, not a source
-of truth: after the first run the platforms live in the database and are edited in the admin.
-Re-running the command adds what is missing and leaves existing platforms alone — it never
+of truth: after the first run the sites live in the database and are edited in the admin.
+Re-running the command adds what is missing and leaves existing sites alone — it never
 overwrites an edit.
 
 Sites the temporary project had switched off are created switched off, with the reason printed
@@ -19,10 +19,10 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from collectors.schemas.tender import collector_key
-from control.models import Config, Platform
+from control.models import Config, Source
 
 #: (engine, title, domain, extras). Extras carry only what differs from the engine defaults.
-PLATFORMS: list[dict[str, Any]] = [
+SOURCES: list[dict[str, Any]] = [
     # --- iTender / Fogsoft -------------------------------------------------------------
     {"engine": "fogsoft", "title": "Центр реализации", "domain": "https://bankrupt.centerr.ru"},
     {
@@ -131,7 +131,7 @@ PLATFORMS: list[dict[str, Any]] = [
 
 
 class Command(BaseCommand):
-    help = "Create the platforms carried over from the temporary parser project (idempotent)."
+    help = "Create the sources carried over from the temporary parser project (idempotent)."
 
     def add_arguments(self, parser) -> None:
         parser.add_argument(
@@ -145,12 +145,12 @@ class Command(BaseCommand):
         dry_run: bool = options["dry_run"]
         created, kept = 0, 0
 
-        for spec in PLATFORMS:
+        for spec in SOURCES:
             key = collector_key(spec["engine"])
             domain = spec["domain"]
             parameters = {"domain": domain, **spec.get("params", {})}
 
-            # The domain is the identity: a platform renamed in the admin must not be re-created
+            # The domain is the identity: a source renamed in the admin must not be re-created
             # here under its old name.
             if Config.objects.filter(parameters__domain=domain).exists():
                 kept += 1
@@ -161,7 +161,7 @@ class Command(BaseCommand):
             if spec.get("note"):
                 self.stdout.write(f"    {spec['note']}")
             if not dry_run:
-                Platform.objects.create(
+                Source.objects.create(
                     name=spec["title"],
                     collector_key=key,
                     parameters=parameters,
@@ -170,7 +170,7 @@ class Command(BaseCommand):
 
         prefix = "[dry-run] " if dry_run else ""
         self.stdout.write(
-            self.style.SUCCESS(f"{prefix}платформ создано: {created}, уже было: {kept}")
+            self.style.SUCCESS(f"{prefix}источников создано: {created}, уже было: {kept}")
         )
         if dry_run:
             transaction.set_rollback(True)
