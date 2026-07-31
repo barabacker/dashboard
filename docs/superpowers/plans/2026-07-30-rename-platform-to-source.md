@@ -1262,21 +1262,25 @@ Replace (currently within `UNFOLD["SIDEBAR"]["navigation"]`, the "Сбор да�
 item):
 
 ```python
-                    {
-                        "title": "Площадки",
-                        "icon": "language",
-                        "link": reverse_lazy("admin:control_platform_changelist"),
-                    },
+(
+    {
+        "title": "Площадки",
+        "icon": "language",
+        "link": reverse_lazy("admin:control_platform_changelist"),
+    },
+)
 ```
 
 with:
 
 ```python
-                    {
-                        "title": "Источники",
-                        "icon": "language",
-                        "link": reverse_lazy("admin:control_source_changelist"),
-                    },
+(
+    {
+        "title": "Источники",
+        "icon": "language",
+        "link": reverse_lazy("admin:control_source_changelist"),
+    },
+)
 ```
 
 - [ ] **Step 2: Verify**
