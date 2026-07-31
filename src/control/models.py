@@ -1,8 +1,8 @@
 """All persistence for the whole system lives here.
 
 `execution` owns runtime behavior and no models; it imports these. Keep framework glue thin and
-put invariants that must always hold — terminal states, snapshot immutability, revision bumps —
-in the model layer, where nothing can route around them.
+put invariants that must always hold — terminal states, snapshot immutability — in the model
+layer, where nothing can route around them.
 """
 
 from __future__ import annotations
