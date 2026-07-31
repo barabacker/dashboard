@@ -32,6 +32,35 @@ def _snapshot_values(names: Iterable[str], values: Sequence[Any]) -> dict[str, A
     }
 
 
+class _ChangeTrackedModel(models.Model):
+    """Base for models whose `save()` compares the row as loaded against in-memory edits.
+
+    `from_db` is identical for every subclass — stash what the row looked like when it was read —
+    so this is the one place that needs to be right, not three. Subclasses call `_remember()` at
+    the end of `save()` with whichever fields they track, and `_any_changed()` to ask, before that
+    update lands, whether any of them actually moved.
+    """
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instance = super().from_db(db, field_names, values)
+        instance._loaded_values = _snapshot_values(field_names, values)
+        return instance
+
+    def _any_changed(self, names: Iterable[str]) -> bool:
+        loaded = getattr(self, "_loaded_values", None)
+        if loaded is None:
+            return False
+        return any(name in loaded and loaded[name] != getattr(self, name) for name in names)
+
+    def _remember(self, names: Iterable[str]) -> None:
+        names = tuple(names)
+        self._loaded_values = _snapshot_values(names, [getattr(self, name) for name in names])
+
+
 # Stored values stay English — they are data, referenced by the queue SQL, the tests and
 # CLAUDE.md. Only the labels are Russian, because only labels are ever shown to a human.
 class JobStatus(models.TextChoices):
@@ -95,7 +124,7 @@ class Collector(models.Model):
         return f"{self.display_name} ({self.key})"
 
 
-class Source(models.Model):
+class Source(_ChangeTrackedModel):
     """A site, authored: domain, listing path and TLS quirks — the identity a crawl needs before
     behaviour (which collector, how many pages, how many requests at once) enters the picture.
 
@@ -171,32 +200,14 @@ class Source(models.Model):
         `Config.forget_job_outcomes` already use — because this is an echo of this Source's own
         edit, not an authored change to any one Config.
         """
-        changed = self._revisioned_changed()
+        changed = self._any_changed(self.REVISIONED_FIELDS)
         super().save(*args, **kwargs)
         if changed:
             Config.objects.filter(source=self).update(revision=F("revision") + 1)
-        tracked = self.REVISIONED_FIELDS
-        self._loaded_values = _snapshot_values(tracked, [getattr(self, name) for name in tracked])
-
-    @classmethod
-    def from_db(cls, db, field_names, values):
-        instance = super().from_db(db, field_names, values)
-        instance._loaded_values = _snapshot_values(field_names, values)
-        return instance
-
-    def _revisioned_changed(self) -> bool:
-        if self.pk is None:
-            return False
-        loaded = getattr(self, "_loaded_values", None)
-        if loaded is None:
-            return False
-        return any(
-            name in loaded and loaded[name] != getattr(self, name)
-            for name in self.REVISIONED_FIELDS
-        )
+        self._remember(self.REVISIONED_FIELDS)
 
 
-class Config(models.Model):
+class Config(_ChangeTrackedModel):
     """The primary business object: *what to collect*, authored by a human.
 
     Editable at any time. Editing never disturbs a running Job — the Job carries its own snapshot.
@@ -301,7 +312,7 @@ class Config(models.Model):
         an edit, or every run would inflate the revision the snapshots are compared against.
         """
         update_fields = kwargs.get("update_fields")
-        if self.pk is not None and self._revisioned_changed():
+        if self.pk is not None and self._any_changed(self.REVISIONED_FIELDS):
             touches_intent = update_fields is None or bool(
                 set(update_fields) & set(self.REVISIONED_FIELDS)
             )
@@ -310,23 +321,7 @@ class Config(models.Model):
                 if update_fields is not None:
                     kwargs["update_fields"] = list(set(update_fields) | {"revision"})
         super().save(*args, **kwargs)
-        tracked = (*self.REVISIONED_FIELDS, "revision")
-        self._loaded_values = _snapshot_values(tracked, [getattr(self, name) for name in tracked])
-
-    @classmethod
-    def from_db(cls, db, field_names, values):
-        instance = super().from_db(db, field_names, values)
-        instance._loaded_values = _snapshot_values(field_names, values)
-        return instance
-
-    def _revisioned_changed(self) -> bool:
-        loaded = getattr(self, "_loaded_values", None)
-        if loaded is None:
-            return False
-        return any(
-            name in loaded and loaded[name] != getattr(self, name)
-            for name in self.REVISIONED_FIELDS
-        )
+        self._remember((*self.REVISIONED_FIELDS, "revision"))
 
     @property
     def is_runnable(self) -> bool:
@@ -537,7 +532,7 @@ class Schedule(models.Model):
             raise ValidationError({"cron": f"некорректное cron-выражение {self.cron!r}"})
 
 
-class Job(models.Model):
+class Job(_ChangeTrackedModel):
     """One execution attempt of one Config, and the queue row that drives it.
 
     A separate aggregate, not a child of Config: it holds an immutable **snapshot** (§4) plus
@@ -663,16 +658,7 @@ class Job(models.Model):
             self._assert_snapshot_unchanged(loaded)
             self._assert_terminal_not_mutated(loaded)
         super().save(*args, **kwargs)
-        self._loaded_values = _snapshot_values(
-            (*self.SNAPSHOT_FIELDS, "status"),
-            [getattr(self, name) for name in (*self.SNAPSHOT_FIELDS, "status")],
-        )
-
-    @classmethod
-    def from_db(cls, db, field_names, values):
-        instance = super().from_db(db, field_names, values)
-        instance._loaded_values = _snapshot_values(field_names, values)
-        return instance
+        self._remember((*self.SNAPSHOT_FIELDS, "status"))
 
     def _assert_snapshot_unchanged(self, loaded: dict[str, Any]) -> None:
         changed = [
