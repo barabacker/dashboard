@@ -141,9 +141,9 @@ UNFOLD = {
                 "title": "Сбор данных",
                 "items": [
                     {
-                        "title": "Площадки",
+                        "title": "Источники",
                         "icon": "language",
-                        "link": reverse_lazy("admin:control_platform_changelist"),
+                        "link": reverse_lazy("admin:control_source_changelist"),
                     },
                     {
                         "title": "Конфигурации",
