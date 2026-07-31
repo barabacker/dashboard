@@ -130,6 +130,36 @@ class TestConfigFormWithSource:
         assert not form.is_valid()
         assert "source" in form.errors
 
+    def test_a_blank_parameters_field_defaults_to_empty_dict(self):
+        """The auto-generated JSONField turns an empty textarea into `None`, not `{}` — left
+
+        uncoerced, that `None` sails past validation (the model field is `blank=True`) and hits a
+        NOT NULL constraint at the database instead of a form error.
+        """
+        source = Source.objects.create(name="Торги82", domain="https://lot.torgi82.ru")
+        form = ConfigForm(
+            data={
+                "name": "Демо",
+                "collector_key": "tender_kendo",
+                "source": source.pk,
+                "parameters": "",
+                "enabled": "on",
+            }
+        )
+        assert form.is_valid(), form.errors
+        assert form.save().parameters == {}
+
+    def test_collector_key_offers_a_dropdown_of_known_collectors(self):
+        choices = {value for value, _label in ConfigForm().fields["collector_key"].choices}
+        assert "example_api" in choices
+        assert "tender_kendo" in choices
+
+    def test_a_stale_collector_key_stays_selectable_when_editing(self):
+        config = Config.objects.create(name="Демо", collector_key="gone", parameters={})
+        form = ConfigForm(instance=config)
+        choices = {value for value, _label in form.fields["collector_key"].choices}
+        assert "gone" in choices
+
 
 class TestOneToMany:
     def test_one_source_can_back_several_named_profiles(self):

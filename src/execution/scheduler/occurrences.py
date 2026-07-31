@@ -1,3 +1,9 @@
+"""Cron arithmetic — the pure part of the scheduler.
+
+Kept apart from the transaction and the enqueue on purpose: "which occurrence is due" is a
+function of a cron string, a timezone and two instants, and it should be testable as one.
+"""
+
 from __future__ import annotations
 
 from datetime import datetime

@@ -2,7 +2,7 @@
 
 One runner per parser family, all four sharing this implementation: the difference between them
 is which engine class the site is crawled with, and that is a single attribute. The site itself
-is not code — it arrives in the snapshot as `domain` / `listing_path` / TLS parameters.
+is not code — it arrives in the snapshot as `domain` / `start_url` / TLS parameters.
 
 The runner is the seam between the job control and the engine. It owns three translations and
 nothing else:
