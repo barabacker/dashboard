@@ -37,22 +37,8 @@ class TestDueOccurrences:
         assert schedule.last_fired_at is None
         assert due_occurrences(schedule, now=at(12)) == []
 
-    def test_lists_every_missed_occurrence_under_fire_missed(self, config, make_schedule):
-        schedule = make_schedule(
-            config,
-            cron="0 * * * *",
-            catchup_policy=CatchupPolicy.FIRE_MISSED,
-            last_fired_at=at(9),
-        )
-        assert due_occurrences(schedule, now=at(12, 30)) == [at(10), at(11), at(12)]
-
-    def test_keeps_only_the_latest_under_skip_to_now(self, config, make_schedule):
-        schedule = make_schedule(
-            config,
-            cron="0 * * * *",
-            catchup_policy=CatchupPolicy.SKIP_TO_NOW,
-            last_fired_at=at(9),
-        )
+    def test_keeps_only_the_latest_occurrence(self, config, make_schedule):
+        schedule = make_schedule(config, cron="0 * * * *", last_fired_at=at(9))
         assert due_occurrences(schedule, now=at(12, 30)) == [at(12)]
 
     def test_nothing_is_due_before_the_next_occurrence(self, config, make_schedule):
@@ -65,20 +51,14 @@ class TestDueOccurrences:
             config,
             cron="0 2 * * *",
             timezone="Europe/Berlin",
-            catchup_policy=CatchupPolicy.FIRE_MISSED,
             last_fired_at=at(0, day=5),
         )
         occurrences = due_occurrences(schedule, now=at(12, day=5))
         assert [o.astimezone(UTC) for o in occurrences] == [at(1, day=5)]
 
     def test_catch_up_is_capped(self, config, make_schedule):
-        schedule = make_schedule(
-            config,
-            cron="* * * * *",
-            catchup_policy=CatchupPolicy.FIRE_MISSED,
-            last_fired_at=at(0),
-        )
-        assert len(due_occurrences(schedule, now=at(12), max_catchup=10)) == 10
+        schedule = make_schedule(config, cron="* * * * *", last_fired_at=at(0))
+        assert due_occurrences(schedule, now=at(12), max_catchup=10) == [at(0, 10)]
 
 
 class TestTick:
