@@ -1,10 +1,10 @@
-"""Authoring form for a `Source` — a site's identity: domain, listing path, TLS quirks.
+"""Authoring form for a `Source` — a site's identity: domain, start URL, TLS quirks.
 
 Behaviour (which collector, `max_pages`, `fetch_details`, ...) belongs to a `Config` profile that
 references this `Source`, not to the `Source` itself — see `control.forms.ConfigForm` for that
-side. Keeping the two forms apart mirrors the model split (`control.models.Source` /
-`control.models.Config.source`): a `Source` never carries a `collector_key` and never resolves
-against a schema.
+side. `extra_ca_cert`/`skip_tls_verify` are declared here as their own fields even though they are
+stored together inside `Source.tls_options`: the split is a database-shape decision, not something
+the person filling the form needs to see.
 """
 
 from __future__ import annotations
@@ -24,7 +24,12 @@ class SourceForm(forms.ModelForm):
         help_text="Имя PEM-файла из collectors/certs с промежуточным сертификатом, который сайт "
         "не отдаёт сам. Пусто — обычный набор корневых сертификатов.",
     )
-    listing_path = forms.CharField(
+    skip_tls_verify = forms.BooleanField(
+        label="Не проверять сертификат",
+        required=False,
+        help_text="Полностью отключить проверку сертификата для этого сайта.",
+    )
+    start_url = forms.CharField(
         label="Путь к листингу",
         max_length=200,
         required=False,
@@ -34,7 +39,7 @@ class SourceForm(forms.ModelForm):
 
     class Meta:
         model = Source
-        fields = ["name", "domain", "listing_path", "extra_ca_cert", "skip_tls_verify", "archived"]
+        fields = ["name", "domain", "start_url"]
         labels = {"name": "Название источника"}
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -42,3 +47,20 @@ class SourceForm(forms.ModelForm):
         self.fields["extra_ca_cert"].choices = [("", "— обычный набор корневых —")] + [
             (name, name) for name in available_certs()
         ]
+        if self.instance.pk:
+            self.fields["extra_ca_cert"].initial = self.instance.tls_options.get(
+                "extra_ca_cert", ""
+            )
+            self.fields["skip_tls_verify"].initial = self.instance.tls_options.get(
+                "skip_tls_verify", False
+            )
+
+    def save(self, commit: bool = True) -> Source:
+        source = super().save(commit=False)
+        source.tls_options = {
+            "extra_ca_cert": self.cleaned_data.get("extra_ca_cert", ""),
+            "skip_tls_verify": self.cleaned_data.get("skip_tls_verify", False),
+        }
+        if commit:
+            source.save()
+        return source

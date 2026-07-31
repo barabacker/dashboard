@@ -20,7 +20,7 @@ def _source_form_data(**overrides):
     data = {
         "name": "Центр реализации",
         "domain": "https://bankrupt.centerr.ru",
-        "listing_path": "",
+        "start_url": "",
         "extra_ca_cert": "",
         "skip_tls_verify": False,
     }
@@ -35,33 +35,33 @@ class TestSourceForm:
         source = form.save()
 
         assert source.domain == "https://bankrupt.centerr.ru"
-        assert source.listing_path == ""
-        assert source.skip_tls_verify is False
+        assert source.start_url == ""
+        assert source.tls_options.get("skip_tls_verify") is False
 
     def test_a_missing_domain_is_refused(self):
         form = SourceForm(data=_source_form_data(domain=""))
         assert not form.is_valid()
         assert "domain" in form.errors
 
-    def test_a_per_site_listing_path_is_stored(self):
+    def test_a_per_site_start_url_is_stored(self):
         form = SourceForm(
             data=_source_form_data(
                 name="Объединённые системы торгов",
                 domain="https://sistematorg.com",
-                listing_path="tradelist.php",
+                start_url="tradelist.php",
             )
         )
         assert form.is_valid(), form.errors
-        assert form.save().listing_path == "tradelist.php"
+        assert form.save().start_url == "tradelist.php"
 
     def test_editing_shows_what_is_authored(self):
         source = Source.objects.create(
-            name="Промконсалт", domain="https://promkonsalt.ru", listing_path="tradelist.php"
+            name="Промконсалт", domain="https://promkonsalt.ru", start_url="tradelist.php"
         )
         form = SourceForm(instance=source)
 
         assert form.initial["domain"] == "https://promkonsalt.ru"
-        assert form.initial["listing_path"] == "tradelist.php"
+        assert form.initial["start_url"] == "tradelist.php"
 
     def test_extra_ca_cert_offers_the_shipped_certificates(self):
         choices = {value for value, _label in SourceForm().fields["extra_ca_cert"].choices}
