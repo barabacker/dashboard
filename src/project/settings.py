@@ -198,6 +198,13 @@ UNFOLD = {
 WORKER_LEASE_SECONDS = env("WORKER_LEASE_SECONDS")
 WORKER_POLL_SECONDS = env("WORKER_POLL_SECONDS")
 
+# --- Collected-data store -------------------------------------------------------------
+# Lots (and, later, other collected item types) live in Mongo, not Postgres: their shape varies
+# per collector family, so a document store beats a table with a column per possible field.
+# Postgres stays the control-plane store (Config/Job/Schedule) — see control/models.py.
+MONGO_URI = env("MONGO_URI")
+MONGO_DB_NAME = env("MONGO_DB_NAME")
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

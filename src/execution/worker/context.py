@@ -20,7 +20,7 @@ from django.db import connections
 from collectors.runners.base import CredentialMissing, RunContext
 from control.models import Job
 from execution.queue import LeaseLost, read_cancel_flag, renew_lease
-from execution.worker.lot_sink import DbLotSink
+from execution.worker.mongo_lot_sink import MongoLotSink
 
 logger = logging.getLogger(__name__)
 
@@ -87,12 +87,13 @@ class DbRunContext(RunContext):
         self._cancel_cached = _query(read_cancel_flag, self.job_id)
         return self._cancel_cached
 
-    def open_lot_sink(self) -> DbLotSink:
-        """The database sink. Built here because only `execution` may import models.
+    def open_lot_sink(self) -> MongoLotSink:
+        """The collected-data sink. Built here because only `execution` wires storage in.
 
-        One per run, carrying this Job's id so a stored lot records which run last saw it.
+        One per run, carrying this Job's id so a stored lot records which run last saw it. Lots
+        live in Mongo (`MongoLotSink`), not Postgres — see `execution/worker/mongo_lot_sink.py`.
         """
-        return DbLotSink(job_id=self.job_id)
+        return MongoLotSink(job_id=self.job_id)
 
     def resolve_credential(self, reference: str) -> str:
         """Secrets come from the environment at execution time, never from the snapshot (§4).

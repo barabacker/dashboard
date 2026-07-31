@@ -111,8 +111,9 @@ crawled; after that they live in the admin.
 
 A run crawls for real, honours cancellation between requests and extends its lease as it goes. It
 reports what it found — `rows`, `calls`, `listing_pages`, and a few lot ids in `Job.result` — and
-stores the lots via `Lot` / `DbLotSink`; `Job.result` carries `"stored": true` (or `false` for the
-rare run with no sink attached) so a green Job never overstates what happened.
+stores the lots via `MongoLotSink` (Mongo, not Postgres — a lot's shape varies by collector family,
+which fights a fixed-column table); `Job.result` carries `"stored": true` (or `false` for the rare
+run with no sink attached) so a green Job never overstates what happened.
 
 ## Commands
 

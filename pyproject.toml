@@ -18,6 +18,7 @@ dependencies = [
     "certifi>=2026.7.22",
     "tenacity>=9.1.4",
     "django-unfold>=0.102.0",
+    "motor>=3.7.1",
 ]
 
 [dependency-groups]
@@ -27,6 +28,7 @@ dev = [
     "ruff>=0.9",
     "import-linter>=2.1",
     "pre-commit>=4.0",
+    "mongomock-motor>=0.0.36",
 ]
 
 # src layout: `uv sync` installs the project in editable mode, which is what puts `collectors`,
