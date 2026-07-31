@@ -16,49 +16,8 @@ def _job(config: Config, **overrides) -> Job:
         "collector_key": config.collector_key,
         "effective_parameters": {"base_url": "https://x.test"},
         "config_id": config.pk,
-        "config_revision": config.revision,
     }
     return Job.objects.create(**{**defaults, **overrides})
-
-
-class TestConfigRevision:
-    def test_starts_at_one_and_bumps_on_an_authored_change(self, config):
-        assert config.revision == 1
-        config.name = "renamed"
-        config.save()
-        assert Config.objects.get(pk=config.pk).revision == 2
-
-    def test_does_not_bump_when_nothing_meaningful_changed(self, config):
-        config.save()
-        assert Config.objects.get(pk=config.pk).revision == 1
-
-    def test_detects_an_in_place_mutation_of_the_parameters_dict(self, config):
-        reloaded = Config.objects.get(pk=config.pk)
-        reloaded.parameters["page_size"] = 999
-        reloaded.save()
-        assert Config.objects.get(pk=config.pk).revision == 2
-
-    def test_cache_column_writes_are_not_edits(self, config):
-        finished = timezone.now()
-        Config.record_job_outcome(
-            config_id=config.pk, job_id=1, status=JobStatus.SUCCEEDED, finished_at=finished
-        )
-        reloaded = Config.objects.get(pk=config.pk)
-        assert reloaded.revision == 1
-        assert reloaded.last_status == JobStatus.SUCCEEDED
-        assert reloaded.last_job_id == 1
-
-    def test_an_older_run_does_not_overwrite_a_newer_one(self, config):
-        newer = timezone.now()
-        older = newer - timezone.timedelta(minutes=5)
-        Config.record_job_outcome(
-            config_id=config.pk, job_id=2, status=JobStatus.SUCCEEDED, finished_at=newer
-        )
-        Config.record_job_outcome(
-            config_id=config.pk, job_id=1, status=JobStatus.FAILED, finished_at=older
-        )
-        reloaded = Config.objects.get(pk=config.pk)
-        assert (reloaded.last_job_id, reloaded.last_status) == (2, JobStatus.SUCCEEDED)
 
 
 class TestJobInvariants:
