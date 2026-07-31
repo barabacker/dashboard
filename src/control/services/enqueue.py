@@ -78,10 +78,6 @@ def enqueue(
     # --- precondition 1: the Config is allowed to run at all --------------------------
     # `reason` stays an English code — it is an API, matched in tests and in CLAUDE.md. Only the
     # message is Russian, because only the message reaches a human.
-    if config.archived:
-        raise EnqueueRefused(
-            "config_archived", f"Конфигурация {config.name!r} в архиве — запуск невозможен."
-        )
     if not config.enabled:
         raise EnqueueRefused(
             "config_disabled", f"Конфигурация {config.name!r} отключена — запуск невозможен."
@@ -127,7 +123,6 @@ def enqueue(
         collector_key=config.collector_key,
         effective_parameters=effective,
         config_id=config.pk,
-        config_revision=config.revision,
         # origin
         origin=origin,
         schedule_id=schedule.pk if schedule else None,
@@ -174,7 +169,6 @@ def _record_invalid_config_job(
         collector_key=config.collector_key,
         effective_parameters={},
         config_id=config.pk,
-        config_revision=config.revision,
         origin=origin,
         schedule_id=schedule.pk if schedule else None,
         fire_time=fire_time,
@@ -191,9 +185,5 @@ def _record_invalid_config_job(
             "trace": "",
             "errors": list(errors),
         },
-    )
-    # This Job is born terminal, so nothing downstream will ever refresh the cache columns.
-    Config.record_job_outcome(
-        config_id=config.pk, job_id=job.pk, status=job.status, finished_at=now
     )
     return job
