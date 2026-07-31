@@ -29,7 +29,6 @@ def make_config(db):
             "collector_key": "example_api",
             "parameters": dict(VALID_PARAMS),
             "enabled": True,
-            "archived": False,
         }
         return Config.objects.create(**{**defaults, **overrides})
 
