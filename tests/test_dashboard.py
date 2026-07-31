@@ -141,3 +141,32 @@ def test_a_family_with_no_matching_config_does_not_render_its_heading(client, us
     response = client.get(reverse("dashboard:index"), {"q": "Alpha"})
     assert "Пример: HTTP API".encode() in response.content
     assert "Торги: iTender (Fogsoft)".encode() not in response.content
+
+
+def test_run_selected_enqueues_a_job_for_each_selected_config(client, user, make_config):
+    a = make_config(name="a")
+    b = make_config(name="b")
+    client.force_login(user)
+    response = client.post(
+        reverse("dashboard:run_selected"), {"config_id": [a.pk, b.pk]}, follow=True
+    )
+    assert response.status_code == 200
+    assert Job.objects.filter(config_id=a.pk, status=JobStatus.PENDING).count() == 1
+    assert Job.objects.filter(config_id=b.pk, status=JobStatus.PENDING).count() == 1
+
+
+def test_run_selected_refuses_a_disabled_config_without_creating_a_job(client, user, make_config):
+    disabled = make_config(name="off", enabled=False)
+    client.force_login(user)
+    response = client.post(
+        reverse("dashboard:run_selected"), {"config_id": [disabled.pk]}, follow=True
+    )
+    assert Job.objects.count() == 0
+    assert "Отказано".encode() in response.content
+
+
+def test_run_selected_with_nothing_checked_creates_no_job(client, user):
+    client.force_login(user)
+    response = client.post(reverse("dashboard:run_selected"), {}, follow=True)
+    assert Job.objects.count() == 0
+    assert "Ничего не выбрано".encode() in response.content

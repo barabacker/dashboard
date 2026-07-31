@@ -27,76 +27,102 @@
     {% endif %}
   </form>
 
-  {% for group in grouped_configs %}
-    <details open class="mb-4 rounded-default border border-base-200 shadow-xs dark:border-base-800 bg-white dark:bg-base-900 overflow-hidden">
-      <summary class="cursor-pointer select-none px-3 py-2 font-semibold text-important border-b border-base-200 dark:border-base-800">
-        {{ group.label }}
-        <span class="text-base-400 dark:text-base-500 font-normal">({{ group.configs|length }})</span>
-      </summary>
-      <div class="overflow-x-auto">
-        <table class="w-full border-spacing-none border-separate whitespace-nowrap">
-          <thead>
-            <tr>
-              <th class="align-middle font-semibold py-2 px-3 text-left text-important">Название</th>
-              <th class="align-middle font-semibold py-2 px-3 text-left text-important">Состояние</th>
-              <th class="align-middle font-semibold py-2 px-3 text-left text-important">Последний запуск</th>
-              <th class="align-middle font-semibold py-2 px-3 text-left text-important">Когда</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for config in group.configs %}
-              <tr class="border-t border-base-200 dark:border-base-800">
-                <td class="px-3 py-2">
-                  <a href="{% url 'admin:control_config_change' config.pk %}" class="text-important hover:underline">{{ config.name }}</a>
-                </td>
-                <td class="px-3 py-2">
-                  {% if config.enabled %}
-                    <span class="text-important">включена</span>
-                  {% else %}
-                    <span class="text-base-400 dark:text-base-500">отключена</span>
-                  {% endif %}
-                </td>
-                <td class="px-3 py-2">
-                  {% if config.latest_job_status %}
-                    {% include "dashboard/_badge.html" with variant=config.latest_job_status|dashboard_status_variant text=config.latest_job_label %}
-                    <a class="ml-1 text-base-400 dark:text-base-500 hover:underline" href="{% url 'admin:control_job_change' config.latest_job_id %}">#{{ config.latest_job_id }}</a>
-                  {% else %}
-                    <span class="text-base-400 dark:text-base-500">не запускалась</span>
-                  {% endif %}
-                </td>
-                <td class="px-3 py-2 text-base-500 dark:text-base-400">{{ config.latest_job_at|default:"—" }}</td>
-                <td class="px-3 py-2 text-right">
-                  {% if config.active_job_id %}
-                    {% if config.active_job_cancel_requested %}
-                      <span class="text-base-400 dark:text-base-500 text-sm">останавливается…</span>
+  <form method="post" action="{% url 'dashboard:run_selected' %}">
+    {% csrf_token %}
+    <input type="hidden" name="next_qs" value="{{ request.GET.urlencode }}">
+
+    <div class="mb-3 flex items-center gap-3">
+      <label class="inline-flex items-center gap-1.5 text-sm text-important">
+        <input type="checkbox" onclick="dashboardToggleAll(this)"> Выбрать все
+      </label>
+      <button type="submit" class="font-medium inline-flex items-center gap-1 rounded-default justify-center whitespace-nowrap cursor-pointer px-3 py-2 border border-base-200 bg-primary-600 border-transparent text-white hover:bg-primary-600/80">
+        Запустить выбранные
+      </button>
+    </div>
+
+    {% for group in grouped_configs %}
+      <details open class="mb-4 rounded-default border border-base-200 shadow-xs dark:border-base-800 bg-white dark:bg-base-900 overflow-hidden">
+        <summary class="cursor-pointer select-none px-3 py-2 font-semibold text-important border-b border-base-200 dark:border-base-800">
+          {{ group.label }}
+          <span class="text-base-400 dark:text-base-500 font-normal">({{ group.configs|length }})</span>
+        </summary>
+        <div class="overflow-x-auto">
+          <table class="w-full border-spacing-none border-separate whitespace-nowrap">
+            <thead>
+              <tr>
+                <th class="w-px px-3 py-2"></th>
+                <th class="align-middle font-semibold py-2 px-3 text-left text-important">Название</th>
+                <th class="align-middle font-semibold py-2 px-3 text-left text-important">Состояние</th>
+                <th class="align-middle font-semibold py-2 px-3 text-left text-important">Последний запуск</th>
+                <th class="align-middle font-semibold py-2 px-3 text-left text-important">Когда</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for config in group.configs %}
+                <tr class="border-t border-base-200 dark:border-base-800">
+                  <td class="px-3 py-2">
+                    <input type="checkbox" name="config_id" value="{{ config.pk }}"
+                           {% if not config.enabled or config.active_job_id %}disabled{% endif %}>
+                  </td>
+                  <td class="px-3 py-2">
+                    <a href="{% url 'admin:control_config_change' config.pk %}" class="text-important hover:underline">{{ config.name }}</a>
+                    {% if config.active_job_id %}
+                      {% include "dashboard/_badge.html" with variant="info" text="в работе" %}
+                    {% endif %}
+                  </td>
+                  <td class="px-3 py-2">
+                    {% if config.enabled %}
+                      <span class="text-important">включена</span>
                     {% else %}
-                      <form method="post" action="{% url 'dashboard:cancel_job' config.active_job_id %}">
-                        {% csrf_token %}
-                        <button type="submit" class="font-medium inline-flex items-center gap-1 rounded-default justify-center whitespace-nowrap cursor-pointer px-2.5 py-1.5 text-sm border border-red-600 bg-red-600 text-white hover:bg-red-600/80">
+                      <span class="text-base-400 dark:text-base-500">отключена</span>
+                    {% endif %}
+                  </td>
+                  <td class="px-3 py-2">
+                    {% if config.latest_job_status %}
+                      {% include "dashboard/_badge.html" with variant=config.latest_job_status|dashboard_status_variant text=config.latest_job_label %}
+                      <a class="ml-1 text-base-400 dark:text-base-500 hover:underline" href="{% url 'admin:control_job_change' config.latest_job_id %}">#{{ config.latest_job_id }}</a>
+                    {% else %}
+                      <span class="text-base-400 dark:text-base-500">не запускалась</span>
+                    {% endif %}
+                  </td>
+                  <td class="px-3 py-2 text-base-500 dark:text-base-400">{{ config.latest_job_at|default:"—" }}</td>
+                  <td class="px-3 py-2 text-right">
+                    {% if config.active_job_id %}
+                      {% if config.active_job_cancel_requested %}
+                        <span class="text-base-400 dark:text-base-500 text-sm">останавливается…</span>
+                      {% else %}
+                        <button type="submit" formaction="{% url 'dashboard:cancel_job' config.active_job_id %}"
+                                class="font-medium inline-flex items-center gap-1 rounded-default justify-center whitespace-nowrap cursor-pointer px-2.5 py-1.5 text-sm border border-red-600 bg-red-600 text-white hover:bg-red-600/80">
                           Остановить
                         </button>
-                      </form>
-                    {% endif %}
-                  {% else %}
-                    <form method="post" action="{% url 'dashboard:run_now' config.pk %}">
-                      {% csrf_token %}
-                      <button type="submit" {% if not config.enabled %}disabled{% endif %}
+                      {% endif %}
+                    {% else %}
+                      <button type="submit" formaction="{% url 'dashboard:run_now' config.pk %}"
+                              {% if not config.enabled %}disabled{% endif %}
                               class="font-medium inline-flex items-center gap-1 rounded-default justify-center whitespace-nowrap {% if not config.enabled %}cursor-not-allowed opacity-50{% else %}cursor-pointer{% endif %} px-2.5 py-1.5 text-sm border border-base-200 bg-white shadow-xs text-important dark:border-base-700 dark:bg-transparent hover:bg-base-100/80 dark:hover:bg-base-800/80">
                         Запустить
                       </button>
-                    </form>
-                  {% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </details>
-  {% empty %}
-    <p class="text-base-500 dark:text-base-400">Ничего не найдено.</p>
-  {% endfor %}
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    {% empty %}
+      <p class="text-base-500 dark:text-base-400">Ничего не найдено.</p>
+    {% endfor %}
+  </form>
 
   {% include "dashboard/_jobs.html" %}
+
+  <script>
+    function dashboardToggleAll(master) {
+      master.form.querySelectorAll('input[name="config_id"]:not(:disabled)').forEach(function (cb) {
+        cb.checked = master.checked;
+      });
+    }
+  </script>
 {% endblock %}

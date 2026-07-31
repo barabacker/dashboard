@@ -16,6 +16,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, OuterRef, Subquery
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from collectors import schemas
@@ -50,6 +51,14 @@ def _collector_label(key: str) -> str:
         return schemas.get_collector(key).display_name
     except schemas.UnknownCollector:
         return key
+
+
+def _redirect_preserving_filter(request: HttpRequest) -> HttpResponse:
+    url = reverse("dashboard:index")
+    next_qs = request.POST.get("next_qs", "")
+    if next_qs:
+        url = f"{url}?{next_qs}"
+    return redirect(url)
 
 
 def _filtered_configs(request: HttpRequest):
@@ -131,7 +140,38 @@ def run_now(request: HttpRequest, pk: int) -> HttpResponse:
         messages.error(request, f"{config.name}: {exc}{detail}")
     else:
         messages.success(request, f"Задача #{job.pk} поставлена в очередь для «{config.name}».")
-    return redirect("dashboard:index")
+    return _redirect_preserving_filter(request)
+
+
+@staff_member_required
+@require_POST
+def run_selected(request: HttpRequest) -> HttpResponse:
+    """Bulk "Запустить выбранные": one `enqueue()` per checked config, one summary message."""
+    ids = []
+    for raw in request.POST.getlist("config_id"):
+        try:
+            ids.append(int(raw))
+        except ValueError:
+            continue
+
+    enqueued, refused = 0, 0
+    for config in Config.objects.filter(pk__in=ids):
+        try:
+            enqueue(config, origin=JobOrigin.MANUAL, requested_by=request.user)
+        except EnqueueRefused:
+            refused += 1
+        else:
+            enqueued += 1
+
+    if not ids:
+        messages.warning(request, "Ничего не выбрано.")
+    else:
+        if enqueued:
+            messages.success(request, f"Поставлено в очередь: {enqueued}.")
+        if refused:
+            messages.warning(request, f"Отказано: {refused} — проверьте состояние конфигураций.")
+
+    return _redirect_preserving_filter(request)
 
 
 @staff_member_required
@@ -151,7 +191,7 @@ def cancel_job(request: HttpRequest, pk: int) -> HttpResponse:
         messages.warning(
             request, f"Задача #{job.pk} уже завершена ({job.get_status_display().lower()})."
         )
-    return redirect("dashboard:index")
+    return _redirect_preserving_filter(request)
 
 
 def _status_counts() -> list[dict[str, object]]:
