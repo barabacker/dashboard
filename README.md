@@ -93,7 +93,7 @@ Russian and what is deliberately not" in [`CLAUDE.md`](CLAUDE.md) before adding 
 
 * **`/admin/`** — the primary UI. Configs with schedules inline, Job history, and a Collector page
   that shows the parameter schema straight from the code.
-* **`/admin/control/platform/`** — «Площадки»: the trading platforms to crawl. The same Configs,
+* **`/admin/control/source/`** — «Источники»: the trading platforms to crawl. The same Configs,
   asked for as sites — domain, listing path, TLS quirks — instead of as a JSON object.
 * **`/dashboard/`** — a small HTMX page: what each Config last did, what is running now, "Run now"
   and "Cancel". Actions are plain form POSTs; HTMX only auto-refreshes the job panel.
@@ -108,8 +108,8 @@ Four collectors ship for bankruptcy-auction platforms, one per parser family —
 `src/collectors/engine/` and stays framework-free.
 
 A **collector is the engine; a site is data.** Its domain, listing path and TLS quirks are
-ordinary parameters, so adding a platform is filling in a form — there is no site list in the
-repository. `make platforms` carries over the thirty-three sites the parser project already
+ordinary parameters, so adding a source is filling in a form — there is no site list in the
+repository. `make sources` carries over the thirty-three sites the parser project already
 crawled; after that they live in the admin.
 
 A run crawls for real, honours cancellation between requests and extends its lease as it goes.
@@ -127,7 +127,7 @@ already shaped for. See [`docs/architecture/adr/0002-tender-site-collectors.md`]
 |---|---|---|
 | `make collectors` | `sync_collectors` | Mirror the collector registry into the projection table. Run on deploy. `--dry-run` available. |
 | `make seed` | `seed` | Dev data. Idempotent. |
-| `make platforms` | `seed_platforms` | Create the 33 trading platforms carried over from the parser project. Initial data, not a source of truth — after this they are edited in the admin. Idempotent, `--dry-run` available. |
+| `make sources` | `seed_sources` | Create the 33 trading platforms carried over from the parser project. Initial data, not a source of truth — after this they are edited in the admin. Idempotent, `--dry-run` available. |
 | `make worker` | `run_worker` | Claim and execute Jobs. `--once`, `--max-jobs`, `--lease-seconds`, `--poll-seconds`. Run as many as you like — they compete for rows. |
 | `make tick` / `make scheduler` | `run_scheduler` | One scheduling pass, or `--loop`. Also `--interval`, `--max-catchup`. |
 
