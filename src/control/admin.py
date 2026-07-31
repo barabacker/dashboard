@@ -250,7 +250,7 @@ class ConfigAdmin(ModelAdmin):
         """
         initial = self.get_changeform_initial_data(request) if obj is None else None
         probe = self.form(request.POST or None, instance=obj, initial=initial)
-        param_fields = tuple(probe._param_field_names)
+        param_fields = tuple(probe.param_field_names)
         return (
             (None, {"fields": ("name", "collector_key", "source", *param_fields)}),
             ("Что уйдёт в задачу", {"fields": ("resolved_preview",), "classes": ("collapse",)}),

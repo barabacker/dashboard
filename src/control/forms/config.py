@@ -92,7 +92,9 @@ class ConfigForm(forms.ModelForm):
             "location.href = location.pathname + '?collector_key=' + this.value"
         )
 
-        self._param_field_names: list[str] = []
+        #: Public: `ConfigAdmin.get_fieldsets` reads this off a probe instance of this form to
+        #: know which fieldset fields to render for the currently selected collector.
+        self.param_field_names: list[str] = []
         if current:
             self._add_parameter_fields(current)
 
@@ -134,7 +136,7 @@ class ConfigForm(forms.ModelForm):
             field = _build_field(spec)
             field.initial = stored.get(spec.name, spec.default)
             self.fields[spec.name] = field
-            self._param_field_names.append(spec.name)
+            self.param_field_names.append(spec.name)
 
     def clean(self) -> dict:
         cleaned = super().clean()
@@ -171,10 +173,10 @@ class ConfigForm(forms.ModelForm):
             return cleaned
 
         # The inline never renders parameter fields at all (`_add_parameter_fields` is a no-op
-        # for it) — `_param_field_names` is then empty and `parameters` resolves to `{}`, which
+        # for it) — `param_field_names` is then empty and `parameters` resolves to `{}`, which
         # is exactly right: a profile added that way keeps its collector's defaults until edited
         # on its own change page.
-        parameters = {name: cleaned[name] for name in self._param_field_names if name in cleaned}
+        parameters = {name: cleaned[name] for name in self.param_field_names if name in cleaned}
         cleaned["parameters"] = parameters
 
         # An unsaved probe: `raw_parameters()` only reads `collector_key`/`source`/`parameters`,
