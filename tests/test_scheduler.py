@@ -128,9 +128,7 @@ class TestSkipIfRunning:
         assert Schedule.objects.get(pk=schedule.pk).last_fired_at == at(10)
 
     def test_false_enqueues_anyway(self, busy_config, make_schedule):
-        make_schedule(
-            busy_config, cron="0 * * * *", skip_if_running=False, last_fired_at=at(9)
-        )
+        make_schedule(busy_config, cron="0 * * * *", skip_if_running=False, last_fired_at=at(9))
 
         tick(now=at(10, 30))
 
@@ -139,9 +137,7 @@ class TestSkipIfRunning:
     def test_only_applies_while_a_run_is_active(self, config, make_schedule):
         job = enqueue(config)
         Job.objects.filter(pk=job.pk).update(status=JobStatus.SUCCEEDED)
-        make_schedule(
-            config, cron="0 * * * *", skip_if_running=True, last_fired_at=at(9)
-        )
+        make_schedule(config, cron="0 * * * *", skip_if_running=True, last_fired_at=at(9))
 
         tick(now=at(10, 30))
 
