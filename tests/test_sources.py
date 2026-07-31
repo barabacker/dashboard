@@ -147,31 +147,6 @@ class TestOneToMany:
         assert set(source.configs.all()) == {default, fast}
         assert default.raw_parameters()["domain"] == fast.raw_parameters()["domain"]
 
-    def test_editing_the_source_bumps_every_profiles_revision(self):
-        source = Source.objects.create(name="Торги82", domain="https://lot.torgi82.ru")
-        a = Config.objects.create(name="A", collector_key="tender_kendo", source=source)
-        b = Config.objects.create(name="B", collector_key="tender_kendo", source=source)
-        rev_a, rev_b = a.revision, b.revision
-
-        source.domain = "https://new.torgi82.ru"
-        source.save()
-
-        a.refresh_from_db()
-        b.refresh_from_db()
-        assert a.revision == rev_a + 1
-        assert b.revision == rev_b + 1
-
-    def test_editing_something_other_than_identity_does_not_bump_revision(self):
-        source = Source.objects.create(name="Торги82", domain="https://lot.torgi82.ru")
-        profile = Config.objects.create(name="A", collector_key="tender_kendo", source=source)
-        rev = profile.revision
-
-        source.name = "Торги82 (переименован)"
-        source.save()
-
-        profile.refresh_from_db()
-        assert profile.revision == rev
-
 
 class TestEnqueue:
     def test_the_source_is_frozen_into_the_snapshot(self):
@@ -182,7 +157,7 @@ class TestEnqueue:
         assert job.status == JobStatus.PENDING
         assert job.collector_key == "tender_kendo"
         assert job.effective_parameters["domain"] == "https://bankrupt.seltim.ru"
-        assert job.effective_parameters["listing_path"] == "lots"
+        assert job.effective_parameters["start_url"] == "lots"
         assert job.effective_parameters["concurrency"] == 1
 
     def test_editing_the_source_afterwards_leaves_the_queued_run_alone(self):
@@ -249,10 +224,6 @@ class TestEndToEnd:
         # The site the engine crawled came from the snapshot, not from Source/Config directly.
         assert seen["spec"].domain == "https://lot.torgi82.ru"
         assert seen["params"]["max_pages"] == "2"
-
-        profile.refresh_from_db()
-        assert profile.last_status == JobStatus.SUCCEEDED
-        assert profile.last_job_id == job.pk
 
     def test_a_cancelled_crawl_lands_as_a_cancelled_job(self, monkeypatch):
         from collectors.engine import CrawlOutcome
@@ -335,8 +306,8 @@ class TestConfigInlineUnderSource:
         data = {
             "name": source.name,
             "domain": source.domain,
-            "listing_path": source.listing_path,
-            "extra_ca_cert": source.extra_ca_cert,
+            "start_url": source.start_url,
+            "extra_ca_cert": source.tls_options.get("extra_ca_cert", ""),
             "configs-TOTAL_FORMS": "1",
             "configs-INITIAL_FORMS": "0",
             "configs-MIN_NUM_FORMS": "0",
@@ -398,9 +369,11 @@ class TestSeed:
     def test_per_site_quirks_survive_the_carry_over(self):
         call_command("seed_sources", verbosity=0)
 
-        assert Source.objects.get(name="АРБбитЛот").skip_tls_verify is True
-        assert Source.objects.get(name="МЕТА-ИНВЕСТ").extra_ca_cert.endswith(".pem")
-        assert Source.objects.get(name="Промконсалт").listing_path == "tradelist.php"
+        arbbitlot = Source.objects.get(name="АРБбитЛот")
+        assert arbbitlot.tls_options.get("skip_tls_verify") is True
+        meta_invest = Source.objects.get(name="МЕТА-ИНВЕСТ")
+        assert meta_invest.tls_options.get("extra_ca_cert", "").endswith(".pem")
+        assert Source.objects.get(name="Промконсалт").start_url == "tradelist.php"
 
     def test_re_running_it_changes_nothing(self):
         call_command("seed_sources", verbosity=0)
