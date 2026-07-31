@@ -9,9 +9,7 @@
 Модульный монолит на Django, одна база PostgreSQL, один деплой. Ни брокера, ни Celery, ни Redis —
 очередью *служит* сама таблица `Job`.
 
-* Архитектура и обоснование решений: [`docs/architecture/adr/0001-architecture-baseline.md`](docs/architecture/adr/0001-architecture-baseline.md)
-* Как интегрированы парсеры торговых площадок: [`docs/architecture/adr/0002-tender-site-collectors.md`](docs/architecture/adr/0002-tender-site-collectors.md)
-* Замороженные инварианты, правила зависимостей и решения: [`CLAUDE.md`](CLAUDE.md)
+* Обоснование решений в control (модели, формы, админка): [`docs/superpowers/specs/2026-07-31-control-models-redesign-design.md`](docs/superpowers/specs/2026-07-31-control-models-redesign-design.md)
 * Исходная спецификация: [`docs/spec/claude-code-build-prompt.md`](docs/spec/claude-code-build-prompt.md)
 
 ## Структура
@@ -90,8 +88,6 @@ make scheduler
 ## Интерфейсы
 
 Интерфейс — на **русском**; код, логи, хранимые значения и документация остаются английскими.
-Прежде чем добавлять строку, прочитайте раздел «What is Russian and what is deliberately not»
-в [`CLAUDE.md`](CLAUDE.md).
 
 * **`/admin/`** — основной интерфейс. `Config` с расписаниями inline, история `Job` и страница
   сборщика, показывающая схему параметров прямо из кода.
@@ -116,13 +112,10 @@ make scheduler
 нет. `make sources` переносит 33 источника, которые уже обходил временный проект; дальше они
 живут в админке.
 
-Запуск честно ходит по сайту, между запросами проверяет отмену и продлевает аренду.
-**Лоты при этом не сохраняются.** Задача сообщает, что нашла — `rows`, `calls`, `listing_pages` и
-несколько `lot_id` в `Job.result`, — и выбрасывает сами лоты; в `Job.result` лежит
-`"stored": false`, чтобы зелёная задача не создавала ложного впечатления. Таблицы для собранных
-лотов пока нет: чтобы она появилась, нужны модель `Lot` в `control` и реализация приёмника в
-`execution` — интерфейс `LotSink` в движке под это уже рассчитан. Подробнее —
-[`docs/architecture/adr/0002-tender-site-collectors.md`](docs/architecture/adr/0002-tender-site-collectors.md).
+Запуск честно ходит по сайту, между запросами проверяет отмену и продлевает аренду. Задача
+сообщает, что нашла — `rows`, `calls`, `listing_pages` и несколько `lot_id` в `Job.result`, — и
+сохраняет сами лоты через `Lot` / `DbLotSink`; в `Job.result` лежит `"stored": true` (или `false`
+для редкого запуска без приёмника), чтобы зелёная задача не создавала ложного впечатления.
 
 ## Команды
 

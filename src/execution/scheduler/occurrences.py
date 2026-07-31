@@ -1,6 +1,6 @@
 """Cron arithmetic — the pure part of the scheduler.
 
-Kept apart from the transaction and the enqueue on purpose: "which occurrences are due" is a
+Kept apart from the transaction and the enqueue on purpose: "which occurrence is due" is a
 function of a cron string, a timezone and two instants, and it should be testable as one.
 """
 
@@ -11,11 +11,11 @@ from zoneinfo import ZoneInfo
 
 from croniter import croniter
 
-from control.models import CatchupPolicy, Schedule
+from control.models import Schedule
 
-#: Hard stop on how far a single catch-up will walk. After a long outage, `fire_missed` would
-#: otherwise enqueue an occurrence per minute of downtime and bury the queue. Hitting this cap is
-#: a signal to look at the schedule, not something to silently absorb.
+#: Hard stop on how far a single tick walks forward looking for the latest due occurrence. After a
+#: long outage this keeps one tick from silently absorbing an unbounded amount of missed history —
+#: hitting the cap just means the next tick picks up from where this one stopped.
 DEFAULT_MAX_CATCHUP = 100
 
 
@@ -25,13 +25,15 @@ def due_occurrences(
     now: datetime,
     max_catchup: int = DEFAULT_MAX_CATCHUP,
 ) -> list[datetime]:
-    """Occurrences of `schedule` in `(last_fired_at, now]`, filtered by its catch-up policy.
+    """The single most recent occurrence of `schedule` still due, if any.
 
-    Returns UTC datetimes, oldest first.
+    Returns a list of zero or one UTC datetimes — a list, not `datetime | None`, so callers do not
+    need a separate branch for "nothing due" versus "one thing due".
 
     A schedule that has never fired starts from *now*: `last_fired_at is None` means "no history",
     not "the epoch", and walking a cron back to 1970 is never what anyone wanted. The caller
-    stamps `last_fired_at` on that first tick.
+    stamps `last_fired_at` on that first tick. Missed occurrences before the latest one are not
+    caught up — only the most recent still means anything.
     """
     if schedule.last_fired_at is None:
         return []
@@ -40,21 +42,13 @@ def due_occurrences(
     cursor = croniter(schedule.cron, schedule.last_fired_at.astimezone(tz))
     horizon = now.astimezone(tz)
 
-    # Truncating at `max_catchup` is safe: `last_fired_at` advances to the last occurrence acted
-    # on, so anything beyond the cap is simply picked up by the next tick.
-    occurrences: list[datetime] = []
+    latest: datetime | None = None
     for _ in range(max_catchup):
         candidate = cursor.get_next(datetime)
         if candidate > horizon:
             break
-        occurrences.append(candidate.astimezone(now.tzinfo))
+        latest = candidate
 
-    if not occurrences:
+    if latest is None:
         return []
-
-    if schedule.catchup_policy == CatchupPolicy.SKIP_TO_NOW:
-        # Missed runs are water under the bridge; only the most recent occurrence still means
-        # anything. `last_fired_at` still advances past all of them.
-        return occurrences[-1:]
-
-    return occurrences
+    return [latest.astimezone(now.tzinfo)]

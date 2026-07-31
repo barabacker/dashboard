@@ -10,7 +10,7 @@ from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from control.models import CatchupPolicy, Config, OverlapPolicy, Schedule
+from control.models import Config, Schedule
 
 
 class Command(BaseCommand):
@@ -51,12 +51,10 @@ class Command(BaseCommand):
                     "dataset": "orders",
                     "credential_ref": "COLLECTOR_SECRET_DEMO_TOKEN",
                 },
-                "tags": ["nightly", "orders"],
                 "schedule": {
                     "cron": "0 2 * * *",
                     "timezone": "Europe/Berlin",
-                    "overlap_policy": OverlapPolicy.SKIP,
-                    "catchup_policy": CatchupPolicy.SKIP_TO_NOW,
+                    "skip_if_running": True,
                 },
             },
             {
@@ -68,12 +66,10 @@ class Command(BaseCommand):
                     "pages": 1,
                     "dataset": "customers",
                 },
-                "tags": ["hourly", "customers"],
                 "schedule": {
                     "cron": "0 * * * *",
                     "timezone": "UTC",
-                    "overlap_policy": OverlapPolicy.QUEUE,
-                    "catchup_policy": CatchupPolicy.FIRE_MISSED,
+                    "skip_if_running": False,
                 },
             },
             {
@@ -83,7 +79,6 @@ class Command(BaseCommand):
                 "name": "Пример API — устаревшая конфигурация (до v2.0)",
                 "collector_key": "example_api",
                 "parameters": {"base_url": "https://api.example.com", "path": "/legacy"},
-                "tags": ["legacy"],
                 "schedule": None,
             },
         ]

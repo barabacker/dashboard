@@ -185,8 +185,8 @@ def _params_for(engine: str) -> tuple[ParamSpec, ...]:
     lots *live* on the detail page, so "skip the details" would mean "collect nothing"; offering
     the switch there would be offering a lie.
     """
-    listing_path = ParamSpec(
-        name="listing_path",
+    start_url = ParamSpec(
+        name="start_url",
         kind="str",
         default=DEFAULT_LISTING_PATHS[engine],
         description=f"Путь к листингу относительно домена. По умолчанию "
@@ -195,7 +195,7 @@ def _params_for(engine: str) -> tuple[ParamSpec, ...]:
     )
     common = (
         _DOMAIN,
-        listing_path,
+        start_url,
         _MAX_PAGES,
         _ONLY_ACTIVE,
         _CONCURRENCY,

@@ -20,7 +20,7 @@ def _source_form_data(**overrides):
     data = {
         "name": "Центр реализации",
         "domain": "https://bankrupt.centerr.ru",
-        "listing_path": "",
+        "start_url": "",
         "extra_ca_cert": "",
         "skip_tls_verify": False,
     }
@@ -35,33 +35,33 @@ class TestSourceForm:
         source = form.save()
 
         assert source.domain == "https://bankrupt.centerr.ru"
-        assert source.listing_path == ""
-        assert source.skip_tls_verify is False
+        assert source.start_url == ""
+        assert source.tls_options.get("skip_tls_verify") is False
 
     def test_a_missing_domain_is_refused(self):
         form = SourceForm(data=_source_form_data(domain=""))
         assert not form.is_valid()
         assert "domain" in form.errors
 
-    def test_a_per_site_listing_path_is_stored(self):
+    def test_a_per_site_start_url_is_stored(self):
         form = SourceForm(
             data=_source_form_data(
                 name="Объединённые системы торгов",
                 domain="https://sistematorg.com",
-                listing_path="tradelist.php",
+                start_url="tradelist.php",
             )
         )
         assert form.is_valid(), form.errors
-        assert form.save().listing_path == "tradelist.php"
+        assert form.save().start_url == "tradelist.php"
 
     def test_editing_shows_what_is_authored(self):
         source = Source.objects.create(
-            name="Промконсалт", domain="https://promkonsalt.ru", listing_path="tradelist.php"
+            name="Промконсалт", domain="https://promkonsalt.ru", start_url="tradelist.php"
         )
         form = SourceForm(instance=source)
 
         assert form.initial["domain"] == "https://promkonsalt.ru"
-        assert form.initial["listing_path"] == "tradelist.php"
+        assert form.initial["start_url"] == "tradelist.php"
 
     def test_extra_ca_cert_offers_the_shipped_certificates(self):
         choices = {value for value, _label in SourceForm().fields["extra_ca_cert"].choices}
@@ -69,57 +69,47 @@ class TestSourceForm:
 
 
 class TestConfigFormWithSource:
-    def test_profile_parameters_render_one_field_each_and_validate_with_the_source(self):
+    def test_parameters_are_a_single_json_field(self):
         source = Source.objects.create(name="Торги82", domain="https://lot.torgi82.ru")
         form = ConfigForm(
             data={
                 "name": "Торги82 — fast",
                 "collector_key": "tender_kendo",
                 "source": source.pk,
-                "max_pages": 0,
-                "only_active": "on",
-                "concurrency": 1,
+                "parameters": '{"max_pages": 0, "only_active": true, "concurrency": 1}',
                 "enabled": "on",
-                "tags": "[]",
             }
         )
         assert form.is_valid(), form.errors
-        # domain/listing_path/... are the source's fields — not re-asked here.
+        # domain/start_url/... are the source's fields — not re-asked here, and not part of
+        # the parameters JSON either.
         assert "domain" not in form.fields
-        assert "max_pages" in form.fields
 
         profile = form.save()
         assert profile.parameters == {"max_pages": 0, "only_active": True, "concurrency": 1}
         assert profile.raw_parameters()["domain"] == "https://lot.torgi82.ru"
 
-    def test_fetch_details_only_appears_for_the_engine_that_declares_it(self):
-        assert "fetch_details" in ConfigForm(data={"collector_key": "tender_fogsoft"}).fields
-        assert "fetch_details" not in ConfigForm(data={"collector_key": "tender_kendo"}).fields
-
-    def test_a_bad_profile_parameter_is_reported_on_its_own_field(self):
+    def test_a_bad_parameters_json_is_reported_on_the_field(self):
         source = Source.objects.create(name="Торги82", domain="https://lot.torgi82.ru")
         form = ConfigForm(
             data={
                 "name": "Торги82 — fast",
                 "collector_key": "tender_kendo",
                 "source": source.pk,
-                "max_pages": 0,
-                "only_active": "on",
-                "concurrency": 99,
+                "parameters": "{not json",
                 "enabled": "on",
-                "tags": "[]",
             }
         )
         assert not form.is_valid()
-        assert "concurrency" in form.errors
+        assert "parameters" in form.errors
 
     def test_without_a_source_a_site_shaped_collector_is_refused(self):
         form = ConfigForm(
             data={
                 "name": "Без сайта",
                 "collector_key": "tender_kendo",
+                "parameters": "{}",
                 "enabled": "on",
-                "tags": "[]",
             }
         )
         assert not form.is_valid()
@@ -133,12 +123,42 @@ class TestConfigFormWithSource:
                 "name": "Демо",
                 "collector_key": "example_api",
                 "source": source.pk,
+                "parameters": "{}",
                 "enabled": "on",
-                "tags": "[]",
             }
         )
         assert not form.is_valid()
         assert "source" in form.errors
+
+    def test_a_blank_parameters_field_defaults_to_empty_dict(self):
+        """The auto-generated JSONField turns an empty textarea into `None`, not `{}` — left
+
+        uncoerced, that `None` sails past validation (the model field is `blank=True`) and hits a
+        NOT NULL constraint at the database instead of a form error.
+        """
+        source = Source.objects.create(name="Торги82", domain="https://lot.torgi82.ru")
+        form = ConfigForm(
+            data={
+                "name": "Демо",
+                "collector_key": "tender_kendo",
+                "source": source.pk,
+                "parameters": "",
+                "enabled": "on",
+            }
+        )
+        assert form.is_valid(), form.errors
+        assert form.save().parameters == {}
+
+    def test_collector_key_offers_a_dropdown_of_known_collectors(self):
+        choices = {value for value, _label in ConfigForm().fields["collector_key"].choices}
+        assert "example_api" in choices
+        assert "tender_kendo" in choices
+
+    def test_a_stale_collector_key_stays_selectable_when_editing(self):
+        config = Config.objects.create(name="Демо", collector_key="gone", parameters={})
+        form = ConfigForm(instance=config)
+        choices = {value for value, _label in form.fields["collector_key"].choices}
+        assert "gone" in choices
 
 
 class TestOneToMany:
@@ -157,31 +177,6 @@ class TestOneToMany:
         assert set(source.configs.all()) == {default, fast}
         assert default.raw_parameters()["domain"] == fast.raw_parameters()["domain"]
 
-    def test_editing_the_source_bumps_every_profiles_revision(self):
-        source = Source.objects.create(name="Торги82", domain="https://lot.torgi82.ru")
-        a = Config.objects.create(name="A", collector_key="tender_kendo", source=source)
-        b = Config.objects.create(name="B", collector_key="tender_kendo", source=source)
-        rev_a, rev_b = a.revision, b.revision
-
-        source.domain = "https://new.torgi82.ru"
-        source.save()
-
-        a.refresh_from_db()
-        b.refresh_from_db()
-        assert a.revision == rev_a + 1
-        assert b.revision == rev_b + 1
-
-    def test_editing_something_other_than_identity_does_not_bump_revision(self):
-        source = Source.objects.create(name="Торги82", domain="https://lot.torgi82.ru")
-        profile = Config.objects.create(name="A", collector_key="tender_kendo", source=source)
-        rev = profile.revision
-
-        source.name = "Торги82 (переименован)"
-        source.save()
-
-        profile.refresh_from_db()
-        assert profile.revision == rev
-
 
 class TestEnqueue:
     def test_the_source_is_frozen_into_the_snapshot(self):
@@ -192,7 +187,7 @@ class TestEnqueue:
         assert job.status == JobStatus.PENDING
         assert job.collector_key == "tender_kendo"
         assert job.effective_parameters["domain"] == "https://bankrupt.seltim.ru"
-        assert job.effective_parameters["listing_path"] == "lots"
+        assert job.effective_parameters["start_url"] == "lots"
         assert job.effective_parameters["concurrency"] == 1
 
     def test_editing_the_source_afterwards_leaves_the_queued_run_alone(self):
@@ -259,10 +254,6 @@ class TestEndToEnd:
         # The site the engine crawled came from the snapshot, not from Source/Config directly.
         assert seen["spec"].domain == "https://lot.torgi82.ru"
         assert seen["params"]["max_pages"] == "2"
-
-        profile.refresh_from_db()
-        assert profile.last_status == JobStatus.SUCCEEDED
-        assert profile.last_job_id == job.pk
 
     def test_a_cancelled_crawl_lands_as_a_cancelled_job(self, monkeypatch):
         from collectors.engine import CrawlOutcome
@@ -345,8 +336,8 @@ class TestConfigInlineUnderSource:
         data = {
             "name": source.name,
             "domain": source.domain,
-            "listing_path": source.listing_path,
-            "extra_ca_cert": source.extra_ca_cert,
+            "start_url": source.start_url,
+            "extra_ca_cert": source.tls_options.get("extra_ca_cert", ""),
             "configs-TOTAL_FORMS": "1",
             "configs-INITIAL_FORMS": "0",
             "configs-MIN_NUM_FORMS": "0",
@@ -408,9 +399,11 @@ class TestSeed:
     def test_per_site_quirks_survive_the_carry_over(self):
         call_command("seed_sources", verbosity=0)
 
-        assert Source.objects.get(name="АРБбитЛот").skip_tls_verify is True
-        assert Source.objects.get(name="МЕТА-ИНВЕСТ").extra_ca_cert.endswith(".pem")
-        assert Source.objects.get(name="Промконсалт").listing_path == "tradelist.php"
+        arbbitlot = Source.objects.get(name="АРБбитЛот")
+        assert arbbitlot.tls_options.get("skip_tls_verify") is True
+        meta_invest = Source.objects.get(name="МЕТА-ИНВЕСТ")
+        assert meta_invest.tls_options.get("extra_ca_cert", "").endswith(".pem")
+        assert Source.objects.get(name="Промконсалт").start_url == "tradelist.php"
 
     def test_re_running_it_changes_nothing(self):
         call_command("seed_sources", verbosity=0)

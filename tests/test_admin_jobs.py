@@ -96,39 +96,6 @@ class TestPurgeAll:
 
         assert Job.objects.count() == 0
 
-    def test_it_forgets_the_dashboard_cache_columns(self, client, user, config):
-        job = _terminal_job(config)
-        Config.record_job_outcome(
-            config_id=config.pk,
-            job_id=job.pk,
-            status=JobStatus.SUCCEEDED,
-            finished_at=timezone.now(),
-        )
-        client.force_login(user)
-
-        client.post(reverse(PURGE_ALL), follow=True)
-
-        config.refresh_from_db()
-        assert config.last_status == ""
-        assert config.last_run_at is None
-        assert config.last_job_id is None
-
-    def test_it_does_not_bump_the_config_revision(self, config, client, user):
-        """Clearing history is not an authored change — a snapshot must not look stale for it."""
-        job = _terminal_job(config)
-        Config.record_job_outcome(
-            config_id=config.pk,
-            job_id=job.pk,
-            status=JobStatus.SUCCEEDED,
-            finished_at=timezone.now(),
-        )
-        before = Config.objects.values_list("revision", flat=True).get(pk=config.pk)
-        client.force_login(user)
-
-        client.post(reverse(PURGE_ALL), follow=True)
-
-        assert Config.objects.values_list("revision", flat=True).get(pk=config.pk) == before
-
     def test_it_asks_before_doing_anything(self, client, user, config):
         _terminal_job(config)
         client.force_login(user)

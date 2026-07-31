@@ -124,13 +124,13 @@ SOURCES: list[dict[str, Any]] = [
         "engine": "ruson",
         "title": "Объединённые системы торгов",
         "domain": "https://sistematorg.com",
-        "params": {"listing_path": "tradelist.php"},
+        "params": {"start_url": "tradelist.php"},
     },
     {
         "engine": "ruson",
         "title": "Промконсалт",
         "domain": "https://promkonsalt.ru",
-        "params": {"listing_path": "tradelist.php"},
+        "params": {"start_url": "tradelist.php"},
     },
 ]
 
@@ -166,7 +166,15 @@ class Command(BaseCommand):
             if spec.get("note"):
                 self.stdout.write(f"    {spec['note']}")
             if not dry_run:
-                source = Source.objects.create(name=spec["title"], domain=domain, **site_fields)
+                tls_keys = set(Source.TLS_OPTION_FIELDS)
+                source_kwargs = {k: v for k, v in site_fields.items() if k not in tls_keys}
+                tls_options = {k: v for k, v in site_fields.items() if k in tls_keys}
+                source = Source.objects.create(
+                    name=spec["title"],
+                    domain=domain,
+                    tls_options=tls_options,
+                    **source_kwargs,
+                )
                 Config.objects.create(
                     name=spec["title"],
                     collector_key=key,

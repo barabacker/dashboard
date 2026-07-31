@@ -8,9 +8,7 @@ records **what actually ran** (`Job`). Collector algorithms are code, not data.
 Django modular monolith, one PostgreSQL database, one deployment. No broker, no Celery, no Redis —
 the Job table *is* the queue.
 
-* Architecture and the reasoning behind it: [`docs/architecture/adr/0001-architecture-baseline.md`](docs/architecture/adr/0001-architecture-baseline.md)
-* How the tender-site parsers were integrated: [`docs/architecture/adr/0002-tender-site-collectors.md`](docs/architecture/adr/0002-tender-site-collectors.md)
-* Frozen invariants, dependency rules and decisions: [`CLAUDE.md`](CLAUDE.md)
+* Design rationale for `control` (models, forms, admin): [`docs/superpowers/specs/2026-07-31-control-models-redesign-design.md`](docs/superpowers/specs/2026-07-31-control-models-redesign-design.md)
 * The original specification: [`docs/spec/claude-code-build-prompt.md`](docs/spec/claude-code-build-prompt.md)
 
 ## Layout
@@ -88,8 +86,7 @@ make scheduler
 
 ## The surfaces
 
-The UI is in **Russian**; code, logs, stored values and documentation stay English. See "What is
-Russian and what is deliberately not" in [`CLAUDE.md`](CLAUDE.md) before adding a string.
+The UI is in **Russian**; code, logs, stored values and documentation stay English.
 
 * **`/admin/`** — the primary UI. Configs with schedules inline, Job history, and a Collector page
   that shows the parameter schema straight from the code.
@@ -112,12 +109,10 @@ ordinary parameters, so adding a source is filling in a form — there is no sit
 repository. `make sources` carries over the thirty-three sites the parser project already
 crawled; after that they live in the admin.
 
-A run crawls for real, honours cancellation between requests and extends its lease as it goes.
-**It does not store the lots.** It reports what it found — `rows`, `calls`, `listing_pages`, and a
-few lot ids in `Job.result` — and discards them; `Job.result` carries `"stored": false` so a green
-Job never implies otherwise. There is no table for collected lots yet: adding one is writing a
-`Lot` model in `control` and a sink in `execution`, which the engine's `LotSink` protocol is
-already shaped for. See [`docs/architecture/adr/0002-tender-site-collectors.md`](docs/architecture/adr/0002-tender-site-collectors.md).
+A run crawls for real, honours cancellation between requests and extends its lease as it goes. It
+reports what it found — `rows`, `calls`, `listing_pages`, and a few lot ids in `Job.result` — and
+stores the lots via `Lot` / `DbLotSink`; `Job.result` carries `"stored": true` (or `false` for the
+rare run with no sink attached) so a green Job never overstates what happened.
 
 ## Commands
 

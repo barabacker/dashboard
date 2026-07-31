@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Count
+from django.db.models import Count, OuterRef, Subquery
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -28,7 +28,17 @@ def _recent_jobs():
 
 @staff_member_required
 def index(request: HttpRequest) -> HttpResponse:
-    configs = Config.objects.filter(archived=False).order_by("name")
+    latest_job = Job.objects.filter(config_id=OuterRef("pk")).order_by("-created_at")
+    configs = list(
+        Config.objects.annotate(
+            latest_job_status=Subquery(latest_job.values("status")[:1]),
+            latest_job_id=Subquery(latest_job.values("id")[:1]),
+            latest_job_at=Subquery(latest_job.values("created_at")[:1]),
+        ).order_by("name")
+    )
+    for c in configs:
+        c.latest_job_label = JobStatus(c.latest_job_status).label if c.latest_job_status else ""
+
     # Job→Config is a soft reference, so "does this config have something in flight?" is a second
     # query rather than a join. One extra query for the whole page is the right trade here.
     active_config_ids = set(

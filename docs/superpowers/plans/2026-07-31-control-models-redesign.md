@@ -370,7 +370,7 @@ git commit -m "refactor: reset control migrations to a single fresh baseline"
 
 Nothing can run yet until fixtures stop passing a removed field.
 
-- [ ] **Step 1: Drop `archived` from `make_config`'s defaults**
+- [x] **Step 1: Drop `archived` from `make_config`'s defaults**
 
 ```python
 @pytest.fixture
@@ -387,7 +387,7 @@ def make_config(db):
     return _make
 ```
 
-- [ ] **Step 2: Run the fixture-only smoke check**
+- [x] **Step 2: Run the fixture-only smoke check**
 
 ```bash
 uv run pytest tests/test_models.py -x -q
@@ -397,7 +397,7 @@ Expected: fails on assertions inside tests that reference removed fields (`revis
 `last_status`, ...) — that is Task 8's job, not this one. Confirm the failures are exactly those
 (no `TypeError`/`AttributeError` about the fixture itself) before moving on.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add tests/conftest.py
@@ -418,7 +418,7 @@ collector's own schema (same mechanism as before, see `Config.raw_parameters`). 
 renamed, the tender collectors' schema must declare a parameter named `start_url`, not
 `listing_path`, or the merge silently stops supplying it.
 
-- [ ] **Step 1: Update the failing test first**
+- [x] **Step 1: Update the failing test first**
 
 In `tests/unit/test_tender_schemas.py`, change:
 
@@ -432,7 +432,7 @@ to:
     assert effective["start_url"] == DEFAULT_LISTING_PATHS[engine]
 ```
 
-- [ ] **Step 2: Run it to confirm it fails**
+- [x] **Step 2: Run it to confirm it fails**
 
 ```bash
 uv run pytest tests/unit/test_tender_schemas.py -x -q
@@ -440,7 +440,7 @@ uv run pytest tests/unit/test_tender_schemas.py -x -q
 
 Expected: `KeyError: 'start_url'`.
 
-- [ ] **Step 3: Rename the `ParamSpec` in `collectors/schemas/tender.py`**
+- [x] **Step 3: Rename the `ParamSpec` in `collectors/schemas/tender.py`**
 
 In `_params_for`, change:
 
@@ -482,7 +482,7 @@ and update the tuple it is placed into:
     )
 ```
 
-- [ ] **Step 4: Run the schema test again**
+- [x] **Step 4: Run the schema test again**
 
 ```bash
 uv run pytest tests/unit/test_tender_schemas.py -x -q
@@ -490,7 +490,7 @@ uv run pytest tests/unit/test_tender_schemas.py -x -q
 
 Expected: PASS.
 
-- [ ] **Step 5: Update the runner to read the renamed key**
+- [x] **Step 5: Update the runner to read the renamed key**
 
 In `src/collectors/runners/tender_site.py`, `TenderSiteRunner.run()`, change:
 
@@ -520,7 +520,7 @@ to:
 `collectors.engine.core.spider` and is out of scope; only the snapshot parameter key that feeds it
 changes.)
 
-- [ ] **Step 6: Run the collectors unit suite**
+- [x] **Step 6: Run the collectors unit suite**
 
 ```bash
 uv run pytest tests/unit -x -q
@@ -529,7 +529,7 @@ uv run pytest tests/unit -x -q
 Expected: PASS. This also covers `tests/unit/test_tender_runner.py`, which does not reference
 `listing_path` directly.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/collectors/schemas/tender.py src/collectors/runners/tender_site.py tests/unit/test_tender_schemas.py
@@ -543,7 +543,7 @@ git commit -m "refactor: rename tender collectors' listing_path parameter to sta
 **Files:**
 - Modify: `src/control/services/enqueue.py`
 
-- [ ] **Step 1: Remove the `archived` precondition**
+- [x] **Step 1: Remove the `archived` precondition**
 
 Delete:
 
@@ -564,13 +564,13 @@ leaving only the `enabled` check under "precondition 1":
         )
 ```
 
-- [ ] **Step 2: Drop `config_revision` from both `Job.objects.create(...)` calls**
+- [x] **Step 2: Drop `config_revision` from both `Job.objects.create(...)` calls**
 
 In `enqueue()`, remove the line `config_revision=config.revision,` from the snapshot section.
 
 In `_record_invalid_config_job()`, remove the same line.
 
-- [ ] **Step 3: Remove the `Config.record_job_outcome` call**
+- [x] **Step 3: Remove the `Config.record_job_outcome` call**
 
 In `_record_invalid_config_job()`, delete:
 
@@ -586,7 +586,7 @@ the now-unused `now = timezone.now()` binding's only-other-use check — `now` i
 `started_at`/`finished_at`/`available_at` above it, so keep that line; only the `record_job_outcome`
 call and its comment are removed.
 
-- [ ] **Step 4: Run the enqueue suite (expect failures — Task 8 fixes the test file itself)**
+- [x] **Step 4: Run the enqueue suite (expect failures — Task 8 fixes the test file itself)**
 
 ```bash
 uv run pytest tests/test_enqueue.py -q
@@ -596,7 +596,7 @@ Expected: some failures referencing `config.archived`, `job.config_revision`,
 `config.last_status` — confirm they are all in `tests/test_enqueue.py` itself, not in
 `enqueue.py`. Leave the test file for Task 8.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/control/services/enqueue.py
@@ -610,7 +610,7 @@ git commit -m "refactor: drop archived precondition and revision snapshotting fr
 **Files:**
 - Modify: `src/execution/worker/loop.py`
 
-- [ ] **Step 1: Remove the cache-column refresh from `_finish()`**
+- [x] **Step 1: Remove the cache-column refresh from `_finish()`**
 
 Replace:
 
@@ -666,7 +666,7 @@ with:
         )
 ```
 
-- [ ] **Step 2: Drop the now-unused `Config` import**
+- [x] **Step 2: Drop the now-unused `Config` import**
 
 Change:
 
@@ -680,7 +680,7 @@ to:
 from control.models import Job
 ```
 
-- [ ] **Step 3: Run the worker suite**
+- [x] **Step 3: Run the worker suite**
 
 ```bash
 uv run pytest tests/test_worker.py tests/test_lot_sink.py -x -q
@@ -688,7 +688,7 @@ uv run pytest tests/test_worker.py tests/test_lot_sink.py -x -q
 
 Expected: PASS (neither file asserted on the cache columns per the earlier grep).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/execution/worker/loop.py
@@ -705,7 +705,7 @@ git commit -m "refactor: stop refreshing the removed Config dashboard cache colu
 
 With `catchup_policy` gone, the scheduler always keeps only the most recent due occurrence.
 
-- [ ] **Step 1: Rewrite `TestDueOccurrences` first**
+- [x] **Step 1: Rewrite `TestDueOccurrences` first**
 
 Replace the whole class in `tests/test_scheduler.py`:
 
@@ -745,7 +745,7 @@ class TestDueOccurrences:
 (This drops `catchup_policy=CatchupPolicy.FIRE_MISSED`/`SKIP_TO_NOW` from every call — the
 behavior is no longer a choice.)
 
-- [ ] **Step 2: Run it to confirm it fails**
+- [x] **Step 2: Run it to confirm it fails**
 
 ```bash
 uv run pytest tests/test_scheduler.py::TestDueOccurrences -x -q
@@ -754,7 +754,7 @@ uv run pytest tests/test_scheduler.py::TestDueOccurrences -x -q
 Expected: fails — `due_occurrences` still branches on `schedule.catchup_policy`, which no longer
 exists on the model after Task 1's `Schedule` rewrite (`AttributeError`).
 
-- [ ] **Step 3: Rewrite `due_occurrences`**
+- [x] **Step 3: Rewrite `due_occurrences`**
 
 Replace the whole function body in `src/execution/scheduler/occurrences.py`:
 
@@ -809,7 +809,7 @@ def due_occurrences(
     return [latest.astimezone(now.tzinfo)]
 ```
 
-- [ ] **Step 4: Run the test again**
+- [x] **Step 4: Run the test again**
 
 ```bash
 uv run pytest tests/test_scheduler.py::TestDueOccurrences -x -q
@@ -817,7 +817,7 @@ uv run pytest tests/test_scheduler.py::TestDueOccurrences -x -q
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/execution/scheduler/occurrences.py tests/test_scheduler.py
@@ -833,7 +833,7 @@ git commit -m "refactor: always keep only the latest due occurrence, drop catchu
 - Test: `tests/test_scheduler.py` (`TestOverlapPolicy` → `TestSkipIfRunning`, plus every other
   `overlap_policy=`/`catchup_policy=` call site in the file)
 
-- [ ] **Step 1: Rewrite the remaining scheduler tests first**
+- [x] **Step 1: Rewrite the remaining scheduler tests first**
 
 In `tests/test_scheduler.py`, change the import block:
 
@@ -949,7 +949,7 @@ Delete the whole `TestCatchupThroughTick` class — both its tests (`test_fire_m
 single remaining behavior is already covered by `TestDueOccurrences.test_keeps_only_the_latest_occurrence`
 (Task 7) and `TestTick.test_enqueues_a_due_occurrence_and_advances_the_cursor`.
 
-- [ ] **Step 2: Run it to confirm the new tests fail**
+- [x] **Step 2: Run it to confirm the new tests fail**
 
 ```bash
 uv run pytest tests/test_scheduler.py -x -q
@@ -960,7 +960,7 @@ model change lands (it already landed in Task 1, so this should actually fail on
 `runtime.py` still reading `schedule.overlap_policy`, an `AttributeError`). Confirm the failure
 is in `runtime.py`, not in the test file itself.
 
-- [ ] **Step 3: Update `runtime.py`**
+- [x] **Step 3: Update `runtime.py`**
 
 Change the import:
 
@@ -1003,7 +1003,7 @@ to:
     # would need a per-stream claim predicate this queue does not have.
 ```
 
-- [ ] **Step 4: Run the full scheduler suite**
+- [x] **Step 4: Run the full scheduler suite**
 
 ```bash
 uv run pytest tests/test_scheduler.py -x -q
@@ -1011,7 +1011,7 @@ uv run pytest tests/test_scheduler.py -x -q
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/execution/scheduler/runtime.py tests/test_scheduler.py
@@ -1030,7 +1030,7 @@ git commit -m "refactor: collapse Schedule.overlap_policy to a boolean skip_if_r
 checkbox) even though they now live inside `Source.tls_options` in the database — only the storage
 shape changed, not what the person filling the form sees.
 
-- [ ] **Step 1: Update `TestSourceForm` first**
+- [x] **Step 1: Update `TestSourceForm` first**
 
 In `tests/test_sources.py`, change `_source_form_data`:
 
@@ -1090,7 +1090,7 @@ class TestSourceForm:
         assert "" in choices  # "— обычный набор корневых —"
 ```
 
-- [ ] **Step 2: Run it to confirm it fails**
+- [x] **Step 2: Run it to confirm it fails**
 
 ```bash
 uv run pytest tests/test_sources.py::TestSourceForm -x -q
@@ -1099,7 +1099,7 @@ uv run pytest tests/test_sources.py::TestSourceForm -x -q
 Expected: fails — `SourceForm` still declares `listing_path` and has no knowledge of
 `tls_options`.
 
-- [ ] **Step 3: Rewrite `SourceForm`**
+- [x] **Step 3: Rewrite `SourceForm`**
 
 Replace the whole file:
 
@@ -1172,7 +1172,7 @@ class SourceForm(forms.ModelForm):
         return source
 ```
 
-- [ ] **Step 4: Run the test again**
+- [x] **Step 4: Run the test again**
 
 ```bash
 uv run pytest tests/test_sources.py::TestSourceForm -x -q
@@ -1180,7 +1180,7 @@ uv run pytest tests/test_sources.py::TestSourceForm -x -q
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/control/forms/source.py tests/test_sources.py
@@ -1197,7 +1197,7 @@ git commit -m "refactor: SourceForm writes tls_options, keeps the two-field TLS 
 
 `parameters` becomes a single JSON textarea instead of one Django field per `ParamSpec`.
 
-- [ ] **Step 1: Update the dependent tests first**
+- [x] **Step 1: Update the dependent tests first**
 
 In `tests/test_sources.py`, `TestConfigFormWithSource`, every POST payload currently includes
 `"tags": "[]"` (a removed field) and expects one form field per parameter. Replace the whole
@@ -1271,7 +1271,7 @@ class TestConfigFormWithSource:
 `test_a_bad_profile_parameter_is_reported_on_its_own_field` are deleted outright — both tested the
 per-`ParamSpec` dynamic field generation this task removes.)
 
-- [ ] **Step 2: Run it to confirm it fails**
+- [x] **Step 2: Run it to confirm it fails**
 
 ```bash
 uv run pytest tests/test_sources.py::TestConfigFormWithSource -x -q
@@ -1279,7 +1279,7 @@ uv run pytest tests/test_sources.py::TestConfigFormWithSource -x -q
 
 Expected: fails — `ConfigForm` does not yet have a `parameters` field.
 
-- [ ] **Step 3: Rewrite `ConfigForm`**
+- [x] **Step 3: Rewrite `ConfigForm`**
 
 Replace the whole file:
 
@@ -1356,7 +1356,7 @@ class ConfigForm(forms.ModelForm):
 needed anymore, since the field is bound directly (unlike the old per-`ParamSpec` version, which
 had to assemble `parameters` from separate cleaned fields).
 
-- [ ] **Step 4: Run the test again**
+- [x] **Step 4: Run the test again**
 
 ```bash
 uv run pytest tests/test_sources.py::TestConfigFormWithSource -x -q
@@ -1364,7 +1364,7 @@ uv run pytest tests/test_sources.py::TestConfigFormWithSource -x -q
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/control/forms/config.py tests/test_sources.py
@@ -1381,7 +1381,7 @@ git commit -m "refactor: ConfigForm renders parameters as one JSON field, not on
 This is the biggest single-file change. Do it in the four pieces below, in order, running the
 admin-touching tests after each.
 
-- [ ] **Step 1: `ConfigInline` — delete the dynamic-field workaround**
+- [x] **Step 1: `ConfigInline` — delete the dynamic-field workaround**
 
 Delete the nested `ConfigInlineForm` class — with `ConfigForm` no longer building dynamic fields,
 there is nothing left for it to suppress — but keep `form = ConfigForm` (now pointing at the plain
@@ -1418,7 +1418,7 @@ class ConfigInline(TabularInline):
     verbose_name_plural = "Профили"
 ```
 
-- [ ] **Step 2: `ConfigAdmin` — replace the cache columns with a `Job` subquery, drop
+- [x] **Step 2: `ConfigAdmin` — replace the cache columns with a `Job` subquery, drop
   `get_form`/`get_fieldsets`, drop the archive/tags fields and actions**
 
 Add the import at the top of the file:
@@ -1573,7 +1573,7 @@ field set to compute anymore — `fieldsets` is a plain static tuple again), `ac
 `action_unarchive` (no `archived` field left), and `last_status_badge`/`last_job_link` reading
 cache columns (replaced by the three `latest_*` methods reading the subquery annotation).
 
-- [ ] **Step 3: `SourceAdmin` — drop the `archived` field**
+- [x] **Step 3: `SourceAdmin` — drop the `archived` field**
 
 Replace the class:
 
@@ -1612,7 +1612,7 @@ class SourceAdmin(ModelAdmin):
         return obj.configs.count()
 ```
 
-- [ ] **Step 4: `JobAdmin` — drop `config_revision`**
+- [x] **Step 4: `JobAdmin` — drop `config_revision`**
 
 In the `JobAdmin.fieldsets` "Снимок" section, remove `"config_revision"` from the tuple:
 
@@ -1642,7 +1642,7 @@ In `config_link`, drop the revision from the label:
         return format_html('<a href="{}">{}</a>', url, config.name)
 ```
 
-- [ ] **Step 5: The "purge all terminal jobs" view — drop the cache-column message**
+- [x] **Step 5: The "purge all terminal jobs" view — drop the cache-column message**
 
 Find the view around what was line 624 and replace:
 
@@ -1671,7 +1671,7 @@ with:
         )
 ```
 
-- [ ] **Step 6: Run the admin-touching test suites**
+- [x] **Step 6: Run the admin-touching test suites**
 
 ```bash
 uv run pytest tests/test_admin_jobs.py tests/test_sources.py -q
@@ -1682,7 +1682,7 @@ revision behavior (`test_it_forgets_the_dashboard_cache_columns`,
 `test_it_does_not_bump_the_config_revision`) — Task 12 removes them. `test_sources.py` should be
 close to passing except wherever Task 13 hasn't landed yet.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/control/admin.py
@@ -1696,13 +1696,13 @@ git commit -m "refactor: ConfigAdmin computes latest job status via subquery, dr
 **Files:**
 - Modify: `tests/test_admin_jobs.py`
 
-- [ ] **Step 1: Delete the two tests that assert removed behavior**
+- [x] **Step 1: Delete the two tests that assert removed behavior**
 
 Delete `test_it_forgets_the_dashboard_cache_columns` and `test_it_does_not_bump_the_config_revision`
 in full (both call `Config.record_job_outcome` directly and assert on `last_status`/`last_run_at`/
 `last_job_id`/`revision`, none of which exist anymore).
 
-- [ ] **Step 2: Update the purge-message assertion, if any, to match the shorter message**
+- [x] **Step 2: Update the purge-message assertion, if any, to match the shorter message**
 
 Search the file for the old message text:
 
@@ -1713,7 +1713,7 @@ grep -n "Сброшен последний статус" tests/test_admin_jobs.p
 If it appears in an assertion, update it to match the new one-sentence message
 (`f"Удалено задач: {deleted}."`) from Task 11 Step 5.
 
-- [ ] **Step 3: Run the file**
+- [x] **Step 3: Run the file**
 
 ```bash
 uv run pytest tests/test_admin_jobs.py -x -q
@@ -1721,7 +1721,7 @@ uv run pytest tests/test_admin_jobs.py -x -q
 
 Expected: PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/test_admin_jobs.py
@@ -1739,14 +1739,14 @@ git commit -m "test: drop admin coverage for the removed dashboard cache columns
 covers the rest of the file: rename `listing_path`/`extra_ca_cert`/`skip_tls_verify` attribute
 reads, and delete the two tests that asserted the removed `revision` cascade.
 
-- [ ] **Step 1: `TestOneToMany` — delete the revision tests**
+- [x] **Step 1: `TestOneToMany` — delete the revision tests**
 
 Delete `test_editing_the_source_bumps_every_profiles_revision` and
 `test_editing_something_other_than_identity_does_not_bump_revision` in full — both asserted the
 `Source` → `Config.revision` cascade, which no longer exists (`Config.revision` is gone). Keep
 `test_one_source_can_back_several_named_profiles` unchanged.
 
-- [ ] **Step 2: `TestEnqueue` — rename the resolved parameter key**
+- [x] **Step 2: `TestEnqueue` — rename the resolved parameter key**
 
 Change:
 
@@ -1760,7 +1760,7 @@ to:
         assert job.effective_parameters["start_url"] == "lots"
 ```
 
-- [ ] **Step 3: `TestEndToEnd` — delete the cache-column assertions**
+- [x] **Step 3: `TestEndToEnd` — delete the cache-column assertions**
 
 In `test_a_worker_runs_a_profile_and_records_what_it_found`, delete the last two lines:
 
@@ -1773,7 +1773,7 @@ In `test_a_worker_runs_a_profile_and_records_what_it_found`, delete the last two
 (the test already asserts `job.status == JobStatus.SUCCEEDED` above this — that is the coverage
 that matters; there is no cache column left to check.)
 
-- [ ] **Step 4: `TestConfigInlineUnderSource` — rename the posted field**
+- [x] **Step 4: `TestConfigInlineUnderSource` — rename the posted field**
 
 In `_inline_post_data`, change:
 
@@ -1799,7 +1799,7 @@ to:
         }
 ```
 
-- [ ] **Step 5: `TestSeed` — rename the field reads**
+- [x] **Step 5: `TestSeed` — rename the field reads**
 
 Change:
 
@@ -1825,7 +1825,7 @@ to:
         assert Source.objects.get(name="Промконсалт").start_url == "tradelist.php"
 ```
 
-- [ ] **Step 6: Run the full file**
+- [x] **Step 6: Run the full file**
 
 ```bash
 uv run pytest tests/test_sources.py -x -q
@@ -1835,7 +1835,7 @@ Expected: PASS (this exercises `seed_sources`, which Task 14 has not touched yet
 here because `seed_sources.py` still writes the old field names, that is expected; do Task 14
 next and re-run).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add tests/test_sources.py
@@ -1850,7 +1850,7 @@ git commit -m "test: update test_sources.py for start_url/tls_options and the re
 - Modify: `src/control/management/commands/seed.py`
 - Modify: `src/control/management/commands/seed_sources.py`
 
-- [ ] **Step 1: Update `seed.py`**
+- [x] **Step 1: Update `seed.py`**
 
 Change the import:
 
@@ -1910,7 +1910,7 @@ becomes:
 The third sample has `"schedule": None` and a `"tags": ["legacy"]` key to drop — leave the
 `"schedule": None` line as-is.
 
-- [ ] **Step 2: Update `seed_sources.py`**
+- [x] **Step 2: Update `seed_sources.py`**
 
 The `SOURCES` list's `"params"` dicts use `listing_path`/`skip_tls_verify`/`extra_ca_cert` keys
 that fed straight into `Source.objects.create(**site_fields)`. Rename `listing_path` to
@@ -1995,7 +1995,7 @@ with:
                 )
 ```
 
-- [ ] **Step 3: Run the full source-seeding coverage**
+- [x] **Step 3: Run the full source-seeding coverage**
 
 ```bash
 uv run pytest tests/test_sources.py -x -q
@@ -2003,7 +2003,7 @@ uv run pytest tests/test_sources.py -x -q
 
 Expected: PASS, including `TestSeed`.
 
-- [ ] **Step 4: Run `seed` end to end against a real database**
+- [x] **Step 4: Run `seed` end to end against a real database**
 
 ```bash
 uv run python src/manage.py seed
@@ -2013,7 +2013,7 @@ uv run python src/manage.py seed_sources
 Expected: both commands complete without error and report `created`/`kept` counts (run against a
 freshly migrated dev database from Task 2).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/control/management/commands/seed.py src/control/management/commands/seed_sources.py
@@ -2027,7 +2027,7 @@ git commit -m "refactor: update seed commands for skip_if_running, start_url and
 **Files:**
 - Modify: `tests/test_models.py`
 
-- [ ] **Step 1: Update the `_job` helper**
+- [x] **Step 1: Update the `_job` helper**
 
 Remove `"config_revision": config.revision,` from `_job`'s defaults:
 
@@ -2041,7 +2041,7 @@ def _job(config: Config, **overrides) -> Job:
     return Job.objects.create(**{**defaults, **overrides})
 ```
 
-- [ ] **Step 2: Delete `TestConfigRevision` in full**
+- [x] **Step 2: Delete `TestConfigRevision` in full**
 
 All five of its tests (`test_starts_at_one_and_bumps_on_an_authored_change`,
 `test_does_not_bump_when_nothing_meaningful_changed`,
@@ -2049,7 +2049,7 @@ All five of its tests (`test_starts_at_one_and_bumps_on_an_authored_change`,
 `test_cache_column_writes_are_not_edits`, `test_an_older_run_does_not_overwrite_a_newer_one`)
 asserted the removed `revision`/cache-column mechanism — delete the whole class.
 
-- [ ] **Step 3: Run the file**
+- [x] **Step 3: Run the file**
 
 ```bash
 uv run pytest tests/test_models.py -x -q
@@ -2058,7 +2058,7 @@ uv run pytest tests/test_models.py -x -q
 Expected: PASS — `TestJobInvariants` and `TestSchedule` were not touched and cover behavior
 confirmed unchanged.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/test_models.py
@@ -2072,12 +2072,12 @@ git commit -m "test: drop TestConfigRevision, config_revision no longer exists"
 **Files:**
 - Modify: `tests/test_enqueue.py`
 
-- [ ] **Step 1: Delete the archived-config test**
+- [x] **Step 1: Delete the archived-config test**
 
 Delete `test_an_archived_config_is_refused` from `TestPreconditions` in full — `Config.archived`
 no longer exists, so there is nothing left to refuse on that basis.
 
-- [ ] **Step 2: Drop `config_revision` assertions from `TestSnapshot`**
+- [x] **Step 2: Drop `config_revision` assertions from `TestSnapshot`**
 
 Change:
 
@@ -2128,13 +2128,13 @@ to:
         assert Job.objects.get(pk=job.pk).effective_parameters == original
 ```
 
-- [ ] **Step 3: Delete the dashboard-cache test from `TestInvalidParameters`**
+- [x] **Step 3: Delete the dashboard-cache test from `TestInvalidParameters`**
 
 Delete `test_the_recorded_failure_refreshes_the_dashboard_cache` in full — it asserted
 `Config.last_status`/`last_job_id` directly, both removed. The Job itself reaching `FAILED` is
 already covered by `test_a_scheduled_fire_records_a_failed_job_instead`.
 
-- [ ] **Step 4: Run the file**
+- [x] **Step 4: Run the file**
 
 ```bash
 uv run pytest tests/test_enqueue.py -x -q
@@ -2142,7 +2142,7 @@ uv run pytest tests/test_enqueue.py -x -q
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test_enqueue.py
@@ -2158,7 +2158,7 @@ git commit -m "test: drop archived-config and revision/cache-column coverage fro
 - Modify: `src/control/templates/dashboard/index.html`
 - Test: `tests/test_dashboard.py`
 
-- [ ] **Step 1: Check what `test_dashboard.py` currently asserts**
+- [x] **Step 1: Check what `test_dashboard.py` currently asserts**
 
 ```bash
 grep -n "last_status\|last_run_at\|last_job_id\|archived" tests/test_dashboard.py
@@ -2168,7 +2168,7 @@ If this reports nothing (per the earlier project-wide grep it should), no test c
 here — only production code. If it does report matches, update those assertions the same way as
 Task 13 Step 3/5 (read the latest `Job` for the `Config` under test instead of a cache column).
 
-- [ ] **Step 2: Update `index()` to annotate instead of filtering by `archived` and reading cache
+- [x] **Step 2: Update `index()` to annotate instead of filtering by `archived` and reading cache
   columns**
 
 Replace:
@@ -2233,7 +2233,7 @@ def index(request: HttpRequest) -> HttpResponse:
     )
 ```
 
-- [ ] **Step 3: Update the template**
+- [x] **Step 3: Update the template**
 
 In `src/control/templates/dashboard/index.html`, replace:
 
@@ -2267,7 +2267,7 @@ with:
             <td class="muted">{{ config.latest_job_at|default:"—" }}</td>
 ```
 
-- [ ] **Step 4: Run the dashboard suite**
+- [x] **Step 4: Run the dashboard suite**
 
 ```bash
 uv run pytest tests/test_dashboard.py -x -q
@@ -2275,7 +2275,7 @@ uv run pytest tests/test_dashboard.py -x -q
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/control/dashboard/views.py src/control/templates/dashboard/index.html tests/test_dashboard.py
@@ -2291,7 +2291,7 @@ git commit -m "refactor: dashboard reads latest Job status via subquery instead 
   `0005-config-parameter-fields.md`
 - Modify: `README.md`, `README.ru.md`
 
-- [ ] **Step 1: Delete the ADR files**
+- [x] **Step 1: Delete the ADR files**
 
 ```bash
 rm docs/architecture/adr/0001-architecture-baseline.md \
@@ -2301,7 +2301,7 @@ rm docs/architecture/adr/0001-architecture-baseline.md \
    docs/architecture/adr/0005-config-parameter-fields.md
 ```
 
-- [ ] **Step 2: Fix `README.md` and `README.ru.md`**
+- [x] **Step 2: Fix `README.md` and `README.ru.md`**
 
 Both files link to the now-deleted ADRs and to `CLAUDE.md` (already removed in a prior commit).
 Remove the "Архитектура и обоснование решений" / "Architecture and rationale" bullet list pointing
@@ -2316,7 +2316,7 @@ doc:
 
 (Mirror the equivalent sentence in `README.md`'s English section.)
 
-- [ ] **Step 3: Confirm nothing else references the deleted files**
+- [x] **Step 3: Confirm nothing else references the deleted files**
 
 ```bash
 grep -rn "architecture/adr\|CLAUDE.md" --include=*.md --include=*.py . 2>/dev/null | grep -v docs/superpowers
@@ -2325,7 +2325,7 @@ grep -rn "architecture/adr\|CLAUDE.md" --include=*.md --include=*.py . 2>/dev/nu
 Expected: no remaining hits outside `docs/superpowers/` (the design/plan docs themselves are
 allowed to mention the old ADRs as historical context).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A docs/architecture/adr README.md README.ru.md
@@ -2338,7 +2338,7 @@ git commit -m "docs: retire ADR 0001-0005, point README at the control-models re
 
 **Files:** none — this is a checkpoint, not an edit.
 
-- [ ] **Step 1: Run the whole test suite**
+- [x] **Step 1: Run the whole test suite**
 
 ```bash
 uv run pytest -q
@@ -2346,7 +2346,7 @@ uv run pytest -q
 
 Expected: PASS, zero failures.
 
-- [ ] **Step 2: Run the project's own verification barrier**
+- [x] **Step 2: Run the project's own verification barrier**
 
 ```bash
 make verify
@@ -2355,14 +2355,14 @@ make verify
 Expected: passes — Django system checks, migration drift check, `ruff`, `import-linter` contracts,
 and the full test suite (the same barrier CI would run).
 
-- [ ] **Step 3: If anything fails**
+- [x] **Step 3: If anything fails**
 
 Use `superpowers:systematic-debugging` rather than patching symptoms — this plan's tasks were
 ordered so each file's dependents come right after it, but a missed cross-reference (an
 `import-linter` contract catching a stray import, a template tag referencing a removed context
 key) is still possible. Fix at the root file identified above, not by re-adding a removed field.
 
-- [ ] **Step 4: Final commit if Step 3 needed one**
+- [x] **Step 4: Final commit if Step 3 needed one**
 
 ```bash
 git add -A

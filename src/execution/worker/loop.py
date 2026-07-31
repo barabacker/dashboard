@@ -21,7 +21,7 @@ from django.db import close_old_connections
 
 from collectors import registry
 from collectors.runners.base import Cancelled, RunResult
-from control.models import Config, Job
+from control.models import Job
 from execution.queue import LeaseLost, claim_job, finish_job
 from execution.worker.context import DbRunContext
 
@@ -157,13 +157,9 @@ class Worker:
         )
         if not written:
             # Lost the claim between running and finishing. The reclaiming executor owns the
-            # outcome; the cache columns must not be touched either.
+            # outcome.
             return
 
-        finished = Job.objects.values_list("finished_at", flat=True).get(pk=job.pk)
-        Config.record_job_outcome(
-            config_id=job.config_id, job_id=job.pk, status=result.status, finished_at=finished
-        )
         logger.info(
             "job %s: %s (%s)",
             job.pk,

@@ -11,12 +11,9 @@ Shape of the surface:
 
 from __future__ import annotations
 
-from functools import partial
-
 from django.contrib import admin, messages
 from django.db import transaction
-from django.db.models import QuerySet
-from django.forms.models import modelform_factory
+from django.db.models import OuterRef, QuerySet, Subquery
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import URLPattern, path, reverse
@@ -133,7 +130,7 @@ class CollectorAdmin(ModelAdmin):
 class ScheduleInline(TabularInline):
     model = Schedule
     extra = 0
-    fields = ("cron", "timezone", "enabled", "overlap_policy", "catchup_policy", "last_fired_at")
+    fields = ("cron", "timezone", "enabled", "skip_if_running", "last_fired_at")
     readonly_fields = ("last_fired_at",)
     show_change_link = True
 
@@ -141,28 +138,22 @@ class ScheduleInline(TabularInline):
 class ConfigInline(TabularInline):
     """Add another named profile to this source without leaving its page.
 
-    The other half of the "one guided step" from ADR 0004: the Config-add form already lets you
-    register a brand-new source inline (via the `source` field's own add-popup); this is the
-    reverse direction — a *second* profile (`full`, `fast`, ...) for a site that already has one.
-    `source` is implied by the parent row, so it is deliberately not one of the visible fields;
-    everything beyond name/collector/enabled — parameters, tags, schedules — stays on the
-    profile's own change page, reached via `show_change_link`.
+    The other half of the "one guided step" from the Source/Config split: the Config-add form
+    already lets you register a brand-new source inline (via the `source` field's own add-popup);
+    this is the reverse direction — a *second* profile (`full`, `fast`, ...) for a site that
+    already has one. `source` is implied by the parent row, so it is deliberately not one of the
+    visible fields; everything beyond name/collector/enabled — parameters, schedules — stays on
+    the profile's own change page, reached via `show_change_link`.
+
+    Uses the plain `ConfigForm` (not a subclass): the only reason a subclass ever existed was to
+    suppress the old per-`ParamSpec` dynamic field generation, which no longer happens. The
+    `fields` tuple below already limits what's rendered; `ConfigForm.clean()`'s `is_site` gate
+    still runs because Django's inline formset machinery substitutes an `InlineForeignKeyField`
+    for the (unrendered) `source` field, whose `clean()` returns the parent instance.
     """
 
-    class ConfigInlineForm(ConfigForm):
-        """Skips the dynamic per-collector parameter fields entirely.
-
-        They would otherwise still get built (`ConfigForm.__init__` doesn't know it is being used
-        inside a formset that only shows three columns) and end up validated-but-invisible, or
-        worse, rendered as extra inline columns nobody asked for. Behavioural parameters stay on
-        the profile's own change page, reached via `show_change_link`.
-        """
-
-        def _add_parameter_fields(self, collector_key: str) -> None:
-            return
-
     model = Config
-    form = ConfigInlineForm
+    form = ConfigForm
     fk_name = "source"
     extra = 0
     fields = ("name", "collector_key", "enabled")
@@ -180,33 +171,42 @@ class ConfigAdmin(ModelAdmin):
         "collector_key",
         "source",
         "enabled",
-        "archived",
-        "last_status_badge",
-        "last_run_at",
-        "last_job_link",
-        "revision",
+        "latest_status_badge",
+        "latest_job_at_display",
+        "latest_job_link",
         "owner",
     )
-    list_filter = ("collector_key", "source", "enabled", "archived", "last_status")
+    list_filter = ("collector_key", "source", "enabled")
     search_fields = ("name", "collector_key")
     autocomplete_fields = ("owner", "source")
     readonly_fields = (
-        "revision",
         "created_by",
         "created_at",
         "updated_at",
-        "last_status",
-        "last_run_at",
-        "last_job_link",
         "resolved_preview",
     )
-    actions = [
-        "action_run_now",
-        "action_enable",
-        "action_disable",
-        "action_archive",
-        "action_unarchive",
-    ]
+    fieldsets = (
+        (None, {"fields": ("name", "collector_key", "source", "parameters")}),
+        ("Что уйдёт в задачу", {"fields": ("resolved_preview",), "classes": ("collapse",)}),
+        ("Состояние", {"fields": ("enabled", "owner")}),
+        (
+            "Аудит",
+            {"fields": ("created_by", "created_at", "updated_at"), "classes": ("collapse",)},
+        ),
+    )
+    actions = ["action_run_now", "action_enable", "action_disable"]
+
+    def get_queryset(self, request: HttpRequest) -> QuerySet[Config]:
+        latest_job = Job.objects.filter(config_id=OuterRef("pk")).order_by("-created_at")
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                latest_job_status=Subquery(latest_job.values("status")[:1]),
+                latest_job_id_ann=Subquery(latest_job.values("id")[:1]),
+                latest_job_at=Subquery(latest_job.values("created_at")[:1]),
+            )
+        )
 
     def save_model(self, request: HttpRequest, obj: Config, form, change: bool) -> None:
         if not change:
@@ -215,72 +215,22 @@ class ConfigAdmin(ModelAdmin):
                 obj.owner = request.user
         super().save_model(request, obj, form, change)
 
-    def get_form(
-        self, request: HttpRequest, obj: Config | None = None, change: bool = False, **kwargs
-    ):
-        """Builds the form from `ConfigForm.Meta.fields` (static), not from `get_fieldsets()`.
+    @admin.display(description="Последний статус", ordering="latest_job_status")
+    def latest_status_badge(self, obj: Config) -> SafeString:
+        return _status_badge(getattr(obj, "latest_job_status", "") or "")
 
-        Django's default `get_form()` passes `fields=flatten_fieldsets(self.get_fieldsets(...))`
-        into `modelform_factory` — but our fieldsets name the dynamic per-collector parameter
-        fields, which are not real `Config` model fields and would make `modelform_factory` raise
-        `FieldError`. Calling it directly here, with no `fields`/`exclude` override, falls back to
-        `ConfigForm.Meta`'s own (static, always-valid) field list; the dynamic parameter fields are
-        added afterwards, in `ConfigForm.__init__`, same as always. `formfield_callback` is kept so
-        `source`/`owner` still get their admin widgets (autocomplete, the "add related" popup).
-        """
-        return modelform_factory(
-            self.model,
-            form=self.form,
-            formfield_callback=partial(self.formfield_for_dbfield, request=request),
-        )
-
-    def get_fieldsets(
-        self, request: HttpRequest, obj: Config | None = None
-    ) -> tuple[tuple[str | None, dict], ...]:
-        """The parameter fields vary by collector, so the fieldset can't be a static tuple.
-
-        Building a throwaway probe form the same way the real one will be built — bound to
-        `request.POST` on a submit, to the add-page's `?collector_key=` reload on a fresh GET, or
-        to the instance's own value on an existing profile — is what
-        `ConfigForm._current_collector_key` already resolves; asking it here keeps that priority
-        order in one place instead of duplicating it. Instantiates `self.form` (`ConfigForm`)
-        directly rather than going through `self.get_form(request, obj)`: Django's default
-        `get_form()` calls back into `get_fieldsets()` to compute which fields to include, so
-        calling it from here would recurse.
-        """
-        initial = self.get_changeform_initial_data(request) if obj is None else None
-        probe = self.form(request.POST or None, instance=obj, initial=initial)
-        param_fields = tuple(probe._param_field_names)
-        return (
-            (None, {"fields": ("name", "collector_key", "source", *param_fields)}),
-            ("Что уйдёт в задачу", {"fields": ("resolved_preview",), "classes": ("collapse",)}),
-            ("Состояние", {"fields": ("enabled", "archived", "tags", "owner")}),
-            (
-                "Последний запуск (кэш-колонки)",
-                {
-                    "fields": ("last_status", "last_run_at", "last_job_link"),
-                    "classes": ("collapse",),
-                },
-            ),
-            (
-                "Аудит",
-                {
-                    "fields": ("revision", "created_by", "created_at", "updated_at"),
-                    "classes": ("collapse",),
-                },
-            ),
-        )
-
-    @admin.display(description="Последний статус", ordering="last_status")
-    def last_status_badge(self, obj: Config) -> SafeString:
-        return _status_badge(obj.last_status)
+    @admin.display(description="Последний запуск", ordering="latest_job_at")
+    def latest_job_at_display(self, obj: Config) -> str:
+        value = getattr(obj, "latest_job_at", None)
+        return "—" if value is None else str(value)
 
     @admin.display(description="Последняя задача")
-    def last_job_link(self, obj: Config) -> SafeString:
-        if not obj.last_job_id:
+    def latest_job_link(self, obj: Config) -> SafeString:
+        job_id = getattr(obj, "latest_job_id_ann", None)
+        if not job_id:
             return format_html("—")
-        url = reverse("admin:control_job_change", args=[obj.last_job_id])
-        return format_html('<a href="{}">Задача #{}</a>', url, obj.last_job_id)
+        url = reverse("admin:control_job_change", args=[job_id])
+        return format_html('<a href="{}">Задача #{}</a>', url, job_id)
 
     @admin.display(description="Итоговые параметры")
     def resolved_preview(self, obj: Config) -> SafeString:
@@ -308,8 +258,6 @@ class ConfigAdmin(ModelAdmin):
         return format_html("<table><tbody>{}</tbody></table>", rows)
 
     def _bulk(self, request: HttpRequest, queryset: QuerySet[Config], **updates) -> int:
-        # Deliberately per-instance: `revision` is bumped in `Config.save()`, and a bulk
-        # `queryset.update()` would route around it.
         count = 0
         for config in queryset:
             for field, value in updates.items():
@@ -349,20 +297,10 @@ class ConfigAdmin(ModelAdmin):
         n = self._bulk(request, queryset, enabled=False)
         self.message_user(request, f"Выключено конфигураций: {n}.", messages.SUCCESS)
 
-    @admin.action(description="В архив (мягкое удаление)")
-    def action_archive(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
-        n = self._bulk(request, queryset, archived=True)
-        self.message_user(request, f"Отправлено в архив: {n}.", messages.SUCCESS)
-
-    @admin.action(description="Вернуть из архива")
-    def action_unarchive(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
-        n = self._bulk(request, queryset, archived=False)
-        self.message_user(request, f"Возвращено из архива: {n}.", messages.SUCCESS)
-
 
 @admin.register(Source)
 class SourceAdmin(ModelAdmin):
-    """The site registry: domain, listing path, TLS quirks — one row per real site.
+    """The site registry: domain, start URL, TLS quirks — one row per real site.
 
     Behaviour — which collector, how many pages, how many requests at once — lives on the
     `Config` profiles that reference a Source (see `ConfigAdmin`), not here. A Source knows
@@ -372,12 +310,11 @@ class SourceAdmin(ModelAdmin):
 
     form = SourceForm
     inlines = [ConfigInline]
-    list_display = ("name", "domain", "listing_path", "profiles_count", "archived")
-    list_filter = ("archived", "skip_tls_verify")
+    list_display = ("name", "domain", "start_url", "profiles_count")
     search_fields = ("name", "domain")
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
-        (None, {"fields": ("name", "domain", "listing_path")}),
+        (None, {"fields": ("name", "domain", "start_url")}),
         (
             "TLS",
             {
@@ -387,7 +324,6 @@ class SourceAdmin(ModelAdmin):
                 "По умолчанию не нужны.",
             },
         ),
-        ("Состояние", {"fields": ("archived",)}),
         ("Аудит", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
     )
 
@@ -403,11 +339,10 @@ class ScheduleAdmin(ModelAdmin):
         "cron",
         "timezone",
         "enabled",
-        "overlap_policy",
-        "catchup_policy",
+        "skip_if_running",
         "last_fired_at",
     )
-    list_filter = ("enabled", "overlap_policy", "catchup_policy", "timezone")
+    list_filter = ("enabled", "skip_if_running", "timezone")
     search_fields = ("config__name", "cron")
     autocomplete_fields = ("config",)
     readonly_fields = ("last_fired_at", "created_at", "updated_at")
@@ -445,7 +380,6 @@ class JobAdmin(ModelAdmin):
                     "effective_parameters",
                     "config_link",
                     "config_id",
-                    "config_revision",
                 )
             },
         ),
@@ -497,7 +431,7 @@ class JobAdmin(ModelAdmin):
         if config is None:
             return format_html("#{} (удалена)", obj.config_id)
         url = reverse("admin:control_config_change", args=[config.pk])
-        return format_html('<a href="{}">{}</a> (рев. {})', url, config.name, obj.config_revision)
+        return format_html('<a href="{}">{}</a>', url, config.name)
 
     @admin.display(description="Длительность")
     def duration(self, obj: Job) -> str:
@@ -623,11 +557,10 @@ class JobAdmin(ModelAdmin):
 
         with transaction.atomic():
             deleted = Job.objects.all().delete()[0]
-            forgotten = Config.forget_job_outcomes()
 
         self.message_user(
             request,
-            f"Удалено задач: {deleted}. Сброшен последний статус у конфигураций: {forgotten}.",
+            f"Удалено задач: {deleted}.",
             messages.SUCCESS if deleted else messages.INFO,
         )
         return self._changelist_redirect()

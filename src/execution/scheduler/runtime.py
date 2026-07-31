@@ -20,7 +20,7 @@ from datetime import datetime
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from control.models import Config, Job, JobOrigin, JobStatus, OverlapPolicy, Schedule
+from control.models import Config, Job, JobOrigin, JobStatus, Schedule
 from control.services import EnqueueRefused, enqueue
 from execution.scheduler.occurrences import DEFAULT_MAX_CATCHUP, due_occurrences
 
@@ -88,11 +88,10 @@ def _process_schedule(
 
 
 def _fire(schedule: Schedule, config: Config, *, fire_time: datetime, report: TickReport) -> None:
-    # Only `skip` changes what the scheduler does. `queue` and `allow` both enqueue — under
-    # Option A they are indistinguishable at runtime, because keeping a queued run from
-    # overlapping needs the per-stream claim predicate from Option B. See the "Known limitation"
-    # note in CLAUDE.md before treating `queue` as mutual exclusion.
-    if schedule.overlap_policy == OverlapPolicy.SKIP and _has_active_job(config):
+    # `skip_if_running=False` is not a queueing guarantee — it just does not check for an
+    # active run before enqueuing. Preventing two runs of the same Config from ever overlapping
+    # would need a per-stream claim predicate this queue does not have.
+    if schedule.skip_if_running and _has_active_job(config):
         # Drop the occurrence, but still move the cursor past it — otherwise it stays "due"
         # forever and fires the moment the current run ends.
         Schedule.objects.filter(pk=schedule.pk).update(last_fired_at=fire_time)

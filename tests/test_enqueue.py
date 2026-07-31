@@ -20,12 +20,6 @@ class TestPreconditions:
         assert exc_info.value.reason == "config_disabled"
         assert Job.objects.count() == 0
 
-    def test_an_archived_config_is_refused(self, make_config):
-        config = make_config(archived=True)
-        with pytest.raises(EnqueueRefused) as exc_info:
-            enqueue(config)
-        assert exc_info.value.reason == "config_archived"
-
     def test_a_collector_that_left_the_codebase_is_refused(self, make_config):
         config = make_config(collector_key="gone")
         with pytest.raises(EnqueueRefused) as exc_info:
@@ -48,7 +42,6 @@ class TestSnapshot:
         job = enqueue(config)
 
         assert job.config_id == config.pk
-        assert job.config_revision == config.revision
         assert job.status == JobStatus.PENDING
         # Defaults applied, nothing left implicit.
         assert job.effective_parameters["since"] == ""
@@ -63,8 +56,6 @@ class TestSnapshot:
         config.save()
 
         assert Job.objects.get(pk=job.pk).effective_parameters == original
-        assert Job.objects.get(pk=job.pk).config_revision == 1
-        assert Config.objects.get(pk=config.pk).revision == 2
 
     def test_the_credential_reference_is_snapshotted_but_never_the_secret(self, make_config):
         config = make_config(
@@ -112,11 +103,6 @@ class TestInvalidParameters:
     def test_the_recorded_failure_is_not_claimable(self, stale_config):
         enqueue(stale_config, origin=JobOrigin.SCHEDULE)
         assert Job.objects.filter(status=JobStatus.PENDING).count() == 0
-
-    def test_the_recorded_failure_refreshes_the_dashboard_cache(self, stale_config):
-        job = enqueue(stale_config, origin=JobOrigin.SCHEDULE)
-        reloaded = Config.objects.get(pk=stale_config.pk)
-        assert (reloaded.last_status, reloaded.last_job_id) == (JobStatus.FAILED, job.pk)
 
     def test_the_policy_can_be_forced_either_way(self, stale_config):
         job = enqueue(
