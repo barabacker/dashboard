@@ -2,53 +2,69 @@
 Refreshed in place by HTMX every few seconds. Keep the id and the hx-* attributes on the root
 element — they are what makes the swap re-arm itself.
 {% endcomment %}
-<div id="jobs-panel" hx-get="{% url 'dashboard:jobs_panel' %}"
-     hx-trigger="every 5s" hx-swap="outerHTML">
-  <h2>Последние задачи</h2>
-  <ul class="tally">
+{% load dashboard_extras %}
+<div id="jobs-panel" hx-get="{% url 'dashboard:jobs_panel' %}" hx-trigger="every 5s" hx-swap="outerHTML">
+  <h2 class="text-sm font-semibold uppercase tracking-wide text-base-500 dark:text-base-400 mt-8 mb-2">
+    Последние задачи
+  </h2>
+
+  <ul class="flex flex-wrap gap-4 mb-3 text-sm">
     {% for tally in counts %}
-      <li><span class="status status-{{ tally.value }}">{{ tally.label }}</span> {{ tally.count }}</li>
+      <li class="flex items-center gap-1.5">
+        {% include "dashboard/_badge.html" with variant=tally.variant text=tally.label %}
+        <span class="text-base-500 dark:text-base-400">{{ tally.count }}</span>
+      </li>
     {% endfor %}
   </ul>
-  <section>
-    <table>
+
+  <div class="rounded-default border border-base-200 shadow-xs dark:border-base-800 bg-white dark:bg-base-900 overflow-x-auto">
+    <table class="w-full border-spacing-none border-separate whitespace-nowrap">
       <thead>
         <tr>
-          <th>#</th><th>Статус</th><th>Сборщик</th><th>Источник</th>
-          <th>Попытка</th><th>Создана</th><th>Длительность</th><th></th>
+          <th class="align-middle font-semibold py-2 px-3 text-left text-important">#</th>
+          <th class="align-middle font-semibold py-2 px-3 text-left text-important">Статус</th>
+          <th class="align-middle font-semibold py-2 px-3 text-left text-important">Сборщик</th>
+          <th class="align-middle font-semibold py-2 px-3 text-left text-important">Источник</th>
+          <th class="align-middle font-semibold py-2 px-3 text-left text-important">Попытка</th>
+          <th class="align-middle font-semibold py-2 px-3 text-left text-important">Создана</th>
+          <th class="align-middle font-semibold py-2 px-3 text-left text-important">Длительность</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
         {% for job in jobs %}
-          <tr>
-            <td><a href="{% url 'admin:control_job_change' job.pk %}">{{ job.pk }}</a></td>
-            <td>
-              <span class="status status-{{ job.status }}">{{ job.get_status_display }}</span>
+          <tr class="border-t border-base-200 dark:border-base-800">
+            <td class="px-3 py-2">
+              <a class="text-important hover:underline" href="{% url 'admin:control_job_change' job.pk %}">{{ job.pk }}</a>
+            </td>
+            <td class="px-3 py-2">
+              {% include "dashboard/_badge.html" with variant=job.status|dashboard_status_variant text=job.get_status_display %}
               {% if job.cancel_requested and job.status == 'running' %}
-                <span class="muted">· отменяется</span>
+                <span class="text-base-400 dark:text-base-500 text-sm">· отменяется</span>
               {% endif %}
             </td>
-            <td><code>{{ job.collector_key }}</code></td>
-            <td class="muted">{{ job.get_origin_display }}</td>
-            <td class="muted">{{ job.attempt_no }}</td>
-            <td class="muted">{{ job.created_at }}</td>
-            <td class="muted">
-              {% if job.duration_seconds %}{{ job.duration_seconds|floatformat:1 }} с
-              {% else %}—{% endif %}
+            <td class="px-3 py-2 font-mono text-sm text-base-500 dark:text-base-400">{{ job.collector_key }}</td>
+            <td class="px-3 py-2 text-base-500 dark:text-base-400">{{ job.get_origin_display }}</td>
+            <td class="px-3 py-2 text-base-500 dark:text-base-400">{{ job.attempt_no }}</td>
+            <td class="px-3 py-2 text-base-500 dark:text-base-400">{{ job.created_at }}</td>
+            <td class="px-3 py-2 text-base-500 dark:text-base-400">
+              {% if job.duration_seconds %}{{ job.duration_seconds|floatformat:1 }} с{% else %}—{% endif %}
             </td>
-            <td>
+            <td class="px-3 py-2 text-right">
               {% if job.is_active and not job.cancel_requested %}
                 <form method="post" action="{% url 'dashboard:cancel_job' job.pk %}">
                   {% csrf_token %}
-                  <button type="submit">Отменить</button>
+                  <button type="submit" class="font-medium inline-flex items-center gap-1 rounded-default justify-center whitespace-nowrap cursor-pointer px-2.5 py-1.5 text-sm border border-red-600 bg-red-600 text-white hover:bg-red-600/80">
+                    Отменить
+                  </button>
                 </form>
               {% endif %}
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="8" class="empty">Ещё ничего не запускалось.</td></tr>
+          <tr><td colspan="8" class="px-3 py-6 text-center text-base-400 dark:text-base-500">Ещё ничего не запускалось.</td></tr>
         {% endfor %}
       </tbody>
     </table>
-  </section>
+  </div>
 </div>
