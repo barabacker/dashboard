@@ -11,7 +11,7 @@ COMPOSE ?= docker compose
 # the file from the repository root.
 
 .DEFAULT_GOAL := help
-.PHONY: help install env check migrations migrate seed platforms collectors run worker scheduler tick \
+.PHONY: help install env check migrations migrate seed sources collectors run worker scheduler tick \
         shell superuser test test-unit lint fmt contracts verify \
         up down restart build logs ps db docker-migrate docker-seed docker-shell clean reset-db
 
@@ -39,8 +39,8 @@ migrate:  ## Apply migrations
 seed:  ## Dev data: admin/admin superuser, collector projection, sample configs (idempotent)
 	$(MANAGE) seed
 
-platforms:  ## Create the trading platforms carried over from the parser project (idempotent)
-	$(MANAGE) seed_platforms
+sources:  ## Create the sources carried over from the parser project (idempotent)
+	$(MANAGE) seed_sources
 
 collectors:  ## Sync the Collector projection from collector code (run on deploy)
 	$(MANAGE) sync_collectors
