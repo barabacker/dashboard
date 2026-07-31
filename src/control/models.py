@@ -109,9 +109,15 @@ class Source(models.Model):
     so a referenced Source cannot be removed out from under the profiles that point at it.
     """
 
+    #: The Source fields that double as collector parameters — merged into `effective_parameters`
+    #: at enqueue (`Config.raw_parameters`) and, for that reason, excluded from the dynamic
+    #: per-profile fields `ConfigForm` builds from a collector's `ParamSpec` list: a name must not
+    #: be editable in two places at once.
+    PARAM_FIELDS = ("domain", "listing_path", "extra_ca_cert", "skip_tls_verify")
+
     #: Fields whose change means "this site's identity changed" — every Config profile
     #: referencing this Source has its `revision` bumped when one of these moves (`save()` below).
-    REVISIONED_FIELDS = ("domain", "listing_path", "extra_ca_cert", "skip_tls_verify", "archived")
+    REVISIONED_FIELDS = (*PARAM_FIELDS, "archived")
 
     name = models.CharField("Название", max_length=200)
     domain = models.URLField(
@@ -344,12 +350,7 @@ class Config(models.Model):
         except schemas.UnknownCollector:
             return dict(self.parameters)
 
-        source_fields = {
-            "domain": self.source.domain,
-            "listing_path": self.source.listing_path,
-            "extra_ca_cert": self.source.extra_ca_cert,
-            "skip_tls_verify": self.source.skip_tls_verify,
-        }
+        source_fields = {name: getattr(self.source, name) for name in Source.PARAM_FIELDS}
         merged: dict[str, Any] = {}
         for param_name, value in source_fields.items():
             spec = descriptor.param(param_name)

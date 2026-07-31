@@ -11,9 +11,12 @@ Shape of the surface:
 
 from __future__ import annotations
 
+from functools import partial
+
 from django.contrib import admin, messages
 from django.db import transaction
 from django.db.models import QuerySet
+from django.forms.models import modelform_factory
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import URLPattern, path, reverse
@@ -146,8 +149,20 @@ class ConfigInline(TabularInline):
     profile's own change page, reached via `show_change_link`.
     """
 
+    class ConfigInlineForm(ConfigForm):
+        """Skips the dynamic per-collector parameter fields entirely.
+
+        They would otherwise still get built (`ConfigForm.__init__` doesn't know it is being used
+        inside a formset that only shows three columns) and end up validated-but-invisible, or
+        worse, rendered as extra inline columns nobody asked for. Behavioural parameters stay on
+        the profile's own change page, reached via `show_change_link`.
+        """
+
+        def _add_parameter_fields(self, collector_key: str) -> None:
+            return
+
     model = Config
-    form = ConfigForm
+    form = ConfigInlineForm
     fk_name = "source"
     extra = 0
     fields = ("name", "collector_key", "enabled")
@@ -185,21 +200,6 @@ class ConfigAdmin(ModelAdmin):
         "last_job_link",
         "resolved_preview",
     )
-    fieldsets = (
-        (None, {"fields": ("name", "collector_key", "source", "parameters", "resolved_preview")}),
-        ("Состояние", {"fields": ("enabled", "archived", "tags", "owner")}),
-        (
-            "Последний запуск (кэш-колонки)",
-            {"fields": ("last_status", "last_run_at", "last_job_link"), "classes": ("collapse",)},
-        ),
-        (
-            "Аудит",
-            {
-                "fields": ("revision", "created_by", "created_at", "updated_at"),
-                "classes": ("collapse",),
-            },
-        ),
-    )
     actions = [
         "action_run_now",
         "action_enable",
@@ -214,6 +214,62 @@ class ConfigAdmin(ModelAdmin):
             if obj.owner_id is None:
                 obj.owner = request.user
         super().save_model(request, obj, form, change)
+
+    def get_form(
+        self, request: HttpRequest, obj: Config | None = None, change: bool = False, **kwargs
+    ):
+        """Builds the form from `ConfigForm.Meta.fields` (static), not from `get_fieldsets()`.
+
+        Django's default `get_form()` passes `fields=flatten_fieldsets(self.get_fieldsets(...))`
+        into `modelform_factory` — but our fieldsets name the dynamic per-collector parameter
+        fields, which are not real `Config` model fields and would make `modelform_factory` raise
+        `FieldError`. Calling it directly here, with no `fields`/`exclude` override, falls back to
+        `ConfigForm.Meta`'s own (static, always-valid) field list; the dynamic parameter fields are
+        added afterwards, in `ConfigForm.__init__`, same as always. `formfield_callback` is kept so
+        `source`/`owner` still get their admin widgets (autocomplete, the "add related" popup).
+        """
+        return modelform_factory(
+            self.model,
+            form=self.form,
+            formfield_callback=partial(self.formfield_for_dbfield, request=request),
+        )
+
+    def get_fieldsets(
+        self, request: HttpRequest, obj: Config | None = None
+    ) -> tuple[tuple[str | None, dict], ...]:
+        """The parameter fields vary by collector, so the fieldset can't be a static tuple.
+
+        Building a throwaway probe form the same way the real one will be built — bound to
+        `request.POST` on a submit, to the add-page's `?collector_key=` reload on a fresh GET, or
+        to the instance's own value on an existing profile — is what
+        `ConfigForm._current_collector_key` already resolves; asking it here keeps that priority
+        order in one place instead of duplicating it. Instantiates `self.form` (`ConfigForm`)
+        directly rather than going through `self.get_form(request, obj)`: Django's default
+        `get_form()` calls back into `get_fieldsets()` to compute which fields to include, so
+        calling it from here would recurse.
+        """
+        initial = self.get_changeform_initial_data(request) if obj is None else None
+        probe = self.form(request.POST or None, instance=obj, initial=initial)
+        param_fields = tuple(probe._param_field_names)
+        return (
+            (None, {"fields": ("name", "collector_key", "source", *param_fields)}),
+            ("Что уйдёт в задачу", {"fields": ("resolved_preview",), "classes": ("collapse",)}),
+            ("Состояние", {"fields": ("enabled", "archived", "tags", "owner")}),
+            (
+                "Последний запуск (кэш-колонки)",
+                {
+                    "fields": ("last_status", "last_run_at", "last_job_link"),
+                    "classes": ("collapse",),
+                },
+            ),
+            (
+                "Аудит",
+                {
+                    "fields": ("revision", "created_by", "created_at", "updated_at"),
+                    "classes": ("collapse",),
+                },
+            ),
+        )
 
     @admin.display(description="Последний статус", ordering="last_status")
     def last_status_badge(self, obj: Config) -> SafeString:
