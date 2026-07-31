@@ -11,16 +11,23 @@ crawl converges rather than accumulates, and a lot missing from a pass says noth
 (see `control.models.Lot`'s docstring). A collector whose items are observations over time — a
 price on a given day — needs a different sink, one that inserts rather than upserts; this one is
 for lots specifically.
+
+**Sync pymongo under an async interface.** The collection calls themselves (`_ensure_indexes`,
+`_get_fingerprints`, `_upsert`) are plain blocking `pymongo`, run off the event loop through
+`asyncio.to_thread` — see `mongo.py` for why `motor` doesn't survive this worker's one-loop-per-job
+lifecycle. `save`/`get_fingerprints` stay `async def` because the engine awaits them.
 """
 
 from __future__ import annotations
 
+import asyncio
 import weakref
 from collections.abc import Sequence
 from datetime import datetime
 
 from django.utils import timezone
 from pymongo import ReturnDocument
+from pymongo.collection import Collection
 
 from collectors.engine.core.lot import Lot
 from collectors.engine.core.storage.contracts import ChangeStatus, fingerprint_of
@@ -35,7 +42,7 @@ from execution.worker.mongo import get_lots_collection
 _indexed_collections: dict[int, set[str]] = {}
 
 
-async def _ensure_indexes(collection) -> None:
+def _ensure_indexes(collection: Collection) -> None:
     """Create the sink's indexes once per collection per client.
 
     `create_index` is idempotent, so calling it more than once is harmless — this just keeps a warm
@@ -50,9 +57,9 @@ async def _ensure_indexes(collection) -> None:
     key = f"{collection.database.name}.{collection.name}"
     if key in seen:
         return
-    await collection.create_index([("source", 1), ("lot_id", 1)], unique=True, name="uniq_lot")
-    await collection.create_index([("source", 1), ("is_active", 1)], name="lot_by_source_active")
-    await collection.create_index([("last_seen_at", -1)], name="lot_by_last_seen")
+    collection.create_index([("source", 1), ("lot_id", 1)], unique=True, name="uniq_lot")
+    collection.create_index([("source", 1), ("is_active", 1)], name="lot_by_source_active")
+    collection.create_index([("last_seen_at", -1)], name="lot_by_last_seen")
     seen.add(key)
 
 
@@ -68,10 +75,41 @@ def _document_fields(lot: Lot) -> dict[str, object]:
     return values
 
 
+def _get_fingerprints(
+    collection: Collection, source: str, lot_ids: Sequence[str]
+) -> dict[str, str]:
+    _ensure_indexes(collection)
+    cursor = collection.find(
+        {"source": source, "lot_id": {"$in": list(lot_ids)}},
+        projection={"_id": False, "lot_id": True, "fingerprint": True},
+    )
+    return {doc["lot_id"]: doc["fingerprint"] for doc in cursor}
+
+
+def _upsert(
+    collection: Collection, item: Lot, fingerprint: str, now: datetime, job_id: int | None
+) -> dict | None:
+    _ensure_indexes(collection)
+    return collection.find_one_and_update(
+        {"source": item.source, "lot_id": item.lot_id},
+        {
+            "$set": {
+                **_document_fields(item),
+                "fingerprint": fingerprint,
+                "last_seen_at": now,
+                "last_job_id": job_id,
+            },
+            "$setOnInsert": {"first_seen_at": now},
+        },
+        upsert=True,
+        return_document=ReturnDocument.BEFORE,
+    )
+
+
 class MongoLotSink:
     """Upserts lots into the `lots` Mongo collection, one document per `(source, lot_id)`."""
 
-    def __init__(self, *, job_id: int | None = None, collection=None) -> None:
+    def __init__(self, *, job_id: int | None = None, collection: Collection | None = None) -> None:
         self.job_id = job_id
         self._collection = collection if collection is not None else get_lots_collection()
         self.new = 0
@@ -82,12 +120,7 @@ class MongoLotSink:
         """Batch-read the fingerprints this site already has stored."""
         if not lot_ids:
             return {}
-        await _ensure_indexes(self._collection)
-        cursor = self._collection.find(
-            {"source": source, "lot_id": {"$in": list(lot_ids)}},
-            projection={"_id": False, "lot_id": True, "fingerprint": True},
-        )
-        return {doc["lot_id"]: doc["fingerprint"] async for doc in cursor}
+        return await asyncio.to_thread(_get_fingerprints, self._collection, source, lot_ids)
 
     async def save(self, item: Lot) -> ChangeStatus:
         """Upsert one lot and report whether it was new, changed, or already known.
@@ -95,23 +128,10 @@ class MongoLotSink:
         `first_seen_at` is written only through `$setOnInsert`, so an update cannot move it — a lot
         is first seen exactly once.
         """
-        await _ensure_indexes(self._collection)
         fingerprint = fingerprint_of(item)
         now = timezone.now()
-
-        before = await self._collection.find_one_and_update(
-            {"source": item.source, "lot_id": item.lot_id},
-            {
-                "$set": {
-                    **_document_fields(item),
-                    "fingerprint": fingerprint,
-                    "last_seen_at": now,
-                    "last_job_id": self.job_id,
-                },
-                "$setOnInsert": {"first_seen_at": now},
-            },
-            upsert=True,
-            return_document=ReturnDocument.BEFORE,
+        before = await asyncio.to_thread(
+            _upsert, self._collection, item, fingerprint, now, self.job_id
         )
         if before is None:
             self.new += 1

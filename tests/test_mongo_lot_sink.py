@@ -1,9 +1,9 @@
 """Mirrors `test_lot_sink.py` — same behaviour contract, Mongo backend.
 
-Uses `mongomock-motor` (an in-memory fake with `motor`'s async API) instead of a real MongoDB
-server, so this suite runs without any extra service. It is not a substitute for pointing
-`MONGO_URI` at a real Mongo once — only that this sink's own logic (fingerprint comparison, upsert
-semantics, index creation) is exercised.
+Uses `mongomock` (an in-memory fake with `pymongo`'s sync API) instead of a real MongoDB server, so
+this suite runs without any extra service. It is not a substitute for pointing `MONGO_URI` at a real
+Mongo once — only that this sink's own logic (fingerprint comparison, upsert semantics, index
+creation) is exercised.
 """
 
 from __future__ import annotations
@@ -11,9 +11,9 @@ from __future__ import annotations
 import asyncio
 from datetime import timedelta
 
+import mongomock
 import pytest
 from django.utils import timezone
-from mongomock_motor import AsyncMongoMockClient
 
 from collectors.engine.core.lot import Lot
 from collectors.engine.core.storage.contracts import ChangeStatus, lot_fingerprint
@@ -24,7 +24,7 @@ SOURCE = "bankrupt.centerr.ru"
 
 @pytest.fixture
 def collection():
-    return AsyncMongoMockClient()["dashboard-test"]["lots"]
+    return mongomock.MongoClient()["dashboard-test"]["lots"]
 
 
 def raw_item(**overrides) -> dict[str, object]:
@@ -58,17 +58,11 @@ def save_all(sink: MongoLotSink, *lots: Lot) -> list[ChangeStatus]:
 
 
 def get_one(collection, source: str = SOURCE, lot_id: str = "0025093_1") -> dict:
-    async def run() -> dict:
-        return await collection.find_one({"source": source, "lot_id": lot_id})
-
-    return asyncio.run(run())
+    return collection.find_one({"source": source, "lot_id": lot_id})
 
 
 def count(collection) -> int:
-    async def run() -> int:
-        return await collection.count_documents({})
-
-    return asyncio.run(run())
+    return collection.count_documents({})
 
 
 class TestTheFingerprintRoundTrip:
@@ -154,14 +148,11 @@ class TestSaving:
     def test_first_seen_survives_but_last_seen_moves(self, collection):
         save_all(MongoLotSink(job_id=1, collection=collection), Lot.model_validate(raw_item()))
 
-        async def backdate() -> None:
-            three_days_ago = timezone.now() - timedelta(days=3)
-            await collection.update_one(
-                {"source": SOURCE, "lot_id": "0025093_1"},
-                {"$set": {"first_seen_at": three_days_ago, "last_seen_at": three_days_ago}},
-            )
-
-        asyncio.run(backdate())
+        three_days_ago = timezone.now() - timedelta(days=3)
+        collection.update_one(
+            {"source": SOURCE, "lot_id": "0025093_1"},
+            {"$set": {"first_seen_at": three_days_ago, "last_seen_at": three_days_ago}},
+        )
         before = get_one(collection)
 
         save_all(MongoLotSink(job_id=2, collection=collection), Lot.model_validate(raw_item()))
@@ -186,10 +177,7 @@ class TestSaving:
     def test_the_unique_index_matches_the_upsert_identity(self, collection):
         save_all(MongoLotSink(job_id=1, collection=collection), Lot.model_validate(raw_item()))
 
-        async def indexes() -> dict:
-            return await collection.index_information()
-
-        info = asyncio.run(indexes())
+        info = collection.index_information()
         assert info["uniq_lot"]["unique"] is True
         assert info["uniq_lot"]["key"] == [("source", 1), ("lot_id", 1)]
 
