@@ -69,57 +69,47 @@ class TestSourceForm:
 
 
 class TestConfigFormWithSource:
-    def test_profile_parameters_render_one_field_each_and_validate_with_the_source(self):
+    def test_parameters_are_a_single_json_field(self):
         source = Source.objects.create(name="Торги82", domain="https://lot.torgi82.ru")
         form = ConfigForm(
             data={
                 "name": "Торги82 — fast",
                 "collector_key": "tender_kendo",
                 "source": source.pk,
-                "max_pages": 0,
-                "only_active": "on",
-                "concurrency": 1,
+                "parameters": '{"max_pages": 0, "only_active": true, "concurrency": 1}',
                 "enabled": "on",
-                "tags": "[]",
             }
         )
         assert form.is_valid(), form.errors
-        # domain/listing_path/... are the source's fields — not re-asked here.
+        # domain/start_url/... are the source's fields — not re-asked here, and not part of
+        # the parameters JSON either.
         assert "domain" not in form.fields
-        assert "max_pages" in form.fields
 
         profile = form.save()
         assert profile.parameters == {"max_pages": 0, "only_active": True, "concurrency": 1}
         assert profile.raw_parameters()["domain"] == "https://lot.torgi82.ru"
 
-    def test_fetch_details_only_appears_for_the_engine_that_declares_it(self):
-        assert "fetch_details" in ConfigForm(data={"collector_key": "tender_fogsoft"}).fields
-        assert "fetch_details" not in ConfigForm(data={"collector_key": "tender_kendo"}).fields
-
-    def test_a_bad_profile_parameter_is_reported_on_its_own_field(self):
+    def test_a_bad_parameters_json_is_reported_on_the_field(self):
         source = Source.objects.create(name="Торги82", domain="https://lot.torgi82.ru")
         form = ConfigForm(
             data={
                 "name": "Торги82 — fast",
                 "collector_key": "tender_kendo",
                 "source": source.pk,
-                "max_pages": 0,
-                "only_active": "on",
-                "concurrency": 99,
+                "parameters": "{not json",
                 "enabled": "on",
-                "tags": "[]",
             }
         )
         assert not form.is_valid()
-        assert "concurrency" in form.errors
+        assert "parameters" in form.errors
 
     def test_without_a_source_a_site_shaped_collector_is_refused(self):
         form = ConfigForm(
             data={
                 "name": "Без сайта",
                 "collector_key": "tender_kendo",
+                "parameters": "{}",
                 "enabled": "on",
-                "tags": "[]",
             }
         )
         assert not form.is_valid()
@@ -133,8 +123,8 @@ class TestConfigFormWithSource:
                 "name": "Демо",
                 "collector_key": "example_api",
                 "source": source.pk,
+                "parameters": "{}",
                 "enabled": "on",
-                "tags": "[]",
             }
         )
         assert not form.is_valid()
