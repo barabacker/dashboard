@@ -42,7 +42,7 @@ def test_every_collector_has_a_runner():
 def test_a_domain_is_all_a_site_must_be_told(engine):
     effective = schemas.resolve_parameters(collector_key(engine), {"domain": "https://example.com"})
     assert effective["domain"] == "https://example.com"
-    assert effective["listing_path"] == DEFAULT_LISTING_PATHS[engine]
+    assert effective["start_url"] == DEFAULT_LISTING_PATHS[engine]
     assert effective["max_pages"] == 0
     assert effective["only_active"] is True
     assert effective["concurrency"] == 1

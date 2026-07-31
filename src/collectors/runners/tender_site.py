@@ -78,7 +78,7 @@ class TenderSiteRunner(Runner):
             spec = SiteSpec(
                 engine=self.engine,
                 domain=str(params["domain"]),
-                listing_path=str(params.get("listing_path") or ""),
+                listing_path=str(params.get("start_url") or ""),
                 extra_ca_cert=str(params.get("extra_ca_cert") or ""),
                 skip_tls_verify=bool(params.get("skip_tls_verify")),
             )
