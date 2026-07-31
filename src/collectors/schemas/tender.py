@@ -213,6 +213,7 @@ def _descriptor_for(engine: str) -> CollectorDescriptor:
         description=_DESCRIPTIONS[engine],
         summary=_SUMMARIES[engine],
         params=_params_for(engine),
+        is_site=True,
     )
 
 
