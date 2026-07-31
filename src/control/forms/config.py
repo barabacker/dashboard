@@ -26,6 +26,7 @@ class ConfigForm(forms.ModelForm):
         fields = [
             "name",
             "collector_key",
+            "source",
             "parameters",
             "enabled",
             "archived",
@@ -55,8 +56,12 @@ class ConfigForm(forms.ModelForm):
             self.add_error("parameters", "Параметры должны быть JSON-объектом.")
             return cleaned
 
+        # An unsaved probe: `raw_parameters()` only reads `collector_key`/`source`/`parameters`,
+        # none of which need a persisted row, and this keeps the source-merge logic in exactly
+        # the one place (`Config.raw_parameters`) that `enqueue` and the admin preview also use.
+        probe = Config(collector_key=key, parameters=parameters, source=cleaned.get("source"))
         try:
-            schemas.resolve_parameters(key, parameters)
+            schemas.resolve_parameters(key, probe.raw_parameters())
         except schemas.UnknownCollector:
             self.add_error("collector_key", f"Сборщика {key!r} нет в кодовой базе.")
             return cleaned

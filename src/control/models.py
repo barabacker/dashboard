@@ -14,10 +14,10 @@ from typing import Any
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import F, Q
 from django.utils import timezone
 
-from collectors.schemas.tender import KEY_PREFIX as TENDER_KEY_PREFIX
+from collectors import schemas
 
 
 def _snapshot_values(names: Iterable[str], values: Sequence[Any]) -> dict[str, Any]:
@@ -95,6 +95,101 @@ class Collector(models.Model):
         return f"{self.display_name} ({self.key})"
 
 
+class Source(models.Model):
+    """A site, authored: domain, listing path and TLS quirks — the identity a crawl needs before
+    behaviour (which collector, how many pages, how many requests at once) enters the picture.
+
+    Referenced by `Config.source`, not the other way around: one `Source` can back many named
+    `Config` profiles (`default`, `full`, `fast`, ...), each with its own collector and its own
+    behavioural parameters. `effective_parameters` at enqueue merges this Source's fields — filtered
+    to the ones the profile's collector actually declares — with the profile's own `parameters`
+    (see `Config.raw_parameters`); the two key sets are disjoint by construction.
+
+    Deletion is soft (`archived`), the same as `Config`. `Config.source` uses `on_delete=PROTECT`
+    so a referenced Source cannot be removed out from under the profiles that point at it.
+    """
+
+    #: Fields whose change means "this site's identity changed" — every Config profile
+    #: referencing this Source has its `revision` bumped when one of these moves (`save()` below).
+    REVISIONED_FIELDS = ("domain", "listing_path", "extra_ca_cert", "skip_tls_verify", "archived")
+
+    name = models.CharField("Название", max_length=200)
+    domain = models.URLField(
+        "Домен",
+        max_length=200,
+        help_text="Корень сайта площадки со схемой и без завершающего слэша, например "
+        "https://bankrupt.centerr.ru.",
+    )
+    listing_path = models.CharField(
+        "Путь к листингу",
+        max_length=200,
+        blank=True,
+        default="",
+        help_text="Пусто — путь по умолчанию для движка того профиля, который обходит этот сайт.",
+    )
+    extra_ca_cert = models.CharField(
+        "Доп. сертификат",
+        max_length=200,
+        blank=True,
+        default="",
+        help_text="Имя PEM-файла из collectors/certs с промежуточным сертификатом. Пусто — "
+        "обычный набор корневых сертификатов.",
+    )
+    skip_tls_verify = models.BooleanField(
+        "Не проверять сертификат",
+        default=False,
+        help_text="Полностью отключить проверку сертификата для этого сайта.",
+    )
+    archived = models.BooleanField(
+        "В архиве",
+        default=False,
+        help_text="Мягкое удаление. Профили, ссылающиеся на этот сайт, сохраняются.",
+    )
+    created_at = models.DateTimeField("Создан", auto_now_add=True)
+    updated_at = models.DateTimeField("Изменён", auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Источник"
+        verbose_name_plural = "Источники"
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.domain})"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """Cascade a `revision` bump onto every Config profile that references this Source.
+
+        `Config.save()` only reacts to its own fields; an edit here changes what a referencing
+        profile would resolve to just as much as an edit to the profile itself, so the profile's
+        `revision` must move too. A direct UPDATE — the same pattern `Config.record_job_outcome` /
+        `Config.forget_job_outcomes` already use — because this is an echo of this Source's own
+        edit, not an authored change to any one Config.
+        """
+        changed = self._revisioned_changed()
+        super().save(*args, **kwargs)
+        if changed:
+            Config.objects.filter(source=self).update(revision=F("revision") + 1)
+        tracked = self.REVISIONED_FIELDS
+        self._loaded_values = _snapshot_values(tracked, [getattr(self, name) for name in tracked])
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instance = super().from_db(db, field_names, values)
+        instance._loaded_values = _snapshot_values(field_names, values)
+        return instance
+
+    def _revisioned_changed(self) -> bool:
+        if self.pk is None:
+            return False
+        loaded = getattr(self, "_loaded_values", None)
+        if loaded is None:
+            return False
+        return any(
+            name in loaded and loaded[name] != getattr(self, name)
+            for name in self.REVISIONED_FIELDS
+        )
+
+
 class Config(models.Model):
     """The primary business object: *what to collect*, authored by a human.
 
@@ -102,10 +197,29 @@ class Config(models.Model):
     Deletion is soft (`archived`) so history keeps referring to something.
     """
 
-    #: Fields whose change means "the authored intent changed" and must bump `revision`.
-    REVISIONED_FIELDS = ("name", "collector_key", "parameters", "enabled", "archived", "tags")
+    #: Fields whose change means "the authored intent changed" and must bump `revision`. `source_id`
+    #: (not `source`) so checking it never triggers a related-object fetch.
+    REVISIONED_FIELDS = (
+        "name",
+        "collector_key",
+        "parameters",
+        "enabled",
+        "archived",
+        "tags",
+        "source_id",
+    )
 
     name = models.CharField("Название", max_length=200)
+    source = models.ForeignKey(
+        Source,
+        verbose_name="Источник",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="configs",
+        help_text="Сайт, чьи домен/путь листинга/TLS-настройки объединяются с параметрами этого "
+        "профиля при постановке в очередь. Пусто — у сборщика нет понятия сайта.",
+    )
     collector_key = models.CharField(
         "Сборщик",
         max_length=100,
@@ -213,6 +327,40 @@ class Config(models.Model):
         """The two enqueue preconditions that live on the Config itself (§6)."""
         return self.enabled and not self.archived
 
+    def raw_parameters(self) -> dict[str, Any]:
+        """`parameters`, extended with whatever `source` provides.
+
+        The two key sets are disjoint by construction — a `Source` field and a profile parameter
+        never share a name — so this is a plain union, never an override. Source fields are
+        filtered to the ones the collector's schema actually declares, so attaching a `source` to
+        a collector that knows nothing about, say, `listing_path` never leaks it through as an
+        unknown parameter. `enqueue`, the admin's resolved-parameters preview and the authoring
+        forms all resolve against this one method, so they cannot drift apart.
+        """
+        if self.source_id is None:
+            return dict(self.parameters)
+        try:
+            descriptor = schemas.get_collector(self.collector_key)
+        except schemas.UnknownCollector:
+            return dict(self.parameters)
+
+        source_fields = {
+            "domain": self.source.domain,
+            "listing_path": self.source.listing_path,
+            "extra_ca_cert": self.source.extra_ca_cert,
+            "skip_tls_verify": self.source.skip_tls_verify,
+        }
+        merged: dict[str, Any] = {}
+        for param_name, value in source_fields.items():
+            spec = descriptor.param(param_name)
+            if spec is None:
+                continue
+            if not spec.required and value == "":
+                continue
+            merged[param_name] = value
+        merged.update(self.parameters)
+        return merged
+
     @classmethod
     def record_job_outcome(
         cls, *, config_id: int, job_id: int, status: str, finished_at: Any
@@ -239,44 +387,6 @@ class Config(models.Model):
         return cls.objects.exclude(last_status="", last_run_at=None, last_job_id=None).update(
             last_status="", last_run_at=None, last_job_id=None
         )
-
-
-class SourceManager(models.Manager):
-    """Only the Configs that describe a trading platform."""
-
-    def get_queryset(self) -> models.QuerySet[Config]:
-        return super().get_queryset().filter(collector_key__startswith=TENDER_KEY_PREFIX)
-
-
-class Source(Config):
-    """A site to crawl — a Config, seen through a form built for sites.
-
-    Deliberately **not** a table of its own. A site is "what to collect": its domain, listing
-    path and TLS quirks are exactly the parameters the collector's schema declares, so storing
-    them anywhere but `Config.parameters` would either duplicate the authored intent or leave
-    execution reading mutable state after enqueue — the one thing the snapshot exists to
-    prevent.
-
-    What this proxy adds is the surface: its own tab, and a form with a field per site attribute
-    instead of a JSON blob (see `control.forms.SourceForm`).
-
-    Named `Source` (not `Platform`, its original name): the manager still only shows tender
-    trading-platform sites for now (see the `collector_key__startswith` filter below), but the
-    label had to stop implying that every future kind of collected site is a "trading platform" —
-    it will not be, once a non-auction source is added.
-    """
-
-    objects = SourceManager()
-
-    class Meta:
-        proxy = True
-        ordering = ["name"]
-        verbose_name = "Источник"
-        verbose_name_plural = "Источники"
-
-    @property
-    def domain(self) -> str:
-        return str(self.parameters.get("domain") or "")
 
 
 class Lot(models.Model):

@@ -144,6 +144,7 @@ class ConfigAdmin(ModelAdmin):
     list_display = (
         "name",
         "collector_key",
+        "source",
         "enabled",
         "archived",
         "last_status_badge",
@@ -152,9 +153,9 @@ class ConfigAdmin(ModelAdmin):
         "revision",
         "owner",
     )
-    list_filter = ("collector_key", "enabled", "archived", "last_status")
+    list_filter = ("collector_key", "source", "enabled", "archived", "last_status")
     search_fields = ("name", "collector_key")
-    autocomplete_fields = ("owner",)
+    autocomplete_fields = ("owner", "source")
     readonly_fields = (
         "revision",
         "created_by",
@@ -166,7 +167,7 @@ class ConfigAdmin(ModelAdmin):
         "resolved_preview",
     )
     fieldsets = (
-        (None, {"fields": ("name", "collector_key", "parameters", "resolved_preview")}),
+        (None, {"fields": ("name", "collector_key", "source", "parameters", "resolved_preview")}),
         ("Состояние", {"fields": ("enabled", "archived", "tags", "owner")}),
         (
             "Последний запуск (кэш-колонки)",
@@ -212,7 +213,7 @@ class ConfigAdmin(ModelAdmin):
         if not obj.pk:
             return format_html("<i>Сначала сохраните.</i>")
         try:
-            effective = schemas.resolve_parameters(obj.collector_key, obj.parameters)
+            effective = schemas.resolve_parameters(obj.collector_key, obj.raw_parameters())
         except schemas.UnknownCollector:
             return format_html(
                 '<b style="color:#c92a2a">Сборщика {} нет в кодовой базе — запустить нельзя.</b>',
@@ -285,30 +286,22 @@ class ConfigAdmin(ModelAdmin):
 
 
 @admin.register(Source)
-class SourceAdmin(ConfigAdmin):
-    """The source tab: the same Configs, asked for as sites.
+class SourceAdmin(ModelAdmin):
+    """The site registry: domain, listing path, TLS quirks — one row per real site.
 
-    Everything behind it — enqueue, snapshots, schedules, history — is `ConfigAdmin`'s, which is
-    why this subclasses it rather than reimplementing the surface. What changes is the form and
-    the shape of the page.
+    Behaviour — which collector, how many pages, how many requests at once — lives on the
+    `Config` profiles that reference a Source (see `ConfigAdmin`), not here. A Source knows
+    nothing about collectors, schedules or jobs; it exists so several named profiles of the same
+    site (`default`/`full`/`fast`, ...) share one domain/TLS instead of each carrying its own copy.
     """
 
     form = SourceForm
-    list_display = (
-        "name",
-        "engine",
-        "site",
-        "enabled",
-        "archived",
-        "last_status_badge",
-        "last_run_at",
-        "last_job_link",
-    )
-    list_filter = ("collector_key", "enabled", "archived", "last_status")
-    search_fields = ("name",)
+    list_display = ("name", "domain", "listing_path", "profiles_count", "archived")
+    list_filter = ("archived", "skip_tls_verify")
+    search_fields = ("name", "domain")
+    readonly_fields = ("created_at", "updated_at")
     fieldsets = (
-        ("Источник", {"fields": ("name", "collector_key", "domain", "listing_path")}),
-        ("Обход", {"fields": ("max_pages", "only_active", "concurrency", "fetch_details")}),
+        (None, {"fields": ("name", "domain", "listing_path")}),
         (
             "TLS",
             {
@@ -318,54 +311,13 @@ class SourceAdmin(ConfigAdmin):
                 "По умолчанию не нужны.",
             },
         ),
-        ("Состояние", {"fields": ("enabled", "archived", "tags", "owner")}),
-        (
-            "Что уйдёт в задачу",
-            {"fields": ("resolved_preview",), "classes": ("collapse",)},
-        ),
-        (
-            "Последний запуск (кэш-колонки)",
-            {"fields": ("last_status", "last_run_at", "last_job_link"), "classes": ("collapse",)},
-        ),
-        (
-            "Аудит",
-            {
-                "fields": ("revision", "created_by", "created_at", "updated_at"),
-                "classes": ("collapse",),
-            },
-        ),
+        ("Состояние", {"fields": ("archived",)}),
+        ("Аудит", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
     )
 
-    @admin.display(description="Движок", ordering="collector_key")
-    def engine(self, obj: Source) -> str:
-        try:
-            return schemas.get_collector(obj.collector_key).display_name
-        except schemas.UnknownCollector:
-            return f"{obj.collector_key} — нет в кодовой базе"
-
-    @admin.display(description="Сайт")
-    def site(self, obj: Source) -> str:
-        return obj.domain or "—"
-
-    @admin.action(description="Включить выбранные источники")
-    def action_enable(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
-        n = self._bulk(request, queryset, enabled=True)
-        self.message_user(request, f"Включено источников: {n}.", messages.SUCCESS)
-
-    @admin.action(description="Выключить выбранные источники")
-    def action_disable(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
-        n = self._bulk(request, queryset, enabled=False)
-        self.message_user(request, f"Выключено источников: {n}.", messages.SUCCESS)
-
-    @admin.action(description="В архив (мягкое удаление)")
-    def action_archive(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
-        n = self._bulk(request, queryset, archived=True)
-        self.message_user(request, f"Отправлено в архив: {n}.", messages.SUCCESS)
-
-    @admin.action(description="Вернуть из архива")
-    def action_unarchive(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
-        n = self._bulk(request, queryset, archived=False)
-        self.message_user(request, f"Возвращено из архива: {n}.", messages.SUCCESS)
+    @admin.display(description="Профилей")
+    def profiles_count(self, obj: Source) -> int:
+        return obj.configs.count()
 
 
 @admin.register(Schedule)

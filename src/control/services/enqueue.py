@@ -104,7 +104,7 @@ def enqueue(
 
     # --- precondition 3: params are valid for the collector's current schema -----------
     try:
-        effective = descriptor.resolve(config.parameters)
+        effective = descriptor.resolve(config.raw_parameters())
     except schemas.ParameterError as exc:
         if on_invalid_params is InvalidParamsPolicy.REFUSE:
             raise EnqueueRefused(
@@ -184,7 +184,7 @@ def _record_invalid_config_job(
         available_at=now,
         started_at=now,
         finished_at=now,
-        result={"raw_parameters": config.parameters},
+        result={"raw_parameters": config.raw_parameters()},
         structured_error={
             "type": "config_invalid",
             "message": f"config invalid for collector {config.collector_key}",

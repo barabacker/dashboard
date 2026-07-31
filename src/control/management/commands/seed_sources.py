@@ -6,9 +6,14 @@ of truth: after the first run the sites live in the database and are edited in t
 Re-running the command adds what is missing and leaves existing sites alone — it never
 overwrites an edit.
 
+Each entry becomes one `Source` (domain, listing path, TLS quirks) and one `Config` profile
+referencing it (collector, name, `enabled`) — none of these carried-over sites need more than one
+profile, so the split is invisible here; it only matters once a site needs a second named profile,
+which the admin handles from then on.
+
 Sites the temporary project had switched off are created switched off, with the reason printed
-rather than stored: `Config` has nowhere to keep a note, and inventing a column for one is worse
-than a line in the log.
+rather than stored: neither model has anywhere to keep a note, and inventing a column for one is
+worse than a line in the log.
 """
 
 from __future__ import annotations
@@ -148,11 +153,11 @@ class Command(BaseCommand):
         for spec in SOURCES:
             key = collector_key(spec["engine"])
             domain = spec["domain"]
-            parameters = {"domain": domain, **spec.get("params", {})}
+            site_fields = spec.get("params", {})
 
             # The domain is the identity: a source renamed in the admin must not be re-created
             # here under its old name.
-            if Config.objects.filter(parameters__domain=domain).exists():
+            if Source.objects.filter(domain=domain).exists():
                 kept += 1
                 continue
 
@@ -161,10 +166,11 @@ class Command(BaseCommand):
             if spec.get("note"):
                 self.stdout.write(f"    {spec['note']}")
             if not dry_run:
-                Source.objects.create(
+                source = Source.objects.create(name=spec["title"], domain=domain, **site_fields)
+                Config.objects.create(
                     name=spec["title"],
                     collector_key=key,
-                    parameters=parameters,
+                    source=source,
                     enabled=spec.get("enabled", True),
                 )
 

@@ -112,6 +112,11 @@ class CollectorDescriptor:
     description: str = ""
     summary: str = ""
     params: tuple[ParamSpec, ...] = field(default_factory=tuple)
+    #: True for a collector that crawls a *site* — one whose identity (domain, listing path, TLS
+    #: quirks) belongs on `control.models.Source` rather than being purely behavioural. Used to
+    #: constrain which `collector_key` choices make sense for a Config that has a `source`; not a
+    #: queryset filter (`Source` is its own table, not a filtered view of `Config`).
+    is_site: bool = False
 
     def param(self, name: str) -> ParamSpec | None:
         return next((p for p in self.params if p.name == name), None)
