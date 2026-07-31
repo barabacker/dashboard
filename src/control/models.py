@@ -14,7 +14,7 @@ from typing import Any
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import F, Q
+from django.db.models import Q
 from django.utils import timezone
 
 from collectors import schemas
@@ -48,17 +48,6 @@ class JobStatus(models.TextChoices):
     @classmethod
     def active(cls) -> frozenset[str]:
         return frozenset({cls.PENDING, cls.RUNNING})
-
-
-class OverlapPolicy(models.TextChoices):
-    SKIP = "skip", "Пропустить — не запускать, пока идёт предыдущий запуск"
-    QUEUE = "queue", "В очередь — поставить в очередь за текущим запуском"
-    ALLOW = "allow", "Разрешить — запускать параллельно"
-
-
-class CatchupPolicy(models.TextChoices):
-    FIRE_MISSED = "fire_missed", "Догнать — поставить каждый пропущенный запуск"
-    SKIP_TO_NOW = "skip_to_now", "Только последний — пропустить всё, кроме ближайшего к текущему"
 
 
 class JobOrigin(models.TextChoices):
@@ -96,7 +85,7 @@ class Collector(models.Model):
 
 
 class Source(models.Model):
-    """A site, authored: domain, listing path and TLS quirks — the identity a crawl needs before
+    """A site, authored: domain, start URL and TLS quirks — the identity a crawl needs before
     behaviour (which collector, how many pages, how many requests at once) enters the picture.
 
     Referenced by `Config.source`, not the other way around: one `Source` can back many named
@@ -105,19 +94,21 @@ class Source(models.Model):
     to the ones the profile's collector actually declares — with the profile's own `parameters`
     (see `Config.raw_parameters`); the two key sets are disjoint by construction.
 
-    Deletion is soft (`archived`), the same as `Config`. `Config.source` uses `on_delete=PROTECT`
-    so a referenced Source cannot be removed out from under the profiles that point at it.
+    `Config.source` uses `on_delete=PROTECT` so a referenced Source cannot be removed out from
+    under the profiles that point at it — deletion is real (there is no soft-delete flag here),
+    it is simply refused while anything still depends on the row.
     """
 
-    #: The Source fields that double as collector parameters — merged into `effective_parameters`
-    #: at enqueue (`Config.raw_parameters`) and, for that reason, excluded from the dynamic
-    #: per-profile fields `ConfigForm` builds from a collector's `ParamSpec` list: a name must not
-    #: be editable in two places at once.
-    PARAM_FIELDS = ("domain", "listing_path", "extra_ca_cert", "skip_tls_verify")
+    #: Keys inside `tls_options` that double as collector parameters — rare, site-specific
+    #: quirks (an extra CA cert, skipping verification, and whatever else turns out to be needed)
+    #: bagged into one JSON field instead of one column each.
+    TLS_OPTION_FIELDS = ("extra_ca_cert", "skip_tls_verify")
 
-    #: Fields whose change means "this site's identity changed" — every Config profile
-    #: referencing this Source has its `revision` bumped when one of these moves (`save()` below).
-    REVISIONED_FIELDS = (*PARAM_FIELDS, "archived")
+    #: Every Source field that can double as a collector parameter — a plain attribute (`domain`,
+    #: `start_url`) or a key inside `tls_options`. Excluded, for that reason, from the dynamic
+    #: per-profile fields `ConfigForm` would otherwise build: a name must not be editable in two
+    #: places at once.
+    PARAM_FIELDS = ("domain", "start_url", *TLS_OPTION_FIELDS)
 
     name = models.CharField("Название", max_length=200)
     domain = models.URLField(
@@ -126,30 +117,19 @@ class Source(models.Model):
         help_text="Корень сайта площадки со схемой и без завершающего слэша, например "
         "https://bankrupt.centerr.ru.",
     )
-    listing_path = models.CharField(
+    start_url = models.CharField(
         "Путь к листингу",
         max_length=200,
         blank=True,
         default="",
         help_text="Пусто — путь по умолчанию для движка того профиля, который обходит этот сайт.",
     )
-    extra_ca_cert = models.CharField(
-        "Доп. сертификат",
-        max_length=200,
+    tls_options = models.JSONField(
+        "TLS-настройки",
+        default=dict,
         blank=True,
-        default="",
-        help_text="Имя PEM-файла из collectors/certs с промежуточным сертификатом. Пусто — "
-        "обычный набор корневых сертификатов.",
-    )
-    skip_tls_verify = models.BooleanField(
-        "Не проверять сертификат",
-        default=False,
-        help_text="Полностью отключить проверку сертификата для этого сайта.",
-    )
-    archived = models.BooleanField(
-        "В архиве",
-        default=False,
-        help_text="Мягкое удаление. Профили, ссылающиеся на этот сайт, сохраняются.",
+        help_text="Редкие костыли под конкретный сайт: доп. сертификат, отключение проверки "
+        "TLS и подобное.",
     )
     created_at = models.DateTimeField("Создан", auto_now_add=True)
     updated_at = models.DateTimeField("Изменён", auto_now=True)
@@ -162,58 +142,18 @@ class Source(models.Model):
     def __str__(self) -> str:
         return f"{self.name} ({self.domain})"
 
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        """Cascade a `revision` bump onto every Config profile that references this Source.
-
-        `Config.save()` only reacts to its own fields; an edit here changes what a referencing
-        profile would resolve to just as much as an edit to the profile itself, so the profile's
-        `revision` must move too. A direct UPDATE — the same pattern `Config.record_job_outcome` /
-        `Config.forget_job_outcomes` already use — because this is an echo of this Source's own
-        edit, not an authored change to any one Config.
-        """
-        changed = self._revisioned_changed()
-        super().save(*args, **kwargs)
-        if changed:
-            Config.objects.filter(source=self).update(revision=F("revision") + 1)
-        tracked = self.REVISIONED_FIELDS
-        self._loaded_values = _snapshot_values(tracked, [getattr(self, name) for name in tracked])
-
-    @classmethod
-    def from_db(cls, db, field_names, values):
-        instance = super().from_db(db, field_names, values)
-        instance._loaded_values = _snapshot_values(field_names, values)
-        return instance
-
-    def _revisioned_changed(self) -> bool:
-        if self.pk is None:
-            return False
-        loaded = getattr(self, "_loaded_values", None)
-        if loaded is None:
-            return False
-        return any(
-            name in loaded and loaded[name] != getattr(self, name)
-            for name in self.REVISIONED_FIELDS
-        )
+    def param_value(self, name: str) -> Any:
+        """One Source-supplied value, addressed by the name a collector's schema would use."""
+        if name in self.TLS_OPTION_FIELDS:
+            return self.tls_options.get(name, "")
+        return getattr(self, name)
 
 
 class Config(models.Model):
     """The primary business object: *what to collect*, authored by a human.
 
     Editable at any time. Editing never disturbs a running Job — the Job carries its own snapshot.
-    Deletion is soft (`archived`) so history keeps referring to something.
     """
-
-    #: Fields whose change means "the authored intent changed" and must bump `revision`. `source_id`
-    #: (not `source`) so checking it never triggers a related-object fetch.
-    REVISIONED_FIELDS = (
-        "name",
-        "collector_key",
-        "parameters",
-        "enabled",
-        "archived",
-        "tags",
-        "source_id",
-    )
 
     name = models.CharField("Название", max_length=200)
     source = models.ForeignKey(
@@ -238,15 +178,9 @@ class Config(models.Model):
         default=dict,
         blank=True,
         help_text="Исходные параметры как их задал человек. При постановке в очередь они "
-        "проверяются по схеме версии сборщика, и уже результат попадает в снимок задачи.",
+        "проверяются по схеме сборщика, и уже результат попадает в снимок задачи.",
     )
     enabled = models.BooleanField("Включена", default=True)
-    archived = models.BooleanField(
-        "В архиве",
-        default=False,
-        help_text="Мягкое удаление. Архивная конфигурация никогда не ставится в очередь.",
-    )
-    tags = models.JSONField("Метки", default=list, blank=True)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name="Владелец",
@@ -266,72 +200,23 @@ class Config(models.Model):
     )
     created_at = models.DateTimeField("Создана", auto_now_add=True)
     updated_at = models.DateTimeField("Изменена", auto_now=True)
-    revision = models.PositiveIntegerField("Ревизия", default=1, editable=False)
-
-    # --- dashboard cache columns (§11) ------------------------------------------------
-    # Written by the worker when a Job reaches a terminal state, read by list views. These are
-    # denormalized caches, not a read model: the Job table remains the source of truth.
-    last_status = models.CharField(
-        "Последний статус",
-        max_length=16,
-        choices=JobStatus.choices,
-        blank=True,
-        default="",
-        editable=False,
-    )
-    last_run_at = models.DateTimeField("Последний запуск", null=True, blank=True, editable=False)
-    last_job_id = models.BigIntegerField("Последняя задача", null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ["-updated_at"]
         verbose_name = "Конфигурация"
         verbose_name_plural = "Конфигурации"
         indexes = [
-            models.Index(fields=["archived", "enabled"]),
+            models.Index(fields=["enabled"]),
             models.Index(fields=["collector_key"]),
         ]
 
     def __str__(self) -> str:
         return self.name
 
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        """Bump `revision` when authored intent changes — and only then.
-
-        The worker writes the `last_*` cache columns with `update_fields`; that must not look like
-        an edit, or every run would inflate the revision the snapshots are compared against.
-        """
-        update_fields = kwargs.get("update_fields")
-        if self.pk is not None and self._revisioned_changed():
-            touches_intent = update_fields is None or bool(
-                set(update_fields) & set(self.REVISIONED_FIELDS)
-            )
-            if touches_intent:
-                self.revision += 1
-                if update_fields is not None:
-                    kwargs["update_fields"] = list(set(update_fields) | {"revision"})
-        super().save(*args, **kwargs)
-        tracked = (*self.REVISIONED_FIELDS, "revision")
-        self._loaded_values = _snapshot_values(tracked, [getattr(self, name) for name in tracked])
-
-    @classmethod
-    def from_db(cls, db, field_names, values):
-        instance = super().from_db(db, field_names, values)
-        instance._loaded_values = _snapshot_values(field_names, values)
-        return instance
-
-    def _revisioned_changed(self) -> bool:
-        loaded = getattr(self, "_loaded_values", None)
-        if loaded is None:
-            return False
-        return any(
-            name in loaded and loaded[name] != getattr(self, name)
-            for name in self.REVISIONED_FIELDS
-        )
-
     @property
     def is_runnable(self) -> bool:
-        """The two enqueue preconditions that live on the Config itself (§6)."""
-        return self.enabled and not self.archived
+        """The enqueue precondition that lives on the Config itself (§6)."""
+        return self.enabled
 
     def raw_parameters(self) -> dict[str, Any]:
         """`parameters`, extended with whatever `source` provides.
@@ -339,7 +224,7 @@ class Config(models.Model):
         The two key sets are disjoint by construction — a `Source` field and a profile parameter
         never share a name — so this is a plain union, never an override. Source fields are
         filtered to the ones the collector's schema actually declares, so attaching a `source` to
-        a collector that knows nothing about, say, `listing_path` never leaks it through as an
+        a collector that knows nothing about, say, `start_url` never leaks it through as an
         unknown parameter. `enqueue`, the admin's resolved-parameters preview and the authoring
         forms all resolve against this one method, so they cannot drift apart.
         """
@@ -350,44 +235,17 @@ class Config(models.Model):
         except schemas.UnknownCollector:
             return dict(self.parameters)
 
-        source_fields = {name: getattr(self.source, name) for name in Source.PARAM_FIELDS}
         merged: dict[str, Any] = {}
-        for param_name, value in source_fields.items():
+        for param_name in Source.PARAM_FIELDS:
             spec = descriptor.param(param_name)
             if spec is None:
                 continue
+            value = self.source.param_value(param_name)
             if not spec.required and value == "":
                 continue
             merged[param_name] = value
         merged.update(self.parameters)
         return merged
-
-    @classmethod
-    def record_job_outcome(
-        cls, *, config_id: int, job_id: int, status: str, finished_at: Any
-    ) -> None:
-        """Refresh the dashboard cache columns (§11) after a Job reached a terminal state.
-
-        A direct UPDATE on purpose. It must not bump `revision` (this is not an authored change)
-        and it must not touch `updated_at` (which should keep meaning "last edited"). The
-        `last_run_at` guard keeps two concurrent runs from letting the older one win the race.
-        """
-        cls.objects.filter(pk=config_id).filter(
-            Q(last_run_at__isnull=True) | Q(last_run_at__lte=finished_at)
-        ).update(last_status=status, last_run_at=finished_at, last_job_id=job_id)
-
-    @classmethod
-    def forget_job_outcomes(cls) -> int:
-        """Blank the dashboard cache columns — the mirror image of `record_job_outcome`.
-
-        For when the Jobs they summarise are gone: a `last_status` pointing at a deleted row is
-        worse than no status at all. A direct UPDATE for the same two reasons as above — clearing
-        history is not an authored change, so it must not bump `revision`, and it is not an edit,
-        so it must not move `updated_at`.
-        """
-        return cls.objects.exclude(last_status="", last_run_at=None, last_job_id=None).update(
-            last_status="", last_run_at=None, last_job_id=None
-        )
 
 
 class Lot(models.Model):
@@ -489,19 +347,12 @@ class Schedule(models.Model):
         help_text="Название по IANA. Моменты запуска считаются в этом поясе, хранятся в UTC.",
     )
     enabled = models.BooleanField("Включено", default=True)
-    overlap_policy = models.CharField(
-        "При наложении",
-        max_length=16,
-        choices=OverlapPolicy.choices,
-        default=OverlapPolicy.SKIP,
-        help_text="Что делать, если предыдущий запуск этой конфигурации ещё не завершён.",
-    )
-    catchup_policy = models.CharField(
-        "После простоя",
-        max_length=16,
-        choices=CatchupPolicy.choices,
-        default=CatchupPolicy.SKIP_TO_NOW,
-        help_text="Что делать с запусками, пропущенными пока система была недоступна.",
+    skip_if_running = models.BooleanField(
+        "Пропускать, если ещё выполняется",
+        default=True,
+        help_text="Не запускать новый экземпляр, пока предыдущий запуск этой конфигурации не "
+        "завершён. Пропущенное срабатывание не догоняется — считается только ближайшее к "
+        "текущему моменту.",
     )
     last_fired_at = models.DateTimeField(
         "Последнее срабатывание",
@@ -552,7 +403,6 @@ class Job(models.Model):
         "collector_key",
         "effective_parameters",
         "config_id",
-        "config_revision",
     )
 
     # --- snapshot (§4) ----------------------------------------------------------------
@@ -571,8 +421,6 @@ class Job(models.Model):
         help_text="Мягкая ссылка. Внешнего ключа нет намеренно: история задач переживает "
         "жизненный цикл конфигурации.",
     )
-    config_revision = models.PositiveIntegerField("Ревизия конфигурации", default=0, editable=False)
-
     # --- origin -----------------------------------------------------------------------
     origin = models.CharField(
         "Источник", max_length=16, choices=JobOrigin.choices, default=JobOrigin.MANUAL
