@@ -53,11 +53,15 @@ exactly one place today, and keeping it that way avoids a polymorphic snapshot f
 own `name` is now the *profile*'s name ("cian.ru — full"), not the site's name — the site's name
 lives on `Source`.
 
-One `Source`, many `Config` rows. Creating the first profile for a new site asks for
-`collector_key` and the site's identity fields together (with an inline "add source" affordance so
-the two are one guided step); creating a second profile for an existing source defaults
-`collector_key` to what the source's other profiles already use, as a suggestion, not a hard
-constraint.
+One `Source`, many `Config` rows — one guided step in both directions. Creating the first profile
+for a new site asks for `collector_key` and the site's identity fields together, via the `source`
+field's own add-popup on the Config-add form (`ConfigAdmin.autocomplete_fields`). Creating a
+*second* profile for a site that already has one happens the other way: a `ConfigInline` on
+`SourceAdmin` lets a new named profile (`full`, `fast`, ...) be added right on the source's own
+page, with `source` implied by the parent row rather than picked again. Defaulting `collector_key`
+to what the source's other profiles already use, as a mere suggestion rather than a hard
+constraint, is a deferred nicety — not implemented, since it would need per-row `initial` plumbing
+on the inline's blank-row template for a marginal saving of one click.
 
 ### 3. Resolution merges disjoint key sets, filtered by the target schema
 
@@ -130,3 +134,13 @@ left to subclass a form for.
   concurrency), not a site-identity fact.
 - Every place that previously treated "a Source" as "a Config filtered by key prefix" — tests,
   `seed_sources`, `SourceForm`, `SourceAdmin`, `SourceManager` — needs rewriting, not extending.
+- **`ConfigForm.clean()`'s `is_site` gate must work identically whether `source`/`parameters` are
+  visible fields of the bound form or not**, because the `ConfigInline` under `SourceAdmin` shows
+  neither (both are implied by, or deferred to, the parent page). This works without
+  special-casing only because of a non-obvious Django mechanism: `BaseInlineFormSet.add_fields()`
+  substitutes an `InlineForeignKeyField` for the FK on every inline row, and that field's own
+  `clean()` returns the parent instance whenever nothing was submitted for it — so
+  `cleaned.get("source")` resolves correctly either way, with no need to branch on which fields
+  the form declares. `parameters` has no equivalent auto-substitution, so the validation order
+  matters: the `is_site` check must run *before* the `parameters is None` early return, or the
+  inline (which never submits `parameters` at all) would skip it silently.
