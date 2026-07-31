@@ -9,6 +9,8 @@ script fails to load, the page still works, it just stops refreshing itself.
 
 from __future__ import annotations
 
+from collections import OrderedDict
+
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, OuterRef, Subquery
@@ -16,6 +18,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from collectors import schemas
 from control.models import Config, Job, JobOrigin, JobStatus
 from control.services import EnqueueRefused, enqueue, request_cancel
 
@@ -36,34 +39,68 @@ def _recent_jobs():
     return Job.objects.order_by("-created_at")[:_RECENT_JOBS]
 
 
+def _collector_label(key: str) -> str:
+    """`Collector.display_name` if the code knows this key, the raw key otherwise.
+
+    Reads `collectors.schemas` (already an allowed import here — see `control/services/enqueue.py`)
+    rather than the `Collector` projection table, so a family still gets a real label even before
+    `sync_collectors` has ever run.
+    """
+    try:
+        return schemas.get_collector(key).display_name
+    except schemas.UnknownCollector:
+        return key
+
+
+def _filtered_configs(request: HttpRequest):
+    q = request.GET.get("q", "").strip()
+    state = request.GET.get("state", "all")
+    if state not in ("all", "enabled", "disabled"):
+        state = "all"
+
+    qs = Config.objects.all()
+    if q:
+        qs = qs.filter(name__icontains=q)
+    if state == "enabled":
+        qs = qs.filter(enabled=True)
+    elif state == "disabled":
+        qs = qs.filter(enabled=False)
+    return qs, q, state
+
+
 @staff_member_required
 def index(request: HttpRequest) -> HttpResponse:
+    configs_qs, q, state = _filtered_configs(request)
+
     latest_job = Job.objects.filter(config_id=OuterRef("pk")).order_by("-created_at")
     configs = list(
-        Config.objects.annotate(
+        configs_qs.annotate(
             latest_job_status=Subquery(latest_job.values("status")[:1]),
             latest_job_id=Subquery(latest_job.values("id")[:1]),
             latest_job_at=Subquery(latest_job.values("created_at")[:1]),
         ).order_by("name")
     )
+
+    groups: OrderedDict[str, dict[str, object]] = OrderedDict()
     for c in configs:
         c.latest_job_label = JobStatus(c.latest_job_status).label if c.latest_job_status else ""
+        group = groups.setdefault(
+            c.collector_key, {"label": _collector_label(c.collector_key), "configs": []}
+        )
+        group["configs"].append(c)
+    grouped_configs = [groups[key] for key in sorted(groups)]
 
-    # Job→Config is a soft reference, so "does this config have something in flight?" is a second
-    # query rather than a join. One extra query for the whole page is the right trade here.
-    active_config_ids = set(
-        Job.objects.filter(status__in=JobStatus.active()).values_list("config_id", flat=True)
-    )
     return render(
         request,
         "dashboard/index.html",
         {
             **admin.site.each_context(request),
             "title": "Панель сбора данных",
-            "configs": configs,
-            "active_config_ids": active_config_ids,
+            "grouped_configs": grouped_configs,
             "jobs": _recent_jobs(),
             "counts": _status_counts(),
+            "q": q,
+            "state": state,
         },
     )
 

@@ -81,3 +81,40 @@ def test_jobs_panel_renders_on_its_own(client, user, config):
     response = client.get(reverse("dashboard:jobs_panel"))
     assert response.status_code == 200
     assert b"jobs-panel" in response.content
+
+
+def test_index_groups_configs_by_collector_display_name(client, user, config):
+    client.force_login(user)
+    response = client.get(reverse("dashboard:index"))
+    # `config` fixture defaults to collector_key="example_api", whose display_name is set in
+    # collectors/schemas/example_api.py.
+    assert "Пример: HTTP API".encode() in response.content
+
+
+def test_search_by_name_narrows_the_list(client, user, make_config):
+    make_config(name="Alpha")
+    make_config(name="Beta")
+    client.force_login(user)
+    response = client.get(reverse("dashboard:index"), {"q": "Alpha"})
+    assert b"Alpha" in response.content
+    assert b"Beta" not in response.content
+
+
+def test_state_filter_shows_only_disabled(client, user, make_config):
+    make_config(name="Included", enabled=False)
+    make_config(name="Excluded", enabled=True)
+    client.force_login(user)
+    response = client.get(reverse("dashboard:index"), {"state": "disabled"})
+    assert b"Included" in response.content
+    assert b"Excluded" not in response.content
+
+
+def test_a_family_with_no_matching_config_does_not_render_its_heading(client, user, make_config):
+    make_config(name="Alpha", collector_key="example_api")
+    make_config(
+        name="Beta", collector_key="tender_fogsoft", parameters={"domain": "https://example.test"}
+    )
+    client.force_login(user)
+    response = client.get(reverse("dashboard:index"), {"q": "Alpha"})
+    assert "Пример: HTTP API".encode() in response.content
+    assert "Торги: iTender (Fogsoft)".encode() not in response.content
