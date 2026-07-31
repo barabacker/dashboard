@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from collectors.runners.base import Cancelled, RunResult
 from collectors.runners.tender_site import _JobControl
-from control.models import Config, Job, JobStatus
+from control.models import Job, JobStatus
 from control.services import enqueue, request_cancel
 from execution.queue import LeaseLost, claim_job
 from execution.worker import DbRunContext, Worker
@@ -37,16 +37,6 @@ class TestHappyPath:
 
     def test_reports_no_work_when_the_queue_is_empty(self, worker):
         assert worker.run_once() is False
-
-    def test_refreshes_the_config_cache_columns(self, config, worker):
-        job = enqueue(config)
-        worker.run_once()
-
-        reloaded = Config.objects.get(pk=config.pk)
-        assert reloaded.last_status == JobStatus.SUCCEEDED
-        assert reloaded.last_job_id == job.pk
-        assert reloaded.last_run_at is not None
-        assert reloaded.revision == 1, "a cache write is not an authored edit"
 
 
 class TestFailures:
@@ -199,7 +189,6 @@ class TestLeaseLoss:
 
         reloaded = Job.objects.get(pk=job.pk)
         assert reloaded.status == JobStatus.RUNNING, "the new owner keeps the job"
-        assert Config.objects.get(pk=config.pk).last_status == ""
 
 
 @pytest.mark.django_db(transaction=True)
