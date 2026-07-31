@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 from django.core.management import call_command
+from django.urls import reverse
 
 from collectors import schemas
 from control.models import Collector
@@ -53,3 +54,17 @@ def test_manual_edits_to_projected_fields_are_overwritten():
 def test_dry_run_writes_nothing():
     call_command("sync_collectors", "--dry-run")
     assert Collector.objects.count() == 0
+
+
+def test_the_schema_table_renders_on_the_change_page(client, user):
+    """Regression: D21 flattened `CollectorDescriptor` (dropped the `versions` axis) and the
+    admin's schema table kept iterating `descriptor.versions` — an `AttributeError` on every
+    Collector change page nobody had a test to catch."""
+    call_command("sync_collectors")
+    row = Collector.objects.get(key="tender_kendo")
+
+    client.force_login(user)
+    response = client.get(reverse("admin:control_collector_change", args=[row.pk]))
+
+    assert response.status_code == 200
+    assert b"domain" in response.content

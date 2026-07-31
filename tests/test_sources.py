@@ -99,7 +99,6 @@ class TestConfigFormWithSource:
         assert any("concurrency" in message for message in form.errors.get("parameters", []))
 
     def test_without_a_source_a_site_shaped_collector_is_refused(self):
-        """`domain` is required by the schema and nothing supplies it without a `source`."""
         form = ConfigForm(
             data={
                 "name": "Без сайта",
@@ -110,7 +109,24 @@ class TestConfigFormWithSource:
             }
         )
         assert not form.is_valid()
-        assert "parameters" in form.errors
+        assert "source" in form.errors
+
+    def test_a_source_on_a_non_site_collector_is_refused(self):
+        """`example_api` declares no site parameters — a `source` here would silently do nothing."""
+        source = Source.objects.create(name="Торги82", domain="https://lot.torgi82.ru")
+        form = ConfigForm(
+            data={
+                "name": "Демо",
+                "collector_key": "example_api",
+                "source": source.pk,
+                "parameters": '{"base_url": "https://api.example.com", "path": "/items", '
+                '"page_size": 10, "pages": 2, "dataset": "orders"}',
+                "enabled": "on",
+                "tags": "[]",
+            }
+        )
+        assert not form.is_valid()
+        assert "source" in form.errors
 
 
 class TestOneToMany:

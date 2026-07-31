@@ -86,11 +86,18 @@ effects that are not the row's own authored edit.
 
 ### 6. `CollectorDescriptor.is_site: bool = False`
 
-A pure, schema-level flag (no DB, no migration) marking which collectors are site-shaped. Used to
-constrain which `collector_key` choices are offered when authoring a `Config` that has a `source`
-set — **not** for filtering a queryset the way `SourceManager` used to, because `Source` is no
-longer a filtered subset of `Config` rows. `SourceManager` is removed entirely; `Source` is an
-ordinary model with the default manager.
+A pure, schema-level flag (no DB, no migration) marking which collectors are site-shaped. `ConfigForm.clean()`
+uses it to reject the two nonsensical pairings at submission time: a site-shaped `collector_key`
+with no `source` (which `raw_parameters()` would catch anyway, on a missing `domain` — this gives
+it a clearer error, pointed at the `source` field instead of a generic parameter complaint), and a
+`source` on a collector that declares no site parameters at all (which `raw_parameters()` would
+**not** catch — the source's fields are simply filtered out, so without this check the field would
+silently do nothing). This is validation at authoring time, not a queryset filter the way
+`SourceManager` used to work — `Source` is no longer a filtered subset of `Config` rows, so
+`SourceManager` is removed entirely; `Source` is an ordinary model with the default manager. The
+`collector_key` dropdown itself still lists every collector regardless of `is_site` — narrowing it
+live to match an already-chosen `source` needs a client-side round trip (a separate, deferred UI
+concern), not an architectural one.
 
 ### 7. Admin surface
 

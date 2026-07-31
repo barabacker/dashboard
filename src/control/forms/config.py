@@ -56,15 +56,34 @@ class ConfigForm(forms.ModelForm):
             self.add_error("parameters", "Параметры должны быть JSON-объектом.")
             return cleaned
 
-        # An unsaved probe: `raw_parameters()` only reads `collector_key`/`source`/`parameters`,
-        # none of which need a persisted row, and this keeps the source-merge logic in exactly
-        # the one place (`Config.raw_parameters`) that `enqueue` and the admin preview also use.
-        probe = Config(collector_key=key, parameters=parameters, source=cleaned.get("source"))
+        source = cleaned.get("source")
         try:
-            schemas.resolve_parameters(key, probe.raw_parameters())
+            descriptor = schemas.get_collector(key)
         except schemas.UnknownCollector:
             self.add_error("collector_key", f"Сборщика {key!r} нет в кодовой базе.")
             return cleaned
+
+        # `is_site` gates the pairing before the parameters even get resolved: a site-shaped
+        # collector with no `source` is guaranteed to fail on a missing `domain`, and the reverse
+        # (a `source` on a collector that declares no site parameters) would not fail at all — its
+        # fields are silently filtered out of `raw_parameters()` — which is exactly why it needs a
+        # named error here instead of a silent no-op.
+        if descriptor.is_site and source is None:
+            self.add_error("source", f"Сборщик {key!r} привязан к сайту — выберите источник.")
+            return cleaned
+        if not descriptor.is_site and source is not None:
+            self.add_error(
+                "source",
+                f"Сборщик {key!r} не использует параметры сайта — источник не даст эффекта.",
+            )
+            return cleaned
+
+        # An unsaved probe: `raw_parameters()` only reads `collector_key`/`source`/`parameters`,
+        # none of which need a persisted row, and this keeps the source-merge logic in exactly
+        # the one place (`Config.raw_parameters`) that `enqueue` and the admin preview also use.
+        probe = Config(collector_key=key, parameters=parameters, source=source)
+        try:
+            schemas.resolve_parameters(key, probe.raw_parameters())
         except schemas.ParameterError as exc:
             for message in exc.errors:
                 self.add_error("parameters", message)

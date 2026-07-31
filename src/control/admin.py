@@ -108,22 +108,20 @@ class CollectorAdmin(ModelAdmin):
             return format_html("<i>Этого ключа больше нет в кодовой базе.</i>")
 
         rows = []
-        for version in descriptor.versions:
-            for spec in version.params:
-                rows.append(
-                    format_html(
-                        "<tr><td>{}</td><td><code>{}</code></td><td>{}</td><td>{}</td>"
-                        "<td><code>{}</code></td><td>{}</td></tr>",
-                        version.version,
-                        spec.name,
-                        spec.kind,
-                        "да" if spec.required else "",
-                        "" if spec.default is None else repr(spec.default),
-                        "ссылка на секрет" if spec.is_credential_ref else spec.description,
-                    )
+        for spec in descriptor.params:
+            rows.append(
+                format_html(
+                    "<tr><td><code>{}</code></td><td>{}</td><td>{}</td>"
+                    "<td><code>{}</code></td><td>{}</td></tr>",
+                    spec.name,
+                    spec.kind,
+                    "да" if spec.required else "",
+                    "" if spec.default is None else repr(spec.default),
+                    "ссылка на секрет" if spec.is_credential_ref else spec.description,
                 )
+            )
         return format_html(
-            "<table><thead><tr><th>версия</th><th>параметр</th><th>тип</th><th>обязателен</th>"
+            "<table><thead><tr><th>параметр</th><th>тип</th><th>обязателен</th>"
             "<th>по умолчанию</th><th>примечание</th></tr></thead><tbody>{}</tbody></table>",
             format_html("".join(rows)),
         )
