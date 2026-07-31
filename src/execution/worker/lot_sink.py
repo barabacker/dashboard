@@ -18,62 +18,26 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
 from django.utils import timezone
 
 from collectors.engine.core.lot import Lot
 from collectors.engine.core.storage.contracts import ChangeStatus, fingerprint_of
 from control.models import Lot as LotRow
+from execution.worker.lot_fields import MUTABLE_FIELDS, SITE_TIMEZONE, aware
 
-#: The sites print civil time without a zone, and `parse_datetime` keeps it naive. Storing that
-#: under `USE_TZ = True` would silently read it as UTC and move every deadline by three hours, so
-#: the assumption is made explicit here: these are Russian trading platforms publishing Moscow
-#: time. The raw string is stored next to the parsed value in `*_date_raw`, so a site that turns
-#: out to publish local regional time can be reinterpreted without re-crawling.
-SITE_TIMEZONE = ZoneInfo("Europe/Moscow")
-
-#: Written on every save; everything else about a lot row is bookkeeping.
-_MUTABLE_FIELDS = (
-    "trade_id",
-    "lot_num",
-    "trade_number",
-    "trade_type",
-    "debtor",
-    "organizer",
-    "description",
-    "lot_url",
-    "price",
-    "price_raw",
-    "status",
-    "is_active",
-    "bidding_deadline",
-    "result_date",
-    "bidding_date_raw",
-    "event_date_raw",
-    "attachments",
-    "price_schedule",
-    "extra",
-)
-
+__all__ = ["SITE_TIMEZONE", "DbLotSink"]
 
 _NULLABLE_FIELDS = frozenset({"price", "bidding_deadline", "result_date"})
-
-
-def _aware(value: datetime) -> datetime:
-    """Pin a site's naive civil time to `SITE_TIMEZONE`; leave an aware value alone."""
-    if timezone.is_naive(value):
-        return value.replace(tzinfo=SITE_TIMEZONE)
-    return value
 
 
 def _row_values(lot: Lot) -> dict[str, object]:
     """A `Lot` as column values. Text columns are non-null, so `None` becomes `""`."""
     values: dict[str, object] = {}
-    for name in _MUTABLE_FIELDS:
+    for name in MUTABLE_FIELDS:
         value = getattr(lot, name)
         if isinstance(value, datetime):
-            value = _aware(value)
+            value = aware(value)
         elif value is None and name not in _NULLABLE_FIELDS:
             value = ""
         values[name] = value

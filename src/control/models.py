@@ -249,7 +249,12 @@ class Config(models.Model):
 
 
 class Lot(models.Model):
-    """One collected lot, as last seen.
+    """One collected lot, as last seen — kept for whatever history already accumulated here.
+
+    No longer written to: `execution.worker.mongo_lot_sink.MongoLotSink` is what `open_lot_sink`
+    hands runners now, because a lot's shape varies by collector family and that fights a
+    fixed-column table. This model stays so existing rows remain queryable; a fresh deployment has
+    no reason to populate it.
 
     Current state, not history: a crawl updates the row in place. `(source, lot_id)` is the
     identity, so re-crawling a site converges instead of accumulating.

@@ -20,6 +20,18 @@ services:
       timeout: 3s
       retries: 20
 
+  mongo:
+    image: mongo:7
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.adminCommand(\"ping\")'"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   web:
     build: &app_build
       context: ..
@@ -32,6 +44,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-dashboard}
       POSTGRES_USER: ${POSTGRES_USER:-dashboard}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dashboard}
+      MONGO_URI: mongodb://mongo:27017
+      MONGO_DB_NAME: ${MONGO_DB_NAME:-dashboard}
     volumes:
       - ..:/app
     ports:
@@ -55,6 +69,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mongo:
+        condition: service_healthy
 
   scheduler:
     build: *app_build
@@ -71,3 +87,4 @@ services:
 
 volumes:
   pgdata:
+  mongodata:
