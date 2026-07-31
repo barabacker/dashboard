@@ -49,25 +49,25 @@ class ConfigForm(forms.ModelForm):
         key = cleaned.get("collector_key")
         if not key:
             return cleaned
-        parameters = cleaned.get("parameters")
-        if parameters is None:
-            return cleaned
-        if not isinstance(parameters, dict):
-            self.add_error("parameters", "Параметры должны быть JSON-объектом.")
-            return cleaned
 
-        source = cleaned.get("source")
         try:
             descriptor = schemas.get_collector(key)
         except schemas.UnknownCollector:
             self.add_error("collector_key", f"Сборщика {key!r} нет в кодовой базе.")
             return cleaned
 
-        # `is_site` gates the pairing before the parameters even get resolved: a site-shaped
-        # collector with no `source` is guaranteed to fail on a missing `domain`, and the reverse
-        # (a `source` on a collector that declares no site parameters) would not fail at all — its
-        # fields are silently filtered out of `raw_parameters()` — which is exactly why it needs a
-        # named error here instead of a silent no-op.
+        # Resolves correctly whether this form shows a `source` field or not: the
+        # Config-under-Source inline never displays one (it is implied by the parent page), but
+        # Django's inline-formset machinery substitutes an `InlineForeignKeyField` for it, whose
+        # own `clean()` returns the parent instance whenever nothing was submitted — exactly
+        # this case.
+        source = cleaned.get("source")
+
+        # `is_site` gates the pairing before `parameters` is even looked at: a site-shaped
+        # collector with no `source` is guaranteed to fail later on a missing `domain` anyway,
+        # and the reverse (a `source` on a collector that declares no site parameters) would not
+        # fail at all — its fields are silently filtered out of `raw_parameters()` — which is
+        # exactly why it needs a named error here instead of a silent no-op.
         if descriptor.is_site and source is None:
             self.add_error("source", f"Сборщик {key!r} привязан к сайту — выберите источник.")
             return cleaned
@@ -76,6 +76,15 @@ class ConfigForm(forms.ModelForm):
                 "source",
                 f"Сборщик {key!r} не использует параметры сайта — источник не даст эффекта.",
             )
+            return cleaned
+
+        # The inline doesn't show `parameters` either — behavioural parameters stay on the
+        # profile's own change page — so there is nothing further to validate here for it.
+        parameters = cleaned.get("parameters")
+        if parameters is None:
+            return cleaned
+        if not isinstance(parameters, dict):
+            self.add_error("parameters", "Параметры должны быть JSON-объектом.")
             return cleaned
 
         # An unsaved probe: `raw_parameters()` only reads `collector_key`/`source`/`parameters`,

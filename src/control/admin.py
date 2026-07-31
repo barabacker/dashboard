@@ -135,6 +135,27 @@ class ScheduleInline(TabularInline):
     show_change_link = True
 
 
+class ConfigInline(TabularInline):
+    """Add another named profile to this source without leaving its page.
+
+    The other half of the "one guided step" from ADR 0004: the Config-add form already lets you
+    register a brand-new source inline (via the `source` field's own add-popup); this is the
+    reverse direction — a *second* profile (`full`, `fast`, ...) for a site that already has one.
+    `source` is implied by the parent row, so it is deliberately not one of the visible fields;
+    everything beyond name/collector/enabled — parameters, tags, schedules — stays on the
+    profile's own change page, reached via `show_change_link`.
+    """
+
+    model = Config
+    form = ConfigForm
+    fk_name = "source"
+    extra = 0
+    fields = ("name", "collector_key", "enabled")
+    show_change_link = True
+    verbose_name = "Профиль"
+    verbose_name_plural = "Профили"
+
+
 @admin.register(Config)
 class ConfigAdmin(ModelAdmin):
     form = ConfigForm
@@ -294,6 +315,7 @@ class SourceAdmin(ModelAdmin):
     """
 
     form = SourceForm
+    inlines = [ConfigInline]
     list_display = ("name", "domain", "listing_path", "profiles_count", "archived")
     list_filter = ("archived", "skip_tls_verify")
     search_fields = ("name", "domain")

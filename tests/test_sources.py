@@ -315,6 +315,67 @@ class TestAdmin:
         job = Job.objects.get()
         assert (job.config_id, job.collector_key) == (profile.pk, "tender_btorg")
 
+    def test_the_config_add_form_can_register_a_new_source_inline(self, client, user):
+        """One guided step, direction one: registering `cian.ru` and picking its collector on
+        the same screen, via the `source` field's own add-popup."""
+        client.force_login(user)
+        response = client.get(reverse("admin:control_config_add"))
+
+        assert response.status_code == 200
+        assert b'id="add_id_source"' in response.content
+
+
+class TestConfigInlineUnderSource:
+    """One guided step, direction two: a *second* named profile for a site that already has
+    one, added right on the Source's own page instead of hunting for it on the Config tab."""
+
+    def _inline_post_data(self, source: Source, **overrides):
+        data = {
+            "name": source.name,
+            "domain": source.domain,
+            "listing_path": source.listing_path,
+            "extra_ca_cert": source.extra_ca_cert,
+            "configs-TOTAL_FORMS": "1",
+            "configs-INITIAL_FORMS": "0",
+            "configs-MIN_NUM_FORMS": "0",
+            "configs-MAX_NUM_FORMS": "1000",
+            "configs-0-name": "Торги82 — fast",
+            "configs-0-collector_key": "tender_kendo",
+            "configs-0-enabled": "on",
+        }
+        data.update(overrides)
+        return data
+
+    def test_adding_a_profile_from_the_source_page(self, client, user):
+        source = Source.objects.create(name="Торги82", domain="https://lot.torgi82.ru")
+        client.force_login(user)
+
+        response = client.post(
+            reverse("admin:control_source_change", args=[source.pk]),
+            self._inline_post_data(source),
+            follow=True,
+        )
+
+        assert response.status_code == 200
+        profile = Config.objects.get(name="Торги82 — fast")
+        assert profile.source_id == source.pk
+        assert profile.collector_key == "tender_kendo"
+
+    def test_a_non_site_collector_is_refused_from_the_inline(self, client, user):
+        """`is_site` validation runs for the inline too, even though it never shows a `source`
+        field — `ConfigForm.clean()` falls back to `self.instance.source`, which Django's inline
+        formset machinery sets before `clean()` runs specifically so this can work."""
+        source = Source.objects.create(name="Торги82", domain="https://lot.torgi82.ru")
+        client.force_login(user)
+
+        response = client.post(
+            reverse("admin:control_source_change", args=[source.pk]),
+            self._inline_post_data(source, **{"configs-0-collector_key": "example_api"}),
+        )
+
+        assert response.status_code == 200  # re-renders with errors, does not redirect
+        assert not Config.objects.filter(name="Торги82 — fast").exists()
+
 
 class TestSeed:
     def test_it_creates_the_carried_over_sources(self):
