@@ -9,7 +9,7 @@ script fails to load, the page still works, it just stops refreshing itself.
 
 from __future__ import annotations
 
-from django.contrib import messages
+from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, OuterRef, Subquery
 from django.http import HttpRequest, HttpResponse
@@ -20,6 +20,16 @@ from control.models import Config, Job, JobOrigin, JobStatus
 from control.services import EnqueueRefused, enqueue, request_cancel
 
 _RECENT_JOBS = 25
+
+#: Shared status -> Unfold badge-pill variant. `dashboard_extras.dashboard_status_variant`
+#: (a template filter) reads this same dict — one source of truth for both call sites.
+STATUS_VARIANT: dict[str, str] = {
+    JobStatus.PENDING: "default",
+    JobStatus.RUNNING: "info",
+    JobStatus.SUCCEEDED: "success",
+    JobStatus.FAILED: "danger",
+    JobStatus.CANCELLED: "warning",
+}
 
 
 def _recent_jobs():
@@ -48,6 +58,8 @@ def index(request: HttpRequest) -> HttpResponse:
         request,
         "dashboard/index.html",
         {
+            **admin.site.each_context(request),
+            "title": "Панель сбора данных",
             "configs": configs,
             "active_config_ids": active_config_ids,
             "jobs": _recent_jobs(),
@@ -101,7 +113,7 @@ def cancel_job(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 def _status_counts() -> list[dict[str, object]]:
-    """One tally per status, carrying both the raw value and its label.
+    """One tally per status, carrying the raw value, its label, and its badge variant.
 
     The raw value drives the CSS class, the label is what a human reads — the template must never
     print the stored value.
@@ -111,6 +123,11 @@ def _status_counts() -> list[dict[str, object]]:
     for row in rows:
         counts[row["status"]] = row["n"]
     return [
-        {"value": status, "label": JobStatus(status).label, "count": counts[status]}
+        {
+            "value": status,
+            "label": JobStatus(status).label,
+            "variant": STATUS_VARIANT.get(status, "default"),
+            "count": counts[status],
+        }
         for status in JobStatus.values
     ]

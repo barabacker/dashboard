@@ -10,6 +10,16 @@ from control.models import Job, JobStatus
 pytestmark = pytest.mark.django_db
 
 
+def test_index_renders_the_unfold_admin_chrome(client, user, config):
+    client.force_login(user)
+    response = client.get(reverse("dashboard:index"))
+    assert response.status_code == 200
+    # "Источники" is a sidebar nav label (see UNFOLD["SIDEBAR"] in settings.py) that never
+    # otherwise appears in the dashboard's own body content — its presence means
+    # `admin.site.each_context` reached the template and Unfold's sidebar rendered.
+    assert "Источники".encode() in response.content
+
+
 def test_index_requires_staff(client):
     response = client.get(reverse("dashboard:index"))
     assert response.status_code == 302
