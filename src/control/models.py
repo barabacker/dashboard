@@ -17,8 +17,6 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 
-from collectors.schemas.tender import KEY_PREFIX as TENDER_KEY_PREFIX
-
 
 def _snapshot_values(names: Iterable[str], values: Sequence[Any]) -> dict[str, Any]:
     """Remember loaded field values for change detection.
@@ -164,8 +162,11 @@ class Config(models.Model):
 
     class Meta:
         ordering = ["-updated_at"]
-        verbose_name = "Конфигурация"
-        verbose_name_plural = "Конфигурации"
+        # "Источник" (D22): the admin surface people actually use is framed as sources, not
+        # config rows — even though a Config for a non-source collector (example_api) still
+        # lives here too, edited through the raw-JSON form.
+        verbose_name = "Источник"
+        verbose_name_plural = "Источники"
         indexes = [
             models.Index(fields=["archived", "enabled"]),
             models.Index(fields=["collector_key"]),
@@ -239,44 +240,6 @@ class Config(models.Model):
         return cls.objects.exclude(last_status="", last_run_at=None, last_job_id=None).update(
             last_status="", last_run_at=None, last_job_id=None
         )
-
-
-class SourceManager(models.Manager):
-    """Only the Configs that describe a trading platform."""
-
-    def get_queryset(self) -> models.QuerySet[Config]:
-        return super().get_queryset().filter(collector_key__startswith=TENDER_KEY_PREFIX)
-
-
-class Source(Config):
-    """A site to crawl — a Config, seen through a form built for sites.
-
-    Deliberately **not** a table of its own. A site is "what to collect": its domain, listing
-    path and TLS quirks are exactly the parameters the collector's schema declares, so storing
-    them anywhere but `Config.parameters` would either duplicate the authored intent or leave
-    execution reading mutable state after enqueue — the one thing the snapshot exists to
-    prevent.
-
-    What this proxy adds is the surface: its own tab, and a form with a field per site attribute
-    instead of a JSON blob (see `control.forms.SourceForm`).
-
-    Named `Source` (not `Platform`, its original name): the manager still only shows tender
-    trading-platform sites for now (see the `collector_key__startswith` filter below), but the
-    label had to stop implying that every future kind of collected site is a "trading platform" —
-    it will not be, once a non-auction source is added.
-    """
-
-    objects = SourceManager()
-
-    class Meta:
-        proxy = True
-        ordering = ["name"]
-        verbose_name = "Источник"
-        verbose_name_plural = "Источники"
-
-    @property
-    def domain(self) -> str:
-        return str(self.parameters.get("domain") or "")
 
 
 class Lot(models.Model):

@@ -19,7 +19,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from collectors.schemas.tender import collector_key
-from control.models import Config, Source
+from control.models import Config
 
 #: (engine, title, domain, extras). Extras carry only what differs from the engine defaults.
 SOURCES: list[dict[str, Any]] = [
@@ -161,7 +161,7 @@ class Command(BaseCommand):
             if spec.get("note"):
                 self.stdout.write(f"    {spec['note']}")
             if not dry_run:
-                Source.objects.create(
+                Config.objects.create(
                     name=spec["title"],
                     collector_key=key,
                     parameters=parameters,

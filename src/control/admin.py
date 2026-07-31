@@ -30,7 +30,6 @@ from control.models import (
     JobOrigin,
     JobStatus,
     Schedule,
-    Source,
 )
 
 admin.site.site_header = "Сбор данных"
@@ -107,23 +106,20 @@ class CollectorAdmin(ModelAdmin):
         except schemas.UnknownCollector:
             return format_html("<i>Этого ключа больше нет в кодовой базе.</i>")
 
-        rows = []
-        for version in descriptor.versions:
-            for spec in version.params:
-                rows.append(
-                    format_html(
-                        "<tr><td>{}</td><td><code>{}</code></td><td>{}</td><td>{}</td>"
-                        "<td><code>{}</code></td><td>{}</td></tr>",
-                        version.version,
-                        spec.name,
-                        spec.kind,
-                        "да" if spec.required else "",
-                        "" if spec.default is None else repr(spec.default),
-                        "ссылка на секрет" if spec.is_credential_ref else spec.description,
-                    )
-                )
+        rows = [
+            format_html(
+                "<tr><td><code>{}</code></td><td>{}</td><td>{}</td>"
+                "<td><code>{}</code></td><td>{}</td></tr>",
+                spec.name,
+                spec.kind,
+                "да" if spec.required else "",
+                "" if spec.default is None else repr(spec.default),
+                "ссылка на секрет" if spec.is_credential_ref else spec.description,
+            )
+            for spec in descriptor.params
+        ]
         return format_html(
-            "<table><thead><tr><th>версия</th><th>параметр</th><th>тип</th><th>обязателен</th>"
+            "<table><thead><tr><th>параметр</th><th>тип</th><th>обязателен</th>"
             "<th>по умолчанию</th><th>примечание</th></tr></thead><tbody>{}</tbody></table>",
             format_html("".join(rows)),
         )
@@ -139,17 +135,25 @@ class ScheduleInline(TabularInline):
 
 @admin.register(Config)
 class ConfigAdmin(ModelAdmin):
-    form = ConfigForm
+    """The one Config admin (D22): «Источники» and «Конфигурации» merged into a single tab.
+
+    Which form and fieldsets render is decided per request, from whichever collector is in play
+    (`obj.collector_key` on change; `?collector_key=` on add — see `add_view`): a collector
+    flagged `is_source` gets `SourceForm`, built field-by-field from its `ParamSpec`s; anything
+    else falls back to `ConfigForm`'s raw-JSON `parameters`. Adding a new source-like collector
+    needs no change here — it needs `is_source=True` on its `CollectorDescriptor`.
+    """
+
     inlines = [ScheduleInline]
     list_display = (
         "name",
-        "collector_key",
+        "engine",
+        "site",
         "enabled",
         "archived",
         "last_status_badge",
         "last_run_at",
         "last_job_link",
-        "revision",
         "owner",
     )
     list_filter = ("collector_key", "enabled", "archived", "last_status")
@@ -165,21 +169,6 @@ class ConfigAdmin(ModelAdmin):
         "last_job_link",
         "resolved_preview",
     )
-    fieldsets = (
-        (None, {"fields": ("name", "collector_key", "parameters", "resolved_preview")}),
-        ("Состояние", {"fields": ("enabled", "archived", "tags", "owner")}),
-        (
-            "Последний запуск (кэш-колонки)",
-            {"fields": ("last_status", "last_run_at", "last_job_link"), "classes": ("collapse",)},
-        ),
-        (
-            "Аудит",
-            {
-                "fields": ("revision", "created_by", "created_at", "updated_at"),
-                "classes": ("collapse",),
-            },
-        ),
-    )
     actions = [
         "action_run_now",
         "action_enable",
@@ -188,12 +177,117 @@ class ConfigAdmin(ModelAdmin):
         "action_unarchive",
     ]
 
+    # --- collector-driven dispatch -------------------------------------------------------
+
+    def _collector_key_for(self, request: HttpRequest, obj: Config | None) -> str:
+        if obj is not None:
+            return obj.collector_key
+        return request.GET.get("collector_key") or request.POST.get("collector_key") or ""
+
+    def _is_source(self, key: str) -> bool:
+        if not key:
+            return False
+        try:
+            return schemas.get_collector(key).is_source
+        except schemas.UnknownCollector:
+            return False
+
+    def get_form(self, request: HttpRequest, obj: Config | None = None, **kwargs):
+        key = self._collector_key_for(request, obj)
+        if self._is_source(key):
+            # SourceForm's field set is built per-request from the collector's ParamSpecs, not
+            # known at class-definition time. The default path below runs every form through
+            # `modelform_factory(..., fields=flatten_fieldsets(...))`, which only accepts model
+            # fields and fields already declared on the class — it cannot know about fields
+            # `SourceForm.__init__` adds dynamically, and raises `FieldError` on the rest of
+            # `fieldsets`. `_changeform_view` only needs a `ModelForm` *class* back, so hand back
+            # `SourceForm` itself and skip that factory entirely.
+            return SourceForm
+        kwargs["form"] = ConfigForm
+        return super().get_form(request, obj, **kwargs)
+
+    def get_fieldsets(self, request: HttpRequest, obj: Config | None = None):
+        key = self._collector_key_for(request, obj)
+        if not self._is_source(key):
+            return (
+                (None, {"fields": ("name", "collector_key", "parameters", "resolved_preview")}),
+                ("Состояние", {"fields": ("enabled", "archived", "tags", "owner")}),
+                (
+                    "Последний запуск (кэш-колонки)",
+                    {
+                        "fields": ("last_status", "last_run_at", "last_job_link"),
+                        "classes": ("collapse",),
+                    },
+                ),
+                (
+                    "Аудит",
+                    {
+                        "fields": ("revision", "created_by", "created_at", "updated_at"),
+                        "classes": ("collapse",),
+                    },
+                ),
+            )
+        param_names = tuple(p.name for p in schemas.get_collector(key).params)
+        return (
+            (None, {"fields": ("name", "collector_key", *param_names)}),
+            ("Состояние", {"fields": ("enabled", "archived", "tags", "owner")}),
+            (
+                "Что уйдёт в задачу",
+                {"fields": ("resolved_preview",), "classes": ("collapse",)},
+            ),
+            (
+                "Последний запуск (кэш-колонки)",
+                {
+                    "fields": ("last_status", "last_run_at", "last_job_link"),
+                    "classes": ("collapse",),
+                },
+            ),
+            (
+                "Аудит",
+                {
+                    "fields": ("revision", "created_by", "created_at", "updated_at"),
+                    "classes": ("collapse",),
+                },
+            ),
+        )
+
+    # --- two-step add: a collector must be chosen before its fields can render -----------
+
+    def add_view(
+        self, request: HttpRequest, form_url: str = "", extra_context: dict | None = None
+    ) -> HttpResponse:
+        if request.method == "GET" and not request.GET.get("collector_key"):
+            return render(
+                request,
+                "admin/control/config/pick_collector.html",
+                {
+                    **self.admin_site.each_context(request),
+                    "title": "Новый источник — выбор сборщика",
+                    "collectors": schemas.all_collectors(),
+                    "opts": self.opts,
+                },
+            )
+        return super().add_view(request, form_url, extra_context)
+
+    # --- everything else -------------------------------------------------------------
+
     def save_model(self, request: HttpRequest, obj: Config, form, change: bool) -> None:
         if not change:
             obj.created_by = request.user
             if obj.owner_id is None:
                 obj.owner = request.user
         super().save_model(request, obj, form, change)
+
+    @admin.display(description="Движок", ordering="collector_key")
+    def engine(self, obj: Config) -> str:
+        try:
+            return schemas.get_collector(obj.collector_key).display_name
+        except schemas.UnknownCollector:
+            return f"{obj.collector_key} — нет в кодовой базе"
+
+    @admin.display(description="Сайт")
+    def site(self, obj: Config) -> str:
+        return str(obj.parameters.get("domain") or "—")
 
     @admin.display(description="Последний статус", ordering="last_status")
     def last_status_badge(self, obj: Config) -> SafeString:
@@ -262,90 +356,6 @@ class ConfigAdmin(ModelAdmin):
                 f"Поставлено задач: {len(created)} — {', '.join(created)}",
                 messages.SUCCESS,
             )
-
-    @admin.action(description="Включить выбранные конфигурации")
-    def action_enable(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
-        n = self._bulk(request, queryset, enabled=True)
-        self.message_user(request, f"Включено конфигураций: {n}.", messages.SUCCESS)
-
-    @admin.action(description="Выключить выбранные конфигурации")
-    def action_disable(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
-        n = self._bulk(request, queryset, enabled=False)
-        self.message_user(request, f"Выключено конфигураций: {n}.", messages.SUCCESS)
-
-    @admin.action(description="В архив (мягкое удаление)")
-    def action_archive(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
-        n = self._bulk(request, queryset, archived=True)
-        self.message_user(request, f"Отправлено в архив: {n}.", messages.SUCCESS)
-
-    @admin.action(description="Вернуть из архива")
-    def action_unarchive(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:
-        n = self._bulk(request, queryset, archived=False)
-        self.message_user(request, f"Возвращено из архива: {n}.", messages.SUCCESS)
-
-
-@admin.register(Source)
-class SourceAdmin(ConfigAdmin):
-    """The source tab: the same Configs, asked for as sites.
-
-    Everything behind it — enqueue, snapshots, schedules, history — is `ConfigAdmin`'s, which is
-    why this subclasses it rather than reimplementing the surface. What changes is the form and
-    the shape of the page.
-    """
-
-    form = SourceForm
-    list_display = (
-        "name",
-        "engine",
-        "site",
-        "enabled",
-        "archived",
-        "last_status_badge",
-        "last_run_at",
-        "last_job_link",
-    )
-    list_filter = ("collector_key", "enabled", "archived", "last_status")
-    search_fields = ("name",)
-    fieldsets = (
-        ("Источник", {"fields": ("name", "collector_key", "domain", "listing_path")}),
-        ("Обход", {"fields": ("max_pages", "only_active", "concurrency", "fetch_details")}),
-        (
-            "TLS",
-            {
-                "fields": ("extra_ca_cert", "skip_tls_verify"),
-                "classes": ("collapse",),
-                "description": "Костыли под сайты со сломанной цепочкой сертификатов. "
-                "По умолчанию не нужны.",
-            },
-        ),
-        ("Состояние", {"fields": ("enabled", "archived", "tags", "owner")}),
-        (
-            "Что уйдёт в задачу",
-            {"fields": ("resolved_preview",), "classes": ("collapse",)},
-        ),
-        (
-            "Последний запуск (кэш-колонки)",
-            {"fields": ("last_status", "last_run_at", "last_job_link"), "classes": ("collapse",)},
-        ),
-        (
-            "Аудит",
-            {
-                "fields": ("revision", "created_by", "created_at", "updated_at"),
-                "classes": ("collapse",),
-            },
-        ),
-    )
-
-    @admin.display(description="Движок", ordering="collector_key")
-    def engine(self, obj: Source) -> str:
-        try:
-            return schemas.get_collector(obj.collector_key).display_name
-        except schemas.UnknownCollector:
-            return f"{obj.collector_key} — нет в кодовой базе"
-
-    @admin.display(description="Сайт")
-    def site(self, obj: Source) -> str:
-        return obj.domain or "—"
 
     @admin.action(description="Включить выбранные источники")
     def action_enable(self, request: HttpRequest, queryset: QuerySet[Config]) -> None:

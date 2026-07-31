@@ -141,13 +141,10 @@ UNFOLD = {
                 "title": "Сбор данных",
                 "items": [
                     {
+                        # D22: «Источники» and «Конфигурации» merged into the one Config admin —
+                        # one sidebar entry, not two.
                         "title": "Источники",
                         "icon": "language",
-                        "link": reverse_lazy("admin:control_source_changelist"),
-                    },
-                    {
-                        "title": "Конфигурации",
-                        "icon": "tune",
                         "link": reverse_lazy("admin:control_config_changelist"),
                     },
                     {

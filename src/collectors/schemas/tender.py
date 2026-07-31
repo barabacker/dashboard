@@ -137,6 +137,9 @@ _EXTRA_CA_CERT = ParamSpec(
     default="",
     description="Имя PEM-файла из collectors/certs с промежуточным сертификатом, который сайт "
     "не отдаёт сам. Пусто — обычный набор корневых сертификатов.",
+    # A form offers exactly the certs shipped on disk right now — not a fixed `choices` tuple,
+    # which would go stale the moment a cert is added or removed from collectors/certs.
+    choices_provider=available_certs,
 )
 _SKIP_TLS_VERIFY = ParamSpec(
     name="skip_tls_verify",
@@ -213,6 +216,7 @@ def _descriptor_for(engine: str) -> CollectorDescriptor:
         description=_DESCRIPTIONS[engine],
         summary=_SUMMARIES[engine],
         params=_params_for(engine),
+        is_source=True,
     )
 
 

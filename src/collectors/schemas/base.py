@@ -7,7 +7,7 @@ parameters and build the snapshot's `effective_parameters`; `execution` never ne
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -66,6 +66,13 @@ class ParamSpec:
     #: True when the value is a *reference* to a credential (an env var / secret-store key),
     #: never the credential itself. Referenced values are snapshotted; secrets never are (§4).
     is_credential_ref: bool = False
+    #: Optional source of a *runtime-computed* pick list (e.g. certificate files shipped on
+    #: disk) for a form to offer, distinct from `choices`. It plays no part in `validate()` —
+    #: a value outside it is still just a `str`/etc. to the schema; whatever narrower contract
+    #: it must satisfy is enforced where that contract actually lives (see
+    #: `collectors.schemas.tender.resolve_cert_path`). Returns plain tuples only: this module
+    #: stays framework-free, so no Django widget or queryset can be plugged in here.
+    choices_provider: Callable[[], tuple[Any, ...]] | None = None
 
     def __post_init__(self) -> None:
         if self.kind not in _KIND_TYPES:
@@ -112,6 +119,13 @@ class CollectorDescriptor:
     description: str = ""
     summary: str = ""
     params: tuple[ParamSpec, ...] = field(default_factory=tuple)
+    #: True for a collector whose params describe "a site to crawl" and are therefore worth a
+    #: form built field-by-field from `params` (see D22). False (the default) sends a Config for
+    #: this collector through the raw-JSON form instead — the right default for anything that
+    #: isn't site-shaped, like `example_api`. Lives here, not on the `Collector` DB projection,
+    #: for the same reason nothing else about a collector's contract lives there: the projection
+    #: is a mirror of code, and a second place to declare the same fact would drift from this one.
+    is_source: bool = False
 
     def param(self, name: str) -> ParamSpec | None:
         return next((p for p in self.params if p.name == name), None)

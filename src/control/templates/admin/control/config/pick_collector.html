@@ -1,0 +1,23 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+  <h1>Новый источник</h1>
+
+  <p>
+    Сначала — сборщик. От него зависит, какие поля будут в форме дальше: сборщики, отмеченные
+    как источник, получают форму по своим параметрам; остальные — форму с параметрами как JSON.
+  </p>
+
+  <form method="get">
+    <select name="collector_key" required>
+      <option value="" disabled selected>— выберите сборщика —</option>
+      {% for collector in collectors %}
+        <option value="{{ collector.key }}">
+          {{ collector.display_name }}{% if not collector.is_source %} (параметры JSON){% endif %}
+        </option>
+      {% endfor %}
+    </select>
+    <input type="submit" value="Далее">
+    <a href="{% url 'admin:control_config_changelist' %}" class="button cancel-link">Отмена</a>
+  </form>
+{% endblock %}
