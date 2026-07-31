@@ -73,11 +73,16 @@ def index(request: HttpRequest) -> HttpResponse:
     configs_qs, q, state = _filtered_configs(request)
 
     latest_job = Job.objects.filter(config_id=OuterRef("pk")).order_by("-created_at")
+    active_job = Job.objects.filter(
+        config_id=OuterRef("pk"), status__in=JobStatus.active()
+    ).order_by("-created_at")
     configs = list(
         configs_qs.annotate(
             latest_job_status=Subquery(latest_job.values("status")[:1]),
             latest_job_id=Subquery(latest_job.values("id")[:1]),
             latest_job_at=Subquery(latest_job.values("created_at")[:1]),
+            active_job_id=Subquery(active_job.values("id")[:1]),
+            active_job_cancel_requested=Subquery(active_job.values("cancel_requested")[:1]),
         ).order_by("name")
     )
 

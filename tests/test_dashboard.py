@@ -109,6 +109,29 @@ def test_state_filter_shows_only_disabled(client, user, make_config):
     assert b"Excluded" not in response.content
 
 
+def test_a_config_with_an_active_job_shows_a_stop_button(client, user, config):
+    from control.services import enqueue
+
+    job = enqueue(config)
+    client.force_login(user)
+    response = client.get(reverse("dashboard:index"))
+    assert reverse("dashboard:cancel_job", args=[job.pk]).encode() in response.content
+    assert "Остановить".encode() in response.content
+
+
+def test_a_config_whose_active_job_is_already_being_cancelled_shows_no_stop_button(
+    client, user, config
+):
+    from control.services import enqueue
+
+    job = enqueue(config)
+    Job.objects.filter(pk=job.pk).update(status=JobStatus.RUNNING, cancel_requested=True)
+    client.force_login(user)
+    response = client.get(reverse("dashboard:index"))
+    assert "останавливается".encode() in response.content
+    assert reverse("dashboard:cancel_job", args=[job.pk]).encode() not in response.content
+
+
 def test_a_family_with_no_matching_config_does_not_render_its_heading(client, user, make_config):
     make_config(name="Alpha", collector_key="example_api")
     make_config(

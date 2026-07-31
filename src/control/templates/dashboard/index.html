@@ -67,13 +67,26 @@
                 </td>
                 <td class="px-3 py-2 text-base-500 dark:text-base-400">{{ config.latest_job_at|default:"—" }}</td>
                 <td class="px-3 py-2 text-right">
-                  <form method="post" action="{% url 'dashboard:run_now' config.pk %}">
-                    {% csrf_token %}
-                    <button type="submit" {% if not config.enabled %}disabled{% endif %}
-                            class="font-medium inline-flex items-center gap-1 rounded-default justify-center whitespace-nowrap {% if not config.enabled %}cursor-not-allowed opacity-50{% else %}cursor-pointer{% endif %} px-2.5 py-1.5 text-sm border border-base-200 bg-white shadow-xs text-important dark:border-base-700 dark:bg-transparent hover:bg-base-100/80 dark:hover:bg-base-800/80">
-                      Запустить
-                    </button>
-                  </form>
+                  {% if config.active_job_id %}
+                    {% if config.active_job_cancel_requested %}
+                      <span class="text-base-400 dark:text-base-500 text-sm">останавливается…</span>
+                    {% else %}
+                      <form method="post" action="{% url 'dashboard:cancel_job' config.active_job_id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="font-medium inline-flex items-center gap-1 rounded-default justify-center whitespace-nowrap cursor-pointer px-2.5 py-1.5 text-sm border border-red-600 bg-red-600 text-white hover:bg-red-600/80">
+                          Остановить
+                        </button>
+                      </form>
+                    {% endif %}
+                  {% else %}
+                    <form method="post" action="{% url 'dashboard:run_now' config.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" {% if not config.enabled %}disabled{% endif %}
+                              class="font-medium inline-flex items-center gap-1 rounded-default justify-center whitespace-nowrap {% if not config.enabled %}cursor-not-allowed opacity-50{% else %}cursor-pointer{% endif %} px-2.5 py-1.5 text-sm border border-base-200 bg-white shadow-xs text-important dark:border-base-700 dark:bg-transparent hover:bg-base-100/80 dark:hover:bg-base-800/80">
+                        Запустить
+                      </button>
+                    </form>
+                  {% endif %}
                 </td>
               </tr>
             {% endfor %}
