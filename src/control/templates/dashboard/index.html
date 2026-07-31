@@ -25,16 +25,16 @@
               {% else %}<span class="muted">отключена</span>{% endif %}
             </td>
             <td>
-              {% if config.last_status %}
-                <span class="status status-{{ config.last_status }}">
-                  {{ config.get_last_status_display }}</span>
-                {% if config.last_job_id %}
-                  <a class="muted" href="{% url 'admin:control_job_change' config.last_job_id %}">
-                    #{{ config.last_job_id }}</a>
+              {% if config.latest_job_status %}
+                <span class="status status-{{ config.latest_job_status }}">
+                  {{ config.latest_job_label }}</span>
+                {% if config.latest_job_id %}
+                  <a class="muted" href="{% url 'admin:control_job_change' config.latest_job_id %}">
+                    #{{ config.latest_job_id }}</a>
                 {% endif %}
               {% else %}<span class="muted">не запускалась</span>{% endif %}
             </td>
-            <td class="muted">{{ config.last_run_at|default:"—" }}</td>
+            <td class="muted">{{ config.latest_job_at|default:"—" }}</td>
             <td>
               <form method="post" action="{% url 'dashboard:run_now' config.pk %}">
                 {% csrf_token %}
