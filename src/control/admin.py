@@ -318,10 +318,11 @@ class SourceAdmin(ModelAdmin):
         (
             "TLS",
             {
-                "fields": ("extra_ca_cert", "skip_tls_verify"),
+                "fields": ("tls_options",),
                 "classes": ("collapse",),
-                "description": "Костыли под сайты со сломанной цепочкой сертификатов. "
-                "По умолчанию не нужны.",
+                "description": "Костыли под сайты со сломанной цепочкой сертификатов, JSON: "
+                '{"extra_ca_cert": "<имя PEM-файла из collectors/certs>", '
+                '"skip_tls_verify": true}. По умолчанию не нужны.',
             },
         ),
         ("Аудит", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),

@@ -4,6 +4,8 @@ named profiles."""
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from django.core.management import call_command
 from django.urls import reverse
@@ -21,8 +23,7 @@ def _source_form_data(**overrides):
         "name": "Центр реализации",
         "domain": "https://bankrupt.centerr.ru",
         "start_url": "",
-        "extra_ca_cert": "",
-        "skip_tls_verify": False,
+        "tls_options": "",
     }
     data.update(overrides)
     return {k: v for k, v in data.items() if v is not None}
@@ -36,7 +37,7 @@ class TestSourceForm:
 
         assert source.domain == "https://bankrupt.centerr.ru"
         assert source.start_url == ""
-        assert source.tls_options.get("skip_tls_verify") is False
+        assert source.tls_options == {}
 
     def test_a_missing_domain_is_refused(self):
         form = SourceForm(data=_source_form_data(domain=""))
@@ -63,9 +64,20 @@ class TestSourceForm:
         assert form.initial["domain"] == "https://promkonsalt.ru"
         assert form.initial["start_url"] == "tradelist.php"
 
-    def test_extra_ca_cert_offers_the_shipped_certificates(self):
-        choices = {value for value, _label in SourceForm().fields["extra_ca_cert"].choices}
-        assert "" in choices  # "— обычный набор корневых —"
+    def test_an_unknown_certificate_name_is_refused(self):
+        form = SourceForm(
+            data=_source_form_data(tls_options='{"extra_ca_cert": "does-not-exist.pem"}')
+        )
+        assert not form.is_valid()
+        assert "tls_options" in form.errors
+
+    def test_a_shipped_certificate_name_is_accepted(self):
+        from collectors.schemas.tender import available_certs
+
+        cert = available_certs()[0]
+        form = SourceForm(data=_source_form_data(tls_options=f'{{"extra_ca_cert": "{cert}"}}'))
+        assert form.is_valid(), form.errors
+        assert form.save().tls_options == {"extra_ca_cert": cert}
 
 
 class TestConfigFormWithSource:
@@ -294,13 +306,13 @@ class TestAdmin:
         assert "Аукционы Сибири".encode() in response.content
         assert b"https://ausib.ru" in response.content
 
-    def test_the_add_form_asks_for_site_fields_not_json(self, client, user):
+    def test_the_add_form_asks_for_site_fields_not_config_parameters(self, client, user):
         client.force_login(user)
         response = client.get(reverse("admin:control_source_add"))
 
         assert response.status_code == 200
         assert b'name="domain"' in response.content
-        assert b'name="skip_tls_verify"' in response.content
+        assert b'name="tls_options"' in response.content
         assert b'name="parameters"' not in response.content
 
     def test_run_now_from_the_config_tab_enqueues(self, client, user):
@@ -337,7 +349,7 @@ class TestConfigInlineUnderSource:
             "name": source.name,
             "domain": source.domain,
             "start_url": source.start_url,
-            "extra_ca_cert": source.tls_options.get("extra_ca_cert", ""),
+            "tls_options": json.dumps(source.tls_options),
             "configs-TOTAL_FORMS": "1",
             "configs-INITIAL_FORMS": "0",
             "configs-MIN_NUM_FORMS": "0",

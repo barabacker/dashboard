@@ -2,9 +2,9 @@
 
 Behaviour (which collector, `max_pages`, `fetch_details`, ...) belongs to a `Config` profile that
 references this `Source`, not to the `Source` itself — see `control.forms.ConfigForm` for that
-side. `extra_ca_cert`/`skip_tls_verify` are declared here as their own fields even though they are
-stored together inside `Source.tls_options`: the split is a database-shape decision, not something
-the person filling the form needs to see.
+side. `tls_options` is one JSON field, the same shape it is on the model and the same choice
+`ConfigForm` makes for `parameters`: validation here is a *convenience* (catches an unknown
+certificate name), not the guarantee — `Source.param_value` reads whatever is stored, typo or not.
 """
 
 from __future__ import annotations
@@ -18,17 +18,6 @@ from control.models import Source
 
 
 class SourceForm(forms.ModelForm):
-    extra_ca_cert = forms.ChoiceField(
-        label="Доп. сертификат",
-        required=False,
-        help_text="Имя PEM-файла из collectors/certs с промежуточным сертификатом, который сайт "
-        "не отдаёт сам. Пусто — обычный набор корневых сертификатов.",
-    )
-    skip_tls_verify = forms.BooleanField(
-        label="Не проверять сертификат",
-        required=False,
-        help_text="Полностью отключить проверку сертификата для этого сайта.",
-    )
     start_url = forms.CharField(
         label="Путь к листингу",
         max_length=200,
@@ -39,28 +28,17 @@ class SourceForm(forms.ModelForm):
 
     class Meta:
         model = Source
-        fields = ["name", "domain", "start_url"]
+        fields = ["name", "domain", "start_url", "tls_options"]
         labels = {"name": "Название источника"}
+        widgets = {"tls_options": forms.Textarea(attrs={"rows": 4, "cols": 60})}
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.fields["extra_ca_cert"].choices = [("", "— обычный набор корневых —")] + [
-            (name, name) for name in available_certs()
-        ]
-        if self.instance.pk:
-            self.fields["extra_ca_cert"].initial = self.instance.tls_options.get(
-                "extra_ca_cert", ""
-            )
-            self.fields["skip_tls_verify"].initial = self.instance.tls_options.get(
-                "skip_tls_verify", False
-            )
-
-    def save(self, commit: bool = True) -> Source:
-        source = super().save(commit=False)
-        source.tls_options = {
-            "extra_ca_cert": self.cleaned_data.get("extra_ca_cert", ""),
-            "skip_tls_verify": self.cleaned_data.get("skip_tls_verify", False),
-        }
-        if commit:
-            source.save()
-        return source
+    def clean_tls_options(self) -> dict[str, Any]:
+        # An empty textarea comes back as `None` from the auto-generated JSONField, not `{}` —
+        # `tls_options` is `blank=True` at the model level but the column is NOT NULL, so an
+        # uncoerced `None` would sail past this form and hit the database instead (see
+        # `ConfigForm.clean` for the same coercion on `parameters`).
+        value = self.cleaned_data.get("tls_options") or {}
+        cert = value.get("extra_ca_cert")
+        if cert and cert not in available_certs():
+            raise forms.ValidationError(f"{cert!r}: такого файла нет в collectors/certs.")
+        return value
