@@ -9,12 +9,14 @@ script fails to load, the page still works, it just stops refreshing itself.
 
 from __future__ import annotations
 
+import json
+
 from collections import OrderedDict
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, OuterRef, Subquery
-from django.http import HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -22,6 +24,7 @@ from django.views.decorators.http import require_POST
 from collectors import schemas
 from control.models import Config, Job, JobOrigin, JobStatus
 from control.services import EnqueueRefused, enqueue, request_cancel
+from control.services.lots import get_lot, list_lots
 
 _RECENT_JOBS = 25
 
@@ -213,3 +216,52 @@ def cancel_job(request: HttpRequest, pk: int) -> HttpResponse:
             request, f"Задача #{job.pk} уже завершена ({job.get_status_display().lower()})."
         )
     return _redirect_preserving_filter(request)
+
+
+@staff_member_required
+def lots_list(request: HttpRequest) -> HttpResponse:
+    source = request.GET.get("source", "").strip() or None
+    try:
+        page = int(request.GET.get("page", "1"))
+    except ValueError:
+        page = 1
+
+    lots_page = list_lots(source=source, page=page)
+    # Django templates reject leading-underscore lookups (`lot._id`), so surface a plain `id`
+    # string here rather than teach the template a filter just for this one field.
+    for lot in lots_page.items:
+        lot["id"] = str(lot["_id"])
+
+    return render(
+        request,
+        "dashboard/lots.html",
+        {
+            **admin.site.each_context(request),
+            "title": "Лоты",
+            "lots_page": lots_page,
+            "source": source or "",
+        },
+    )
+
+
+@staff_member_required
+def lot_detail(request: HttpRequest, id: str) -> HttpResponse:
+    lot = get_lot(id)
+    if lot is None:
+        raise Http404("Лот не найден.")
+
+    fields_json = {
+        name: json.dumps(lot.get(name), indent=2, ensure_ascii=False, default=str)
+        for name in ("attachments", "price_schedule", "extra")
+    }
+
+    return render(
+        request,
+        "dashboard/lot_detail.html",
+        {
+            **admin.site.each_context(request),
+            "title": f"Лот {lot.get('lot_num') or lot['_id']}",
+            "lot": lot,
+            "fields_json": fields_json,
+        },
+    )

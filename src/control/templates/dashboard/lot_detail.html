@@ -1,0 +1,46 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+  <p class="mb-2">
+    <a href="{% url 'dashboard:lots_list' %}" class="text-sm text-base-500 dark:text-base-400 hover:underline">&larr; Назад к списку лотов</a>
+  </p>
+  <h1 class="text-lg font-semibold text-important mb-4">{{ lot.source }} — лот {{ lot.lot_num|default:"—" }}</h1>
+
+  <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 mb-6">
+    <div><dt class="text-xs font-medium text-base-500 dark:text-base-400">Источник</dt><dd class="text-important">{{ lot.source }}</dd></div>
+    <div><dt class="text-xs font-medium text-base-500 dark:text-base-400">ID лота</dt><dd class="text-important">{{ lot.lot_id }}</dd></div>
+    <div><dt class="text-xs font-medium text-base-500 dark:text-base-400">Номер лота</dt><dd class="text-important">{{ lot.lot_num|default:"—" }}</dd></div>
+    <div><dt class="text-xs font-medium text-base-500 dark:text-base-400">Номер торгов</dt><dd class="text-important">{{ lot.trade_number|default:"—" }}</dd></div>
+    <div><dt class="text-xs font-medium text-base-500 dark:text-base-400">Тип торгов</dt><dd class="text-important">{{ lot.trade_type|default:"—" }}</dd></div>
+    <div>
+      <dt class="text-xs font-medium text-base-500 dark:text-base-400">Статус</dt>
+      <dd>{% include "dashboard/_badge.html" with variant=lot.is_active|yesno:"success,default" text=lot.status|default:"—" %}</dd>
+    </div>
+    <div><dt class="text-xs font-medium text-base-500 dark:text-base-400">Цена</dt><dd class="text-important">{{ lot.price|default:"—" }} ({{ lot.price_raw|default:"—" }})</dd></div>
+    <div><dt class="text-xs font-medium text-base-500 dark:text-base-400">Должник</dt><dd class="text-important">{{ lot.debtor|default:"—" }}</dd></div>
+    <div><dt class="text-xs font-medium text-base-500 dark:text-base-400">Организатор</dt><dd class="text-important">{{ lot.organizer|default:"—" }}</dd></div>
+    <div><dt class="text-xs font-medium text-base-500 dark:text-base-400">Дедлайн торгов</dt><dd class="text-important">{{ lot.bidding_deadline|default:"—" }} ({{ lot.bidding_date_raw|default:"—" }})</dd></div>
+    <div><dt class="text-xs font-medium text-base-500 dark:text-base-400">Дата результата</dt><dd class="text-important">{{ lot.result_date|default:"—" }} ({{ lot.event_date_raw|default:"—" }})</dd></div>
+    <div><dt class="text-xs font-medium text-base-500 dark:text-base-400">Впервые замечен</dt><dd class="text-important">{{ lot.first_seen_at|default:"—" }}</dd></div>
+    <div><dt class="text-xs font-medium text-base-500 dark:text-base-400">Последний раз замечен</dt><dd class="text-important">{{ lot.last_seen_at|default:"—" }}</dd></div>
+    <div><dt class="text-xs font-medium text-base-500 dark:text-base-400">Задача</dt><dd class="text-important">{{ lot.last_job_id|default:"—" }}</dd></div>
+    <div class="sm:col-span-2">
+      <dt class="text-xs font-medium text-base-500 dark:text-base-400">Ссылка на лот</dt>
+      <dd>{% if lot.lot_url %}<a href="{{ lot.lot_url }}" target="_blank" rel="noopener" class="text-primary-600 hover:underline">{{ lot.lot_url }}</a>{% else %}—{% endif %}</dd>
+    </div>
+    <div class="sm:col-span-2"><dt class="text-xs font-medium text-base-500 dark:text-base-400">Описание</dt><dd class="text-important whitespace-pre-wrap">{{ lot.description|default:"—" }}</dd></div>
+  </dl>
+
+  <div class="mb-4">
+    <h2 class="text-sm font-semibold text-important mb-1">Вложения</h2>
+    <pre class="text-xs bg-base-100 dark:bg-base-800 border border-base-200 dark:border-base-700 rounded-default p-3 overflow-x-auto">{{ fields_json.attachments }}</pre>
+  </div>
+  <div class="mb-4">
+    <h2 class="text-sm font-semibold text-important mb-1">График цены</h2>
+    <pre class="text-xs bg-base-100 dark:bg-base-800 border border-base-200 dark:border-base-700 rounded-default p-3 overflow-x-auto">{{ fields_json.price_schedule }}</pre>
+  </div>
+  <div class="mb-4">
+    <h2 class="text-sm font-semibold text-important mb-1">Прочее</h2>
+    <pre class="text-xs bg-base-100 dark:bg-base-800 border border-base-200 dark:border-base-700 rounded-default p-3 overflow-x-auto">{{ fields_json.extra }}</pre>
+  </div>
+{% endblock %}

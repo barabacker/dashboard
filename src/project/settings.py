@@ -160,6 +160,11 @@ UNFOLD = {
                         "icon": "list_alt",
                         "link": reverse_lazy("admin:control_job_changelist"),
                     },
+                    {
+                        "title": "Лоты",
+                        "icon": "inventory_2",
+                        "link": reverse_lazy("dashboard:lots_list"),
+                    },
                 ],
             },
             {
