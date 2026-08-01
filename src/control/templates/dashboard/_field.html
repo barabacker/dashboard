@@ -1,0 +1,4 @@
+<div{% if wide %} class="sm:col-span-2"{% endif %}>
+  <dt class="text-xs font-medium text-base-500 dark:text-base-400">{{ label }}</dt>
+  <dd class="text-important{% if value_class %} {{ value_class }}{% endif %}">{{ value|default:"—" }}</dd>
+</div>

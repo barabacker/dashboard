@@ -11,32 +11,13 @@ from bson import ObjectId
 from django.utils import timezone
 
 import control.services.lots as lots_module
+from conftest import make_lot
 from control.services.lots import get_lot, list_lots
 
 
 @pytest.fixture
 def collection():
     return mongomock.MongoClient()["dashboard-test"]["lots"]
-
-
-def make_lot(collection, **overrides) -> dict:
-    doc = {
-        "source": "bankrupt.centerr.ru",
-        "lot_id": "0025093_1",
-        "lot_num": "1",
-        "status": "Идут торги",
-        "is_active": True,
-        "price": 270000.0,
-        "bidding_deadline": None,
-        "attachments": [],
-        "price_schedule": [],
-        "extra": {},
-    }
-    doc.update(overrides)
-    doc.setdefault("last_seen_at", timezone.now())
-    result = collection.insert_one(doc)
-    doc["_id"] = result.inserted_id
-    return doc
 
 
 class TestListLots:
@@ -71,9 +52,7 @@ class TestListLots:
     def test_paginates_using_the_page_size(self, collection, monkeypatch):
         monkeypatch.setattr(lots_module, "PAGE_SIZE", 2)
         for i in range(5):
-            make_lot(
-                collection, lot_id=str(i), last_seen_at=timezone.now() + timedelta(seconds=i)
-            )
+            make_lot(collection, lot_id=str(i), last_seen_at=timezone.now() + timedelta(seconds=i))
 
         first = list_lots(source=None, page=1, collection=collection)
         second = list_lots(source=None, page=2, collection=collection)

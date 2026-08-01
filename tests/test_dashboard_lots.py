@@ -7,9 +7,9 @@ import mongomock
 import pytest
 from bson import ObjectId
 from django.urls import reverse
-from django.utils import timezone
 
 import control.services.lots as lots_module
+from conftest import make_lot
 
 pytestmark = pytest.mark.django_db
 
@@ -19,28 +19,6 @@ def lots_collection(monkeypatch):
     collection = mongomock.MongoClient()["dashboard-test"]["lots"]
     monkeypatch.setattr(lots_module, "get_lots_collection", lambda: collection)
     return collection
-
-
-def make_lot(collection, **overrides) -> dict:
-    doc = {
-        "source": "bankrupt.centerr.ru",
-        "lot_id": "0025093_1",
-        "lot_num": "1",
-        "status": "Идут торги",
-        "is_active": True,
-        "price": 270000.0,
-        "bidding_deadline": None,
-        "debtor": None,
-        "lot_url": None,
-        "attachments": [],
-        "price_schedule": [],
-        "extra": {},
-    }
-    doc.update(overrides)
-    doc.setdefault("last_seen_at", timezone.now())
-    result = collection.insert_one(doc)
-    doc["_id"] = result.inserted_id
-    return doc
 
 
 def test_lots_list_requires_staff(client, lots_collection):

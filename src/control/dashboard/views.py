@@ -10,7 +10,6 @@ script fails to load, the page still works, it just stops refreshing itself.
 from __future__ import annotations
 
 import json
-
 from collections import OrderedDict
 
 from django.contrib import admin, messages
@@ -244,6 +243,15 @@ def lots_list(request: HttpRequest) -> HttpResponse:
     )
 
 
+def _paired(value: object, raw: object) -> str:
+    """Render a field alongside its raw-source counterpart, e.g. `"100 (100 руб.)"`.
+
+    Mirrors the `{{ x|default:"—" }} ({{ y|default:"—" }})` pattern the template used inline
+    before those pairs moved into `_field.html`, which only takes a single `value`.
+    """
+    return f"{value if value else '—'} ({raw if raw else '—'})"
+
+
 @staff_member_required
 def lot_detail(request: HttpRequest, id: str) -> HttpResponse:
     lot = get_lot(id)
@@ -263,5 +271,10 @@ def lot_detail(request: HttpRequest, id: str) -> HttpResponse:
             "title": f"Лот {lot.get('lot_num') or lot['_id']}",
             "lot": lot,
             "fields_json": fields_json,
+            "price_display": _paired(lot.get("price"), lot.get("price_raw")),
+            "bidding_deadline_display": _paired(
+                lot.get("bidding_deadline"), lot.get("bidding_date_raw")
+            ),
+            "result_date_display": _paired(lot.get("result_date"), lot.get("event_date_raw")),
         },
     )
