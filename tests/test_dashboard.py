@@ -170,3 +170,26 @@ def test_run_selected_with_nothing_checked_creates_no_job(client, user):
     response = client.post(reverse("dashboard:run_selected"), {}, follow=True)
     assert Job.objects.count() == 0
     assert "Ничего не выбрано".encode() in response.content
+
+
+def test_run_selected_redirect_preserves_the_current_filter(client, user, make_config):
+    a = make_config(name="a")
+    client.force_login(user)
+    response = client.post(
+        reverse("dashboard:run_selected"),
+        {"config_id": [a.pk], "next_qs": "q=Alpha&state=enabled"},
+    )
+    assert response.status_code == 302
+    assert response["Location"] == f"{reverse('dashboard:index')}?q=Alpha&state=enabled"
+
+
+def test_cancel_job_redirect_preserves_the_current_filter(client, user, config):
+    from control.services import enqueue
+
+    job = enqueue(config)
+    client.force_login(user)
+    response = client.post(
+        reverse("dashboard:cancel_job", args=[job.pk]), {"next_qs": "state=disabled"}
+    )
+    assert response.status_code == 302
+    assert response["Location"] == f"{reverse('dashboard:index')}?state=disabled"

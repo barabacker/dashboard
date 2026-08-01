@@ -40,6 +40,27 @@ def _recent_jobs():
     return Job.objects.order_by("-created_at")[:_RECENT_JOBS]
 
 
+def _status_counts() -> list[dict[str, object]]:
+    """One tally per status, carrying the raw value, its label, and its badge variant.
+
+    The raw value drives the CSS class, the label is what a human reads — the template must never
+    print the stored value.
+    """
+    rows = Job.objects.values("status").annotate(n=Count("pk"))
+    counts = dict.fromkeys(JobStatus.values, 0)
+    for row in rows:
+        counts[row["status"]] = row["n"]
+    return [
+        {
+            "value": status,
+            "label": JobStatus(status).label,
+            "variant": STATUS_VARIANT.get(status, "default"),
+            "count": counts[status],
+        }
+        for status in JobStatus.values
+    ]
+
+
 def _collector_label(key: str) -> str:
     """`Collector.display_name` if the code knows this key, the raw key otherwise.
 
@@ -192,24 +213,3 @@ def cancel_job(request: HttpRequest, pk: int) -> HttpResponse:
             request, f"Задача #{job.pk} уже завершена ({job.get_status_display().lower()})."
         )
     return _redirect_preserving_filter(request)
-
-
-def _status_counts() -> list[dict[str, object]]:
-    """One tally per status, carrying the raw value, its label, and its badge variant.
-
-    The raw value drives the CSS class, the label is what a human reads — the template must never
-    print the stored value.
-    """
-    rows = Job.objects.values("status").annotate(n=Count("pk"))
-    counts = dict.fromkeys(JobStatus.values, 0)
-    for row in rows:
-        counts[row["status"]] = row["n"]
-    return [
-        {
-            "value": status,
-            "label": JobStatus(status).label,
-            "variant": STATUS_VARIANT.get(status, "default"),
-            "count": counts[status],
-        }
-        for status in JobStatus.values
-    ]
