@@ -79,12 +79,14 @@ def test_lot_detail_renders_the_main_fields(client, user, lots_collection):
         lots_collection,
         debtor="ООО «Должник»",
         lot_url="https://bankrupt.centerr.ru/lot/1",
+        trade_id="0025093",
     )
     client.force_login(user)
     response = client.get(reverse("dashboard:lot_detail", args=[str(stored["_id"])]))
     assert response.status_code == 200
     assert "ООО «Должник»".encode() in response.content
     assert b"https://bankrupt.centerr.ru/lot/1" in response.content
+    assert b"0025093" in response.content
 
 
 def test_lot_detail_renders_json_fields(client, user, lots_collection):
