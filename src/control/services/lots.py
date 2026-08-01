@@ -34,9 +34,7 @@ class LotsPage:
         return range(1, self.total_pages + 1)
 
 
-def list_lots(
-    *, source: str | None, page: int, collection: Collection | None = None
-) -> LotsPage:
+def list_lots(*, source: str | None, page: int, collection: Collection | None = None) -> LotsPage:
     collection = collection if collection is not None else get_lots_collection()
     query: dict[str, object] = {"source": source} if source else {}
 
