@@ -11,13 +11,14 @@ Django-проект с админкой на [Unfold](https://unfoldadmin.com/).
 | Django | 5.2 |
 | django-unfold | 0.91 |
 | БД | SQLite (файл `db.sqlite3`) |
+| Пакеты и venv | [uv](https://docs.astral.sh/uv/) — `pyproject.toml` + `uv.lock` |
 
-Никаких системных зависимостей: `pip install -r requirements.txt` и всё работает.
+Системных зависимостей нет. Нужен только `uv` — нужный Python он поставит сам.
 
 ## Запуск
 
 ```bash
-make install-dev     # venv + зависимости
+make install     # uv sync: создаст .venv и поставит зависимости по локу
 make migrate
 make superuser
 make run
@@ -25,13 +26,21 @@ make run
 
 Админка: http://127.0.0.1:8000/admin/
 
-Всё то же самое без Makefile — обычными командами Django:
+Без Makefile — то же самое напрямую:
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-python manage.py migrate && python manage.py createsuperuser
-python manage.py runserver
+uv sync
+uv run manage.py migrate
+uv run manage.py createsuperuser
+uv run manage.py runserver
+```
+
+`uv run` сам поднимает окружение — активировать venv не нужно.
+Если uv ещё не стоит:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh                  # macOS / Linux
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"        # Windows
 ```
 
 ## Команды
@@ -40,6 +49,8 @@ python manage.py runserver
 
 | Команда | Что делает |
 |---|---|
+| `make install` / `make sync` | зависимости: по локу / строго по локу, без перерешения |
+| `make lock` / `make upgrade` | пересобрать лок / поднять версии в пределах ограничений |
 | `make run` | сервер разработки, порт меняется через `PORT=8080` |
 | `make migrate` / `make migrations` | применить / создать миграции |
 | `make test` | тесты |
@@ -89,8 +100,12 @@ GitHub Actions (`.github/workflows/ci.yml`) на каждый push в `main` и 
 
 | Job | Что делает |
 |---|---|
-| Линтер | `ruff check` + `ruff format --check` |
+| Линтер | `uv sync --locked`, затем `ruff check` + `ruff format --check` |
 | Тесты | `manage.py check`, проверка несозданных миграций, `manage.py test`, `collectstatic` на Python 3.11 / 3.12 / 3.13 |
+
+Оба job'а ставят зависимости через `uv sync --locked`: версии берутся из `uv.lock`,
+CI падает, если лок разошёлся с `pyproject.toml`. После правки зависимостей нужно
+закоммитить обновлённый `uv.lock` (`make lock`).
 
 Локально то же самое — `make ci`.
 
@@ -103,6 +118,12 @@ GitHub Actions (`.github/workflows/ci.yml`) на каждый push в `main` и 
 | `DJANGO_ALLOWED_HOSTS` | `*` |
 
 Перед деплоем задать все три.
+
+## Зависимости
+
+Добавить пакет: `uv add <пакет>` (в dev-группу: `uv add --dev <пакет>`) — uv сам
+обновит `pyproject.toml`, `uv.lock` и окружение. Удалить: `uv remove <пакет>`.
+`uv.lock` коммитится, `.venv/` — нет.
 
 ## Что дальше
 

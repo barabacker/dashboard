@@ -1,68 +1,66 @@
 .DEFAULT_GOAL := help
 
-VENV ?= .venv
-PYTHON := $(VENV)/bin/python
-PIP := $(VENV)/bin/pip
-RUFF := $(VENV)/bin/ruff
+UV ?= uv
+RUN := $(UV) run
 PORT ?= 8000
 
-.PHONY: help venv install install-dev run migrate migrations superuser shell \
+.PHONY: help install sync lock upgrade run migrate migrations superuser shell \
         test check lint fmt static clean distclean ci
 
 help: ## Показать список команд
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-$(PYTHON):
-	python3 -m venv $(VENV)
-	$(PIP) install --upgrade pip
+install: ## Поставить зависимости по uv.lock (создаст .venv)
+	$(UV) sync
 
-venv: $(PYTHON) ## Создать виртуальное окружение
+sync: ## То же, но строго по локу — ничего не перерешает
+	$(UV) sync --locked
 
-install: venv ## Установить зависимости проекта
-	$(PIP) install -r requirements.txt
+lock: ## Пересобрать uv.lock после правок pyproject.toml
+	$(UV) lock
 
-install-dev: venv ## Установить зависимости проекта и разработки
-	$(PIP) install -r requirements-dev.txt
+upgrade: ## Поднять версии зависимостей в пределах ограничений
+	$(UV) lock --upgrade
 
 run: ## Запустить сервер разработки (PORT=8000)
-	$(PYTHON) manage.py runserver $(PORT)
+	$(RUN) manage.py runserver $(PORT)
 
 migrate: ## Применить миграции
-	$(PYTHON) manage.py migrate
+	$(RUN) manage.py migrate
 
 migrations: ## Создать миграции по изменениям моделей
-	$(PYTHON) manage.py makemigrations
+	$(RUN) manage.py makemigrations
 
 superuser: ## Создать суперпользователя
-	$(PYTHON) manage.py createsuperuser
+	$(RUN) manage.py createsuperuser
 
 shell: ## Django shell
-	$(PYTHON) manage.py shell
+	$(RUN) manage.py shell
 
 test: ## Прогнать тесты
-	$(PYTHON) manage.py test
+	$(RUN) manage.py test
 
 check: ## Проверки Django: конфигурация и несозданные миграции
-	$(PYTHON) manage.py check
-	$(PYTHON) manage.py makemigrations --check --dry-run
+	$(RUN) manage.py check
+	$(RUN) manage.py makemigrations --check --dry-run
 
 lint: ## Проверить код линтером
-	$(RUFF) check .
-	$(RUFF) format --check .
+	$(RUN) ruff check .
+	$(RUN) ruff format --check .
 
 fmt: ## Отформатировать код и исправить автопочинимое
-	$(RUFF) check --fix .
-	$(RUFF) format .
+	$(RUN) ruff check --fix .
+	$(RUN) ruff format .
 
 static: ## Собрать статику в staticfiles/
-	$(PYTHON) manage.py collectstatic --noinput
+	$(RUN) manage.py collectstatic --noinput
 
 ci: lint check test ## Всё, что гоняет CI
 
 clean: ## Удалить кэши и собранную статику
-	find . -path ./$(VENV) -prune -o -name '__pycache__' -type d -print0 | xargs -0 rm -rf
+	find . -path ./.venv -prune -o -name '__pycache__' -type d -print0 | xargs -0 rm -rf
 	rm -rf .ruff_cache staticfiles
 
 distclean: clean ## Удалить ещё и venv с базой
-	rm -rf $(VENV) db.sqlite3
+	rm -rf .venv db.sqlite3
