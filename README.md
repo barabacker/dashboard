@@ -1,8 +1,8 @@
 # Dashboard
 
 Django-проект с админкой на [Unfold](https://unfoldadmin.com/). Стартовый каркас:
-настроенная тема, кастомный дашборд, оформленные пользователи и группы.
-Доменных моделей пока нет — они добавляются в приложение `core`.
+настроенная тема и оформленные пользователи с группами. Доменных моделей пока
+нет — они добавляются в приложение `core`.
 
 ## Стек
 
@@ -62,12 +62,12 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"        # Windows
 ## Структура
 
 ```
-config/settings.py   настройки проекта и словарь UNFOLD (сайдбар, цвета, дашборд)
+config/settings.py   настройки проекта и словарь UNFOLD (сайдбар, цвета, тема)
 config/urls.py       / → редирект на /admin/
-core/admin.py        dashboard_callback, оформленные UserAdmin и GroupAdmin
+core/admin.py        оформленные UserAdmin и GroupAdmin, бейдж окружения
 core/models.py       место для доменных моделей
-core/tests.py        тесты дашборда и доступа к админке
-templates/admin/index.html   дашборд на компонентах Unfold
+core/tests.py        тесты доступа и рендера страниц админки
+templates/           переопределения шаблонов админки, если понадобятся
 ```
 
 ## Как это настроено
@@ -86,10 +86,6 @@ class ArticleAdmin(ModelAdmin):
 
 Для моделей, у которых уже есть готовый ModelAdmin (User, Group), миксуются оба —
 см. `core/admin.py`.
-
-**Дашборд** рисуется из `templates/admin/index.html`, данные приходят из
-`core.admin.dashboard_callback` (указан в `UNFOLD["DASHBOARD_CALLBACK"]`).
-Сейчас показывает метрики по пользователям; доменные метрики добавляются туда же.
 
 **Сайдбар** задаётся вручную в `UNFOLD["SIDEBAR"]["navigation"]` — новые разделы
 нужно дописывать туда, автоматически они не появляются.
@@ -128,6 +124,8 @@ CI падает, если лок разошёлся с `pyproject.toml`. Пос�
 ## Что дальше
 
 - Доменные модели в `core` (или отдельными приложениями) + их `ModelAdmin`.
+- Свой дашборд на главной, когда будет что показывать: шаблон
+  `templates/admin/index.html` плюс `UNFOLD["DASHBOARD_CALLBACK"]`.
 - Русская локаль для Unfold: часть строк интерфейса («Type to search», «Filters»)
   остаётся английской, лечится собственным `.po`-файлом.
 - Гео-слой (SpatiaLite + GDAL + карты в формах) — рабочий вариант лежит в истории,

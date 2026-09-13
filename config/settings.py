@@ -85,7 +85,6 @@ UNFOLD = {
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": False,
     "ENVIRONMENT": "core.admin.environment_callback",
-    "DASHBOARD_CALLBACK": "core.admin.dashboard_callback",
     "COLORS": {
         "primary": {
             "50": "oklch(97.7% .013 236.62)",
@@ -106,15 +105,8 @@ UNFOLD = {
         "show_all_applications": False,
         "navigation": [
             {
-                "title": "Обзор",
-                "separator": False,
-                "items": [
-                    {"title": "Дашборд", "icon": "dashboard", "link": "/admin/"},
-                ],
-            },
-            {
                 "title": "Доступ",
-                "separator": True,
+                "separator": False,
                 "items": [
                     {"title": "Пользователи", "icon": "person", "link": "/admin/auth/user/"},
                     {"title": "Группы", "icon": "groups", "link": "/admin/auth/group/"},
