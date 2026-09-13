@@ -4,7 +4,7 @@ UV ?= uv
 RUN := $(UV) run
 PORT ?= 8000
 
-.PHONY: help install sync lock upgrade run run-task tasks migrate migrations superuser shell \
+.PHONY: help install sync lock upgrade run maintenance runner migrate migrations superuser shell \
         test check lint fmt static clean distclean ci \
         docker-build docker-up docker-down docker-logs docker-superuser docker-shell
 
@@ -24,11 +24,11 @@ lock: ## Пересобрать uv.lock после правок pyproject.toml
 upgrade: ## Поднять версии зависимостей в пределах ограничений
 	$(UV) lock --upgrade
 
-tasks: ## Запустить обработчик задач: очередь и расписание в одном процессе
-	$(RUN) manage.py qcluster
+maintenance: ## Просроченные запуски и чистка старых логов
+	$(RUN) manage.py maintenance
 
-run-task: ## Поставить задачу в очередь: make run-task ARGS="say_hello --name Пётр"
-	$(RUN) manage.py run_task $(ARGS)
+runner: ## Запустить референсный раннер (нужен RUNNER_TOKEN)
+	$(RUN) --directory runner python runner.py
 
 run: ## Запустить сервер разработки (PORT=8000)
 	$(RUN) manage.py runserver $(PORT)

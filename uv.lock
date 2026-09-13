@@ -34,7 +34,6 @@ source = { virtual = "." }
 dependencies = [
     { name = "croniter" },
     { name = "django" },
-    { name = "django-q2" },
     { name = "django-unfold", version = "0.91.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "django-unfold", version = "0.106.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
@@ -48,7 +47,6 @@ dev = [
 requires-dist = [
     { name = "croniter", specifier = ">=6.2.4" },
     { name = "django", specifier = ">=5.2,<5.3" },
-    { name = "django-q2", specifier = ">=1.11.1" },
     { name = "django-unfold", specifier = ">=0.91" },
 ]
 
@@ -67,31 +65,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d5/d8/43e9d000519adceb189620b6869ff88031e046df91c2e9da72f8f6918399/django-5.2.17.tar.gz", hash = "sha256:9d4d93be539a18ab80d058eb515900e10951e04c537c5a6b394fc49528d3251f", size = 10889740, upload-time = "2026-08-04T15:04:03.173Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/df/f8/ce120525ca78f12b07daf65786679c5d0b54a75285a8958d3ae55e39da35/django-5.2.17-py3-none-any.whl", hash = "sha256:f04fb3b36ee119e1af4fa1d397d5fd6cf12700f49321e84d4f4c642c5b1973db", size = 8315563, upload-time = "2026-08-04T15:03:59.1Z" },
-]
-
-[[package]]
-name = "django-picklefield"
-version = "3.4.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "django" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/93/03/13114bccbd1ec8c026ac1ff33dae75ae6c6a5632e4769ee9cda283b9f57e/django_picklefield-3.4.0.tar.gz", hash = "sha256:3a1f740536c0e60d0dba43aa89ccdbe86760d4c3f8ec47799eae122baa741d0a", size = 12555, upload-time = "2025-11-27T03:11:53.13Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/79/b7/139eb1419ca7b27fd714925b8d0eed6efb592479dcf2155fed6c0c87c956/django_picklefield-3.4.0-py3-none-any.whl", hash = "sha256:929bcfbae5b48bd22a52bc04521fdfdd152eee36abb9f20228f9480f9df65f45", size = 10031, upload-time = "2025-11-27T03:11:51.937Z" },
-]
-
-[[package]]
-name = "django-q2"
-version = "1.11.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "django" },
-    { name = "django-picklefield" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c8/6d/d5e103f31e64d61ad20da154200105d9f80a8e7b582afe80a377c70a1e3e/django_q2-1.11.1.tar.gz", hash = "sha256:640caf961f9098f26e00a22b743c4eb63da681a5390829b1ed951db677866e67", size = 100892, upload-time = "2026-08-26T02:47:43.592Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/aa/77/5448ec49605848eae6d6812994e71a312c2535821cf93853e1756e0b26a8/django_q2-1.11.1-py3-none-any.whl", hash = "sha256:b7e7cc030811babc1824de6c5888faec9e84ecd21572401bfdf48770ea67805f", size = 129780, upload-time = "2026-08-26T02:47:42.108Z" },
 ]
 
 [[package]]

@@ -47,8 +47,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django_q",
     "core",
+    "control",
 ]
 
 MIDDLEWARE = [
@@ -104,21 +104,12 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# Django-Q2: очередь и планировщик в одном процессе (manage.py qcluster).
-# Брокер — сама база, внешние сервисы не нужны; задачи, расписания и история
-# запусков лежат в БД и видны в админке.
-Q_CLUSTER = {
-    "name": "dashboard",
-    "orm": "default",
-    "workers": 2,
-    "recycle": 500,
-    "timeout": 120,  # задача дольше — снимается
-    "retry": 180,  # и уходит на повтор
-    "max_attempts": 3,
-    "save_limit": 250,  # сколько последних успешных запусков хранить
-    "catch_up": False,  # пропущенные запуски не отрабатываются пачкой
-    # sync=1 — задачи выполняются сразу в вызывающем процессе (тесты, Windows-разработка)
-    "sync": os.environ.get("Q_SYNC", "0") == "1",
+# Control plane: сроки хранения, лимиты логов, аренда заданий.
+# Значения по умолчанию — в control/conf.py
+CONTROL = {
+    "LEASE_SECONDS": int(os.environ.get("CONTROL_LEASE_SECONDS", 600)),
+    "LOG_RETENTION_DAYS": int(os.environ.get("CONTROL_LOG_RETENTION_DAYS", 30)),
+    "POLL_INTERVAL_SECONDS": int(os.environ.get("CONTROL_POLL_INTERVAL", 10)),
 }
 
 LOGIN_REDIRECT_URL = "/admin/"
@@ -152,13 +143,13 @@ UNFOLD = {
         "show_all_applications": False,
         "navigation": [
             {
-                "title": "Задачи",
+                "title": "Парсеры",
                 "separator": False,
                 "items": [
-                    {"title": "Расписания", "icon": "schedule", "link": "/admin/django_q/schedule/"},
-                    {"title": "Выполненные", "icon": "task_alt", "link": "/admin/django_q/success/"},
-                    {"title": "Упавшие", "icon": "error", "link": "/admin/django_q/failure/"},
-                    {"title": "В очереди", "icon": "pending", "link": "/admin/django_q/ormq/"},
+                    {"title": "Источники", "icon": "database", "link": "/admin/control/source/"},
+                    {"title": "Запуски", "icon": "play_circle", "link": "/admin/control/run/"},
+                    {"title": "Логи", "icon": "description", "link": "/admin/control/runlog/"},
+                    {"title": "Раннеры", "icon": "dns", "link": "/admin/control/runner/"},
                 ],
             },
             {

@@ -33,14 +33,18 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
-  # Очередь и планировщик Django-Q2
-  tasks:
+  # Референсный раннер: в бою его место в репозитории парсеров
+  runner:
     <<: *app
-    command: python manage.py qcluster
+    command: python runner/runner.py
+    environment:
+      DASHBOARD_URL: http://web:8000
+      RUNNER_TOKEN: "${RUNNER_TOKEN:-}"
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      web:
+        condition: service_started
     restart: unless-stopped
+    profiles: ["runner"]
 
 volumes:
   data:
