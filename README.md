@@ -115,7 +115,7 @@ control/api.py       четыре эндпоинта для раннеров
 control/admin.py     админка control plane, лента логов
 control/management/commands/maintenance.py   просроченные запуски и чистка логов
 runner/              референсный раннер и демо-парсеры
-templates/           переопределения шаблонов админки, если понадобятся
+static/              статика проекта (пока пусто, каталог нужен для collectstatic)
 ```
 
 ## Как это настроено
@@ -274,8 +274,9 @@ cp .env.example .env
 ## Что дальше
 
 - Доменные модели в `core` (или отдельными приложениями) + их `ModelAdmin`.
-- Свой дашборд на главной, когда будет что показывать: шаблон
-  `templates/admin/index.html` плюс `UNFOLD["DASHBOARD_CALLBACK"]`.
+- Свой дашборд на главной, когда будет что показывать: создать каталог
+  `templates/`, вернуть его в `TEMPLATES["DIRS"]`, положить туда
+  `admin/index.html` и указать `UNFOLD["DASHBOARD_CALLBACK"]`.
 - Русская локаль для Unfold: часть строк интерфейса («Type to search», «Filters»)
   остаётся английской, лечится собственным `.po`-файлом.
 - Гео-слой (SpatiaLite + GDAL + карты в формах) — рабочий вариант лежит в истории,
