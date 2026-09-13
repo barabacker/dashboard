@@ -1,0 +1,43 @@
+name: dashboard
+
+x-app: &app
+  build: .
+  environment:
+    DJANGO_DEBUG: "${DJANGO_DEBUG:-1}"
+    DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:-django-insecure-change-me-before-deploy}"
+    DJANGO_ALLOWED_HOSTS: "${DJANGO_ALLOWED_HOSTS:-*}"
+    DJANGO_DB_PATH: /data/db.sqlite3
+  volumes:
+    # код прокинут внутрь: правки видны без пересборки образа
+    - .:/app
+    # база живёт на томе — переживает пересоздание контейнеров
+    - data:/data
+
+services:
+  # Миграции прогоняются один раз до старта остальных сервисов:
+  # у SQLite один писатель, параллельный migrate из двух контейнеров опасен.
+  migrate:
+    <<: *app
+    command: python manage.py migrate --noinput
+
+  web:
+    <<: *app
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "${PORT:-8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # Очередь и планировщик Django-Q2
+  tasks:
+    <<: *app
+    command: python manage.py qcluster
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  data:

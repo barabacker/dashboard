@@ -5,7 +5,8 @@ RUN := $(UV) run
 PORT ?= 8000
 
 .PHONY: help install sync lock upgrade run run-task tasks migrate migrations superuser shell \
-        test check lint fmt static clean distclean ci
+        test check lint fmt static clean distclean ci \
+        docker-build docker-up docker-down docker-logs docker-superuser docker-shell
 
 help: ## Показать список команд
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -63,6 +64,25 @@ static: ## Собрать статику в staticfiles/
 	$(RUN) manage.py collectstatic --noinput
 
 ci: lint check test ## Всё, что гоняет CI
+
+docker-build: ## Собрать образ
+	docker compose build
+
+docker-up: ## Поднять web и обработчик задач в Docker
+	docker compose up -d
+	@echo "Админка: http://127.0.0.1:$(PORT)/admin/"
+
+docker-down: ## Остановить контейнеры (том с базой остаётся)
+	docker compose down
+
+docker-logs: ## Логи всех сервисов
+	docker compose logs -f
+
+docker-superuser: ## Создать суперпользователя в контейнере
+	docker compose run --rm web python manage.py createsuperuser
+
+docker-shell: ## Shell внутри контейнера web
+	docker compose run --rm web bash
 
 clean: ## Удалить кэши и собранную статику
 	find . -path ./.venv -prune -o -name '__pycache__' -type d -print0 | xargs -0 rm -rf

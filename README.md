@@ -44,6 +44,35 @@ curl -LsSf https://astral.sh/uv/install.sh | sh                  # macOS / Linux
 powershell -c "irm https://astral.sh/uv/install.ps1 | iex"        # Windows
 ```
 
+## Docker
+
+Вариант без установки Python и uv на машину — и способ поднять обработчик задач
+на Windows, где `qcluster` нативно не поддерживается.
+
+```bash
+docker compose up -d --build     # или make docker-up
+docker compose run --rm web python manage.py createsuperuser
+```
+
+Админка: http://127.0.0.1:8000/admin/ — порт меняется переменной `PORT`.
+
+Три сервиса: `migrate` прогоняет миграции и завершается, затем стартуют `web`
+(Django) и `tasks` (`qcluster` — очередь и планировщик). Миграции вынесены
+в отдельный шаг намеренно: у SQLite один писатель, и параллельный `migrate`
+из двух контейнеров может встать на блокировке.
+
+```bash
+make docker-logs         # логи всех сервисов
+make docker-down         # остановить; том с базой остаётся
+docker compose down -v   # остановить и удалить базу
+```
+
+Код прокинут внутрь контейнера томом, поэтому правки видны без пересборки —
+образ нужно пересобирать только при изменении зависимостей (`uv.lock`).
+Виртуальное окружение лежит в `/venv`, вне `/app`, чтобы bind-mount его не перекрывал.
+База — в именованном томе по пути `/data/db.sqlite3` (переменная `DJANGO_DB_PATH`),
+общем для `web` и `tasks`.
+
 ## Команды
 
 `make help` покажет список. Основное:
@@ -60,10 +89,15 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"        # Windows
 | `make check` | `manage.py check` + проверка несозданных миграций |
 | `make ci` | всё, что гоняет CI: lint + check + test |
 | `make clean` / `make distclean` | убрать кэши / ещё и venv с базой |
+| `make docker-up` / `make docker-down` | поднять / остановить всё в Docker |
+| `make docker-build` / `make docker-logs` | пересобрать образ / смотреть логи |
+| `make docker-superuser` / `make docker-shell` | суперпользователь / shell в контейнере |
 
 ## Структура
 
 ```
+Dockerfile           образ на базе uv, зависимости строго по uv.lock
+compose.yaml         сервисы migrate, web и tasks, общий том с базой
 config/settings.py   настройки проекта и словарь UNFOLD (сайдбар, цвета, тема)
 config/urls.py       / → редирект на /admin/
 core/admin.py        оформленные UserAdmin и GroupAdmin, бейдж окружения
@@ -154,8 +188,9 @@ Windows есть синхронный режим — задачи выполня
 $env:Q_SYNC = "1"
 ```
 
-Полноценный `qcluster` — на Linux: сервер, WSL2 или Docker. Планировщик при
-`Q_SYNC=1` не работает — периодические задачи там не запускаются.
+Полноценный `qcluster` — на Linux: сервер, WSL2 или **Docker** (см. раздел выше;
+это самый простой путь на Windows). Планировщик при `Q_SYNC=1` не работает —
+периодические задачи там не запускаются.
 
 ## CI
 
@@ -180,6 +215,7 @@ CI падает, если лок разошёлся с `pyproject.toml`. Пос�
 | `DJANGO_DEBUG` | `1` |
 | `DJANGO_ALLOWED_HOSTS` | `*` |
 | `Q_SYNC` | `0` — задачи идут в очередь; `1` — выполняются синхронно |
+| `DJANGO_DB_PATH` | `db.sqlite3` в корне проекта; в Docker — `/data/db.sqlite3` |
 
 Перед деплоем задать все три.
 
