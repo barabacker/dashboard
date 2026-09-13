@@ -4,15 +4,7 @@ UV ?= uv
 RUN := $(UV) run
 PORT ?= 8000
 
-# На Windows пул prefork не работает (billiard падает с WinError 5),
-# поэтому там воркер запускается в однопоточном режиме solo.
-ifeq ($(OS),Windows_NT)
-POOL ?= solo
-else
-POOL ?= prefork
-endif
-
-.PHONY: help install sync lock upgrade run run-task worker beat migrate migrations superuser shell \
+.PHONY: help install sync lock upgrade run run-task tasks migrate migrations superuser shell \
         test check lint fmt static clean distclean ci
 
 help: ## Показать список команд
@@ -31,11 +23,8 @@ lock: ## Пересобрать uv.lock после правок pyproject.toml
 upgrade: ## Поднять версии зависимостей в пределах ограничений
 	$(UV) lock --upgrade
 
-worker: ## Запустить celery-воркер (нужен Redis; пул: POOL=solo|threads|prefork)
-	$(RUN) celery -A config worker -l info --pool=$(POOL)
-
-beat: ## Запустить планировщик celery beat (нужен Redis)
-	$(RUN) celery -A config beat -l info
+tasks: ## Запустить обработчик задач: очередь и расписание в одном процессе
+	$(RUN) manage.py run_huey
 
 run-task: ## Поставить задачу в очередь: make run-task ARGS="say_hello --name Пётр"
 	$(RUN) manage.py run_task $(ARGS)
@@ -79,5 +68,5 @@ clean: ## Удалить кэши и собранную статику
 	find . -path ./.venv -prune -o -name '__pycache__' -type d -print0 | xargs -0 rm -rf
 	rm -rf .ruff_cache staticfiles
 
-distclean: clean ## Удалить ещё и venv с базой
-	rm -rf .venv db.sqlite3
+distclean: clean ## Удалить ещё и venv с базами
+	rm -rf .venv db.sqlite3 huey.db huey.db-shm huey.db-wal

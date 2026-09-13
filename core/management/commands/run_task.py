@@ -20,12 +20,12 @@ class Command(BaseCommand):
         kwargs = {"name": options["name"]} if options["task"] == "say_hello" else {}
 
         if options["now"]:
-            self.stdout.write(self.style.SUCCESS(str(task(**kwargs))))
+            self.stdout.write(self.style.SUCCESS(str(task.call_local(**kwargs))))
             return
 
         try:
-            result = task.delay(**kwargs)
-        except Exception as exc:  # брокер недоступен
+            result = task(**kwargs)
+        except Exception as exc:  # очередь недоступна
             raise CommandError(f"Не удалось поставить задачу в очередь: {exc}") from exc
 
         self.stdout.write(self.style.SUCCESS(f"Задача отправлена в очередь, id {result.id}"))

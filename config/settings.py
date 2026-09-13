@@ -19,7 +19,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django_celery_beat",
+    "huey.contrib.djhuey",
     "core",
 ]
 
@@ -75,16 +75,20 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# Celery: брокер — Redis, расписания периодических задач хранятся в БД
-# и правятся в админке (django-celery-beat).
-CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")
-CELERY_TIMEZONE = TIME_ZONE
-CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
-CELERY_TASK_TIME_LIMIT = 300
-CELERY_TASK_SOFT_TIME_LIMIT = 240
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-# В тестах задачи выполняются синхронно, брокер не нужен
-CELERY_TASK_ALWAYS_EAGER = False
+# Huey: очередь и планировщик в одном процессе (manage.py run_huey).
+# Бэкенд — отдельный SQLite-файл, внешние сервисы не нужны.
+HUEY = {
+    "huey_class": "huey.SqliteHuey",
+    "name": "dashboard",
+    "filename": os.environ.get("HUEY_FILENAME", str(BASE_DIR / "huey.db")),
+    # True — задачи выполняются сразу в вызывающем процессе (тесты, отладка)
+    "immediate": os.environ.get("HUEY_IMMEDIATE", "0") == "1",
+    "results": True,
+    "consumer": {
+        "workers": 4,
+        "worker_type": "thread",
+    },
+}
 
 LOGIN_REDIRECT_URL = "/admin/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -122,27 +126,6 @@ UNFOLD = {
                 "items": [
                     {"title": "Пользователи", "icon": "person", "link": "/admin/auth/user/"},
                     {"title": "Группы", "icon": "groups", "link": "/admin/auth/group/"},
-                ],
-            },
-            {
-                "title": "Задачи",
-                "separator": True,
-                "items": [
-                    {
-                        "title": "Периодические задачи",
-                        "icon": "schedule",
-                        "link": "/admin/django_celery_beat/periodictask/",
-                    },
-                    {
-                        "title": "Расписания cron",
-                        "icon": "calendar_month",
-                        "link": "/admin/django_celery_beat/crontabschedule/",
-                    },
-                    {
-                        "title": "Интервалы",
-                        "icon": "timer",
-                        "link": "/admin/django_celery_beat/intervalschedule/",
-                    },
                 ],
             },
         ],
