@@ -109,6 +109,21 @@ make beat      # в третьем
 
 Адрес брокера меняется переменной `CELERY_BROKER_URL` (по умолчанию `redis://127.0.0.1:6379/0`).
 
+### Windows
+
+Пул `prefork` на Windows не работает — воркер падает с `PermissionError: [WinError 5]`
+внутри billiard. Celery официально не поддерживает Windows с версии 4, поэтому там
+воркер запускается в однопоточном режиме:
+
+```bash
+uv run celery -A config worker -l info --pool=solo
+```
+
+`make worker` подставляет `--pool=solo` на Windows автоматически. Нужна параллельность —
+`--pool=threads -c 4` (или `POOL=threads make worker`). Для нагрузки лучше
+WSL2 или Docker: там работает обычный `prefork`. `beat` и `runserver` на Windows
+работают как есть.
+
 **Одноразовая задача** — `core.tasks.say_hello`. Ставится в очередь по требованию:
 
 ```python

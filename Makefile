@@ -4,6 +4,14 @@ UV ?= uv
 RUN := $(UV) run
 PORT ?= 8000
 
+# На Windows пул prefork не работает (billiard падает с WinError 5),
+# поэтому там воркер запускается в однопоточном режиме solo.
+ifeq ($(OS),Windows_NT)
+POOL ?= solo
+else
+POOL ?= prefork
+endif
+
 .PHONY: help install sync lock upgrade run run-task worker beat migrate migrations superuser shell \
         test check lint fmt static clean distclean ci
 
@@ -23,8 +31,8 @@ lock: ## Пересобрать uv.lock после правок pyproject.toml
 upgrade: ## Поднять версии зависимостей в пределах ограничений
 	$(UV) lock --upgrade
 
-worker: ## Запустить celery-воркер (нужен Redis)
-	$(RUN) celery -A config worker -l info
+worker: ## Запустить celery-воркер (нужен Redis; пул: POOL=solo|threads|prefork)
+	$(RUN) celery -A config worker -l info --pool=$(POOL)
 
 beat: ## Запустить планировщик celery beat (нужен Redis)
 	$(RUN) celery -A config beat -l info
