@@ -1,8 +1,8 @@
 """Скриншоты админки через Playwright.
 
-    pip install -r requirements-dev.txt && playwright install chromium
-    python manage.py runserver 8099
-    python tools/shots.py [--dark]
+pip install -r requirements-dev.txt && playwright install chromium
+python manage.py runserver 8099
+python tools/shots.py [--dark]
 """
 
 import os

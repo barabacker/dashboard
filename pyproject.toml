@@ -1,0 +1,12 @@
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+# .md исключён намеренно: ruff переформатирует примеры кода в README
+exclude = [".venv", "staticfiles", "*/migrations/*", "*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ", "C4"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "core"]

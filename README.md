@@ -40,6 +40,7 @@ config/urls.py       / → редирект на /admin/
 core/admin.py        dashboard_callback, оформленные UserAdmin и GroupAdmin
 core/models.py       место для доменных моделей
 templates/admin/index.html   дашборд на компонентах Unfold
+core/tests.py        тесты дашборда и доступа к админке
 tools/shots.py       скриншоты админки (dev, см. requirements-dev.txt)
 ```
 
@@ -66,6 +67,23 @@ class ArticleAdmin(ModelAdmin):
 
 **Сайдбар** задаётся вручную в `UNFOLD["SIDEBAR"]["navigation"]` — новые разделы
 нужно дописывать туда, автоматически они не появляются.
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) на каждый push в `main` и на каждый PR:
+
+| Job | Что делает |
+|---|---|
+| Линтер | `ruff check` + `ruff format --check` |
+| Тесты | `manage.py check`, проверка несозданных миграций, `manage.py test`, `collectstatic` на Python 3.11 / 3.12 / 3.13 |
+
+Локально то же самое:
+
+```bash
+pip install -r requirements-dev.txt
+ruff check . && ruff format --check .
+python manage.py test
+```
 
 ## Настройки окружения
 

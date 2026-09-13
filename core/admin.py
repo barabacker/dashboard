@@ -7,7 +7,6 @@ from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import RangeDateTimeFilter
 from unfold.decorators import display
 
-
 admin.site.index_title = "Обзор"
 
 
