@@ -4,7 +4,7 @@ UV ?= uv
 RUN := $(UV) run
 PORT ?= 8000
 
-.PHONY: help install sync lock upgrade run migrate migrations superuser shell \
+.PHONY: help install sync lock upgrade run run-task worker beat migrate migrations superuser shell \
         test check lint fmt static clean distclean ci
 
 help: ## Показать список команд
@@ -22,6 +22,15 @@ lock: ## Пересобрать uv.lock после правок pyproject.toml
 
 upgrade: ## Поднять версии зависимостей в пределах ограничений
 	$(UV) lock --upgrade
+
+worker: ## Запустить celery-воркер (нужен Redis)
+	$(RUN) celery -A config worker -l info
+
+beat: ## Запустить планировщик celery beat (нужен Redis)
+	$(RUN) celery -A config beat -l info
+
+run-task: ## Поставить задачу в очередь: make run-task ARGS="say_hello --name Пётр"
+	$(RUN) manage.py run_task $(ARGS)
 
 run: ## Запустить сервер разработки (PORT=8000)
 	$(RUN) manage.py runserver $(PORT)

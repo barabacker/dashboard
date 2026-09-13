@@ -11,6 +11,7 @@ Django-проект с админкой на [Unfold](https://unfoldadmin.com/).
 | Django | 5.2 |
 | django-unfold | 0.91 |
 | БД | SQLite (файл `db.sqlite3`) |
+| Очередь и расписания | Celery + Redis, django-celery-beat |
 | Пакеты и venv | [uv](https://docs.astral.sh/uv/) — `pyproject.toml` + `uv.lock` |
 
 Системных зависимостей нет. Нужен только `uv` — нужный Python он поставит сам.
@@ -52,6 +53,7 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"        # Windows
 | `make install` / `make sync` | зависимости: по локу / строго по локу, без перерешения |
 | `make lock` / `make upgrade` | пересобрать лок / поднять версии в пределах ограничений |
 | `make run` | сервер разработки, порт меняется через `PORT=8080` |
+| `make worker` / `make beat` | celery-воркер / планировщик (нужен Redis) |
 | `make migrate` / `make migrations` | применить / создать миграции |
 | `make test` | тесты |
 | `make lint` / `make fmt` | проверить / отформатировать код (ruff) |
@@ -64,9 +66,14 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"        # Windows
 ```
 config/settings.py   настройки проекта и словарь UNFOLD (сайдбар, цвета, тема)
 config/urls.py       / → редирект на /admin/
-core/admin.py        оформленные UserAdmin и GroupAdmin, бейдж окружения
+config/celery.py     приложение Celery, автопоиск задач по INSTALLED_APPS
+core/admin.py        оформленные UserAdmin и GroupAdmin, модели beat под Unfold
 core/models.py       место для доменных моделей
+core/tasks.py        задачи Celery
+core/management/commands/run_task.py   поставить задачу в очередь из консоли
+core/migrations/0001_hourly_session_cleanup.py   заводит периодическую задачу
 core/tests.py        тесты доступа и рендера страниц админки
+core/tests_tasks.py  тесты задач и расписания
 templates/           переопределения шаблонов админки, если понадобятся
 ```
 
@@ -90,6 +97,46 @@ class ArticleAdmin(ModelAdmin):
 **Сайдбар** задаётся вручную в `UNFOLD["SIDEBAR"]["navigation"]` — новые разделы
 нужно дописывать туда, автоматически они не появляются.
 
+## Фоновые задачи
+
+Три процесса: Django, celery-воркер и планировщик beat. Брокер — Redis.
+
+```bash
+docker run -d --name redis -p 6379:6379 redis:7-alpine   # или локальный redis-server
+make worker    # в отдельном терминале
+make beat      # в третьем
+```
+
+Адрес брокера меняется переменной `CELERY_BROKER_URL` (по умолчанию `redis://127.0.0.1:6379/0`).
+
+**Одноразовая задача** — `core.tasks.say_hello`. Ставится в очередь по требованию:
+
+```python
+from core.tasks import say_hello
+say_hello.delay("Пётр")
+```
+
+```bash
+make run-task ARGS="say_hello --name Пётр"      # или напрямую:
+uv run manage.py run_task say_hello --name Пётр
+uv run manage.py run_task say_hello --now       # выполнить тут же, без очереди
+```
+
+Разовый запуск в заданное время делается без кода: в админке создать
+Clocked-расписание, задачу с ним и галочкой «одноразовая задача».
+
+**Задача по расписанию** — `core.tasks.cleanup_expired_sessions`, чистит протухшие
+сессии каждый час в :30. Расписание заводит миграция `core/0001`, дальше оно живёт
+в БД и правится в админке (раздел «Задачи» → «Периодические задачи»): можно менять
+cron, выключать и включать — перезапуск beat не нужен, изменения подхватываются сами.
+
+Новые задачи кладутся в `core/tasks.py` с декоратором `@shared_task` — Celery
+находит их сам.
+
+Оговорка по интерфейсу: список периодических задач выглядит как остальная админка,
+а вот **форма редактирования рендерится стандартными виджетами Django** — у
+django-celery-beat своя форма, Unfold её не стилизует. Лечится только своей формой.
+
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`) на каждый push в `main` и на каждый PR:
@@ -112,6 +159,7 @@ CI падает, если лок разошёлся с `pyproject.toml`. Пос�
 | `DJANGO_SECRET_KEY` | небезопасный ключ для разработки |
 | `DJANGO_DEBUG` | `1` |
 | `DJANGO_ALLOWED_HOSTS` | `*` |
+| `CELERY_BROKER_URL` | `redis://127.0.0.1:6379/0` |
 
 Перед деплоем задать все три.
 
