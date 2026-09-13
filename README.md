@@ -166,8 +166,48 @@ uv run manage.py run_task say_hello --name Пётр
 uv run manage.py run_task say_hello --now       # выполнить тут же, без очереди
 ```
 
-Отложенный запуск — расписание типа «Однократно» в админке или
-`schedule(..., schedule_type=Schedule.ONCE, next_run=...)`.
+**Разовые задачи** бывают двух видов:
+
+```python
+from django.utils import timezone
+from django_q.models import Schedule
+from django_q.tasks import async_task, schedule
+
+# выполнить как можно скорее — просто ставим в очередь
+async_task("core.tasks.say_hello", "Пётр")
+
+# выполнить в заданное время: расписание типа ONCE,
+# после запуска оно удаляется само (repeats=-1)
+schedule(
+    "core.tasks.say_hello",
+    "Пётр",
+    name="Разовое напоминание",
+    schedule_type=Schedule.ONCE,
+    next_run=timezone.now() + timezone.timedelta(hours=3),
+    repeats=-1,
+)
+```
+
+То же самое руками: «Расписания» → «Добавить», тип «Однократно», время запуска.
+
+**Кнопка «Запустить сейчас»** — в списке расписаний у каждой строки есть меню
+(три точки) с действием «Запустить сейчас», такая же кнопка есть на странице
+расписания. Она ставит задачу в очередь немедленно, с теми же аргументами,
+и **не сдвигает** плановый `next_run`. У упавших задач по аналогии есть
+«Перезапустить».
+
+Реализованы Unfold-действиями в `core/admin.py`:
+
+```python
+@admin.register(Schedule)
+class ScheduleAdmin(BaseScheduleAdmin, ModelAdmin):
+    actions_row = ("run_now",)      # кнопка в строке списка
+    actions_detail = ("run_now",)   # и на странице объекта
+
+    @action(description="Запустить сейчас", icon="play_arrow")
+    def run_now(self, request, object_id):
+        ...
+```
 
 **Задача по расписанию** — `core.tasks.cleanup_expired_sessions`, чистит протухшие
 сессии каждый час в :30. Расписание заводит миграция `core/0001`, дальше оно живёт
