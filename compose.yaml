@@ -2,6 +2,9 @@ name: dashboard
 
 x-app: &app
   build: .
+  env_file:
+    - path: .env
+      required: false
   environment:
     DJANGO_DEBUG: "${DJANGO_DEBUG:-1}"
     DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:-django-insecure-change-me-before-deploy}"

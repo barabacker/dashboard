@@ -3,6 +3,34 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def load_env_file(path=BASE_DIR / ".env"):
+    """Читает .env в окружение процесса. Без внешних зависимостей.
+
+    Переменные, уже заданные в окружении, имеют приоритет над файлом —
+    так настройки из docker compose или CI не перетираются локальным .env.
+    Формат простой: KEY=value, строки с # игнорируются, кавычки снимаются.
+    """
+    if not path.exists():
+        return
+
+    values = {}
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip().removeprefix("export ").strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        values[key.strip()] = value  # при дубле ключа побеждает последняя строка
+
+    for key, value in values.items():
+        os.environ.setdefault(key, value)
+
+
+load_env_file()
+
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-change-me-before-deploy")
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
