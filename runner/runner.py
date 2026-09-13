@@ -132,6 +132,8 @@ def main():
             answer = request("runs/claim/")
         except urllib.error.URLError as exc:
             log.warning("Control plane недоступен: %s", exc)
+            if once:
+                sys.exit(1)
             time.sleep(DEFAULT_POLL)
             continue
 
