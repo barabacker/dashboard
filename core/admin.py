@@ -2,6 +2,11 @@ from django.contrib import admin
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
+from django_q.admin import FailAdmin as BaseFailAdmin
+from django_q.admin import QueueAdmin as BaseQueueAdmin
+from django_q.admin import ScheduleAdmin as BaseScheduleAdmin
+from django_q.admin import TaskAdmin as BaseTaskAdmin
+from django_q.models import Failure, OrmQ, Schedule, Success
 from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import RangeDateTimeFilter
 from unfold.decorators import display
@@ -45,3 +50,29 @@ class GroupAdmin(BaseGroupAdmin, ModelAdmin):
     @display(description="пользователей")
     def users_count(self, obj):
         return obj.user_set.count()
+
+
+# Модели Django-Q2 регистрируются на стандартном ModelAdmin —
+# перерегистрируем под Unfold, чтобы списки выглядели как остальная админка.
+for model in (Schedule, Success, Failure, OrmQ):
+    admin.site.unregister(model)
+
+
+@admin.register(Schedule)
+class ScheduleAdmin(BaseScheduleAdmin, ModelAdmin):
+    pass
+
+
+@admin.register(Success)
+class SuccessAdmin(BaseTaskAdmin, ModelAdmin):
+    pass
+
+
+@admin.register(Failure)
+class FailureAdmin(BaseFailAdmin, ModelAdmin):
+    pass
+
+
+@admin.register(OrmQ)
+class OrmQAdmin(BaseQueueAdmin, ModelAdmin):
+    pass

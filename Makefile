@@ -24,7 +24,7 @@ upgrade: ## Поднять версии зависимостей в предел
 	$(UV) lock --upgrade
 
 tasks: ## Запустить обработчик задач: очередь и расписание в одном процессе
-	$(RUN) manage.py run_huey
+	$(RUN) manage.py qcluster
 
 run-task: ## Поставить задачу в очередь: make run-task ARGS="say_hello --name Пётр"
 	$(RUN) manage.py run_task $(ARGS)
@@ -69,4 +69,4 @@ clean: ## Удалить кэши и собранную статику
 	rm -rf .ruff_cache staticfiles
 
 distclean: clean ## Удалить ещё и venv с базами
-	rm -rf .venv db.sqlite3 huey.db huey.db-shm huey.db-wal
+	rm -rf .venv db.sqlite3

@@ -4,9 +4,10 @@ version = "0.1.0"
 description = "Django-проект с админкой на Unfold"
 requires-python = ">=3.11"
 dependencies = [
+    "croniter>=6.2.4",
     "django>=5.2,<5.3",
+    "django-q2>=1.11.1",
     "django-unfold>=0.91",
-    "huey>=3.4.0",
 ]
 
 [dependency-groups]

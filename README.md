@@ -11,7 +11,7 @@ Django-проект с админкой на [Unfold](https://unfoldadmin.com/).
 | Django | 5.2 |
 | django-unfold | 0.91 |
 | БД | SQLite (файл `db.sqlite3`) |
-| Очередь и расписания | [Huey](https://huey.readthedocs.io/) на SQLite |
+| Очередь и расписания | [Django-Q2](https://django-q2.readthedocs.io/) — брокером служит сама БД |
 | Пакеты и venv | [uv](https://docs.astral.sh/uv/) — `pyproject.toml` + `uv.lock` |
 
 Системных зависимостей нет. Нужен только `uv` — нужный Python он поставит сам.
@@ -68,7 +68,8 @@ config/settings.py   настройки проекта и словарь UNFOLD 
 config/urls.py       / → редирект на /admin/
 core/admin.py        оформленные UserAdmin и GroupAdmin, бейдж окружения
 core/models.py       место для доменных моделей
-core/tasks.py        задачи Huey: одноразовая и по расписанию
+core/tasks.py        задачи: одноразовая и по расписанию
+core/migrations/0001_session_cleanup_schedule.py   заводит расписание очистки сессий
 core/management/commands/run_task.py   поставить задачу в очередь из консоли
 core/tests.py        тесты доступа и рендера страниц админки
 core/tests_tasks.py  тесты задач и расписания
@@ -97,24 +98,31 @@ class ArticleAdmin(ModelAdmin):
 
 ## Фоновые задачи
 
-Очередь и планировщик — [Huey](https://huey.readthedocs.io/) с бэкендом SQLite.
-Внешних сервисов не нужно: хранилище очереди лежит в отдельном файле `huey.db`,
-а один процесс совмещает воркер и расписание.
+Очередь и планировщик — [Django-Q2](https://django-q2.readthedocs.io/). Брокером
+служит сама база: внешних сервисов не нужно, а задачи, расписания и история
+запусков лежат в БД и видны в админке (раздел «Задачи»).
 
 ```bash
 make run      # Django
-make tasks    # обработчик задач, во втором терминале
+make tasks    # обработчик задач (qcluster): воркеры + планировщик
 ```
 
-Работает одинаково на Linux, macOS и Windows.
+**Что видно в админке**
 
-**Одноразовая задача** — `core.tasks.say_hello`. Ставится в очередь по требованию:
+| Раздел | Что показывает |
+|---|---|
+| Расписания | периодические задачи: cron или интервал, следующий и последний запуск; тут же создаются и правятся |
+| Выполненные | история успешных запусков с результатом (хранятся последние `save_limit`) |
+| Упавшие | упавшие задачи с полным трейсбеком |
+| В очереди | что ждёт выполнения прямо сейчас |
+
+**Одноразовая задача** — `core.tasks.say_hello`:
 
 ```python
-from core.tasks import say_hello
+from django_q.tasks import async_task
 
-say_hello("Пётр")             # в очередь, вернёт result-хэндл
-say_hello.call_local("Пётр")  # выполнить прямо здесь, мимо очереди
+async_task("core.tasks.say_hello", "Пётр")                    # в очередь
+async_task("core.tasks.say_hello", "Пётр", hook="core.tasks.on_done")  # с колбэком
 ```
 
 ```bash
@@ -123,28 +131,31 @@ uv run manage.py run_task say_hello --name Пётр
 uv run manage.py run_task say_hello --now       # выполнить тут же, без очереди
 ```
 
-Отложенный запуск — `say_hello.schedule(args=("Пётр",), delay=60)` или
-`eta=datetime(...)`.
+Отложенный запуск — расписание типа «Однократно» в админке или
+`schedule(..., schedule_type=Schedule.ONCE, next_run=...)`.
 
 **Задача по расписанию** — `core.tasks.cleanup_expired_sessions`, чистит протухшие
-сессии каждый час в :30:
+сессии каждый час в :30. Расписание заводит миграция `core/0001`, дальше оно живёт
+в БД: cron меняется в админке, перезапуск обработчика не нужен.
 
-```python
-@db_periodic_task(crontab(minute="30"))
-def cleanup_expired_sessions():
-    ...
+Задачи — обычные функции в `core/tasks.py`, в очередь ставятся по строковому пути
+`"core.tasks.имя"`. Надёжность настраивается в `Q_CLUSTER` (`config/settings.py`):
+`timeout` снимает зависшую задачу, `retry` возвращает её в очередь,
+`max_attempts` ограничивает число попыток.
+
+### Windows
+
+В классификаторах django-q2 заявлены только POSIX и macOS: `qcluster` использует
+многопроцессность и на Windows официально не поддерживается. Для разработки на
+Windows есть синхронный режим — задачи выполняются сразу в вызывающем процессе,
+обработчик не нужен:
+
+```powershell
+$env:Q_SYNC = "1"
 ```
 
-Расписание живёт в коде и читается при старте `run_huey` — поменяли `crontab`,
-перезапустили процесс. Редактировать расписания через админку, как это умел
-django-celery-beat, здесь нельзя: это осознанный размен на простоту.
-
-Новые задачи кладутся в `core/tasks.py` с декоратором `@db_task()`
-(`@db_periodic_task(...)` — для периодических). Декораторы с префиксом `db_`
-закрывают соединение с БД после задачи — для Django берите именно их.
-
-Для тестов и отладки есть immediate-режим: `HUEY_IMMEDIATE=1` — задачи
-выполняются синхронно в вызывающем процессе, обработчик не нужен.
+Полноценный `qcluster` — на Linux: сервер, WSL2 или Docker. Планировщик при
+`Q_SYNC=1` не работает — периодические задачи там не запускаются.
 
 ## CI
 
@@ -168,8 +179,7 @@ CI падает, если лок разошёлся с `pyproject.toml`. Пос�
 | `DJANGO_SECRET_KEY` | небезопасный ключ для разработки |
 | `DJANGO_DEBUG` | `1` |
 | `DJANGO_ALLOWED_HOSTS` | `*` |
-| `HUEY_FILENAME` | `huey.db` в корне проекта |
-| `HUEY_IMMEDIATE` | `0` — задачи идут в очередь; `1` — выполняются синхронно |
+| `Q_SYNC` | `0` — задачи идут в очередь; `1` — выполняются синхронно |
 
 Перед деплоем задать все три.
 

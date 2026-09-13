@@ -19,7 +19,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "huey.contrib.djhuey",
+    "django_q",
     "core",
 ]
 
@@ -75,19 +75,21 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# Huey: очередь и планировщик в одном процессе (manage.py run_huey).
-# Бэкенд — отдельный SQLite-файл, внешние сервисы не нужны.
-HUEY = {
-    "huey_class": "huey.SqliteHuey",
+# Django-Q2: очередь и планировщик в одном процессе (manage.py qcluster).
+# Брокер — сама база, внешние сервисы не нужны; задачи, расписания и история
+# запусков лежат в БД и видны в админке.
+Q_CLUSTER = {
     "name": "dashboard",
-    "filename": os.environ.get("HUEY_FILENAME", str(BASE_DIR / "huey.db")),
-    # True — задачи выполняются сразу в вызывающем процессе (тесты, отладка)
-    "immediate": os.environ.get("HUEY_IMMEDIATE", "0") == "1",
-    "results": True,
-    "consumer": {
-        "workers": 4,
-        "worker_type": "thread",
-    },
+    "orm": "default",
+    "workers": 2,
+    "recycle": 500,
+    "timeout": 120,  # задача дольше — снимается
+    "retry": 180,  # и уходит на повтор
+    "max_attempts": 3,
+    "save_limit": 250,  # сколько последних успешных запусков хранить
+    "catch_up": False,  # пропущенные запуски не отрабатываются пачкой
+    # sync=1 — задачи выполняются сразу в вызывающем процессе (тесты, Windows-разработка)
+    "sync": os.environ.get("Q_SYNC", "0") == "1",
 }
 
 LOGIN_REDIRECT_URL = "/admin/"
@@ -121,8 +123,18 @@ UNFOLD = {
         "show_all_applications": False,
         "navigation": [
             {
-                "title": "Доступ",
+                "title": "Задачи",
                 "separator": False,
+                "items": [
+                    {"title": "Расписания", "icon": "schedule", "link": "/admin/django_q/schedule/"},
+                    {"title": "Выполненные", "icon": "task_alt", "link": "/admin/django_q/success/"},
+                    {"title": "Упавшие", "icon": "error", "link": "/admin/django_q/failure/"},
+                    {"title": "В очереди", "icon": "pending", "link": "/admin/django_q/ormq/"},
+                ],
+            },
+            {
+                "title": "Доступ",
+                "separator": True,
                 "items": [
                     {"title": "Пользователи", "icon": "person", "link": "/admin/auth/user/"},
                     {"title": "Группы", "icon": "groups", "link": "/admin/auth/group/"},

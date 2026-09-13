@@ -1,44 +1,51 @@
-from datetime import datetime
-
 from django.contrib.sessions.models import Session
 from django.test import TestCase
 from django.utils import timezone
-from huey.contrib.djhuey import HUEY
+from django_q.conf import Conf
+from django_q.models import Schedule, Success
+from django_q.tasks import async_task, fetch
 
 from core.tasks import cleanup_expired_sessions, say_hello
 
 
-class ImmediateHueyMixin:
-    """Huey в immediate-режиме: задачи выполняются синхронно, без консьюмера."""
+class SyncClusterMixin:
+    """Задачи выполняются синхронно: кластер в тестах не запускается.
+
+    django_q читает конфиг при импорте, поэтому override_settings на него
+    не действует — переключаем Conf напрямую.
+    """
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls._was_immediate = HUEY.immediate
-        HUEY.immediate = True
+        cls._was_sync = Conf.SYNC
+        Conf.SYNC = True
 
     @classmethod
     def tearDownClass(cls):
-        HUEY.immediate = cls._was_immediate
+        Conf.SYNC = cls._was_sync
         super().tearDownClass()
 
 
-class OneOffTaskTests(ImmediateHueyMixin, TestCase):
-    def test_runs_locally_without_queue(self):
-        self.assertEqual(say_hello.call_local("Пётр"), "Привет, Пётр!")
+class OneOffTaskTests(SyncClusterMixin, TestCase):
+    def test_runs_directly(self):
+        self.assertEqual(say_hello("Пётр"), "Привет, Пётр!")
 
     def test_runs_through_queue(self):
-        result = say_hello("Мир")
-        self.assertEqual(result(), "Привет, Мир!")
+        task_id = async_task("core.tasks.say_hello", "Мир", task_name="приветствие")
+
+        task = fetch(task_id)
+        self.assertTrue(task.success)
+        self.assertEqual(task.result, "Привет, Мир!")
+        self.assertTrue(Success.objects.filter(id=task_id).exists())
 
 
-class ScheduledTaskTests(ImmediateHueyMixin, TestCase):
-    def test_schedule_is_hourly_at_30(self):
-        # validate_datetime — метод класса задачи, отвечает «пора ли запускать»
-        should_run = cleanup_expired_sessions.task_class.validate_datetime
-        self.assertTrue(should_run(None, datetime(2026, 1, 1, 12, 30)))
-        self.assertTrue(should_run(None, datetime(2026, 1, 1, 13, 30)))
-        self.assertFalse(should_run(None, datetime(2026, 1, 1, 12, 31)))
+class ScheduledTaskTests(TestCase):
+    def test_schedule_registered_by_migration(self):
+        schedule = Schedule.objects.get(name="Очистка просроченных сессий")
+        self.assertEqual(schedule.func, "core.tasks.cleanup_expired_sessions")
+        self.assertEqual(schedule.schedule_type, Schedule.CRON)
+        self.assertEqual(schedule.cron, "30 * * * *")
 
     def test_cleanup_removes_only_expired_sessions(self):
         store = self.client.session
@@ -52,6 +59,6 @@ class ScheduledTaskTests(ImmediateHueyMixin, TestCase):
             expire_date=timezone.now() - timezone.timedelta(days=1),
         )
 
-        self.assertEqual(cleanup_expired_sessions.call_local(), "ok")
+        self.assertEqual(cleanup_expired_sessions(), "ok")
         self.assertFalse(Session.objects.filter(pk=expired.pk).exists())
         self.assertTrue(Session.objects.filter(session_key=alive).exists())
