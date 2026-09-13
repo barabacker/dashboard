@@ -12,7 +12,7 @@
 
 {% block content %}
     <div class="flex flex-col gap-8">
-        {# --- KPI-плитки --- #}
+        {# KPI-плитки: данные приходят из core.admin.dashboard_callback #}
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
             {% for card in kpi %}
                 {% component "unfold/components/card.html" with icon=card.icon %}
@@ -25,54 +25,7 @@
             {% endfor %}
         </div>
 
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {# --- Структура автопарка --- #}
-            <div class="lg:col-span-1">
-                {% component "unfold/components/card.html" with title="Статусы техники" %}
-                    <div class="flex flex-col gap-4">
-                        {% for row in statuses %}
-                            <div>
-                                <div class="flex items-center justify-between text-sm text-font-default-light dark:text-font-default-dark">
-                                    <span>{{ row.label }}</span>
-                                    <span class="font-medium">{{ row.count }}</span>
-                                </div>
-                                <div class="mt-2 h-2 w-full rounded-full bg-base-100 dark:bg-base-800">
-                                    <div class="h-2 rounded-full {{ row.color }}" style="width: {{ row.share }}%"></div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endcomponent %}
-            </div>
-
-            {# --- Лента событий --- #}
-            <div class="lg:col-span-2">
-                {% component "unfold/components/card.html" with title="Последние события" %}
-                    <div class="flex flex-col divide-y divide-base-200 dark:divide-base-800">
-                        {% for alert in recent_alerts %}
-                            <a href="{% url 'admin:fleet_alert_change' alert.pk %}"
-                               class="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
-                                <span class="material-symbols-outlined
-                                    {% if alert.level == 'critical' %}text-red-500{% elif alert.level == 'warning' %}text-amber-500{% else %}text-base-400{% endif %}">
-                                    {% if alert.level == 'critical' %}error{% elif alert.level == 'warning' %}warning{% else %}info{% endif %}
-                                </span>
-                                <div class="grow">
-                                    <p class="text-sm font-medium text-font-important-light dark:text-font-important-dark">{{ alert.message }}</p>
-                                    <p class="text-xs text-font-subtle-light dark:text-font-subtle-dark">{{ alert.vehicle.plate }} · {{ alert.created_at|date:"d.m.Y H:i" }}</p>
-                                </div>
-                                {% if alert.is_resolved %}
-                                    {% component "unfold/helpers/label.html" with variant="success" text="обработано" %}{% endcomponent %}
-                                {% else %}
-                                    {% component "unfold/helpers/label.html" with variant="danger" text="в работе" %}{% endcomponent %}
-                                {% endif %}
-                            </a>
-                        {% endfor %}
-                    </div>
-                {% endcomponent %}
-            </div>
-        </div>
-
-        {# --- Стандартный список приложений Unfold --- #}
+        {# Стандартный список приложений Unfold #}
         {% include "unfold/helpers/app_list_default.html" %}
     </div>
 {% endblock %}

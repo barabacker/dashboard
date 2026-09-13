@@ -1,93 +1,86 @@
-# Телеметрия автопарка — демо админки
+# Dashboard
 
-Рабочий стенд на связке **Django 5.2 + Unfold + SQLite/SpatiaLite + GDAL/GEOS**.
-Показывает, как выглядит и работает админка с геоданными: полигоны геозон,
-точки машин, треки рейсов — всё в одной SQLite-базе, редактируется прямо на карте.
+Django-проект с админкой на [Unfold](https://unfoldadmin.com/). Стартовый каркас:
+настроенная тема, кастомный дашборд, оформленные пользователи и группы.
+Доменных моделей пока нет — они добавляются в приложение `core`.
 
-## Скриншоты
+![Дашборд](docs/screenshots/01-dashboard.png)
 
-| | |
-|---|---|
-| ![Дашборд](docs/screenshots/01-dashboard.png) | ![Список транспорта](docs/screenshots/02-vehicles.png) |
-| Дашборд: KPI-карточки, статусы, лента событий | Список: бейджи статусов, прогресс-бары, фильтры |
-| ![Карточка машины](docs/screenshots/03-vehicle-form.png) | ![Геозона](docs/screenshots/05-zone-form.png) |
-| Карточка: вкладки, инлайны рейсов и событий, PointField | Геозона: PolygonField рисуется мышью |
-| ![Рейс](docs/screenshots/07-trip-form.png) | ![Мобильный вид](docs/screenshots/09-mobile.png) |
-| Рейс: LineStringField, длина считается GEOS | Адаптивная вёрстка |
-
-Тёмная тема — те же файлы с суффиксом `-dark`.
+Светлая и тёмная темы (Unfold переключает их сам), адаптив до 420 px —
+остальные экраны в [docs/screenshots](docs/screenshots).
 
 ## Стек
 
-| Слой | Что используется |
+| | |
 |---|---|
-| Фреймворк | Django 5.2, `django.contrib.gis` |
-| Админка | `django-unfold` (Tailwind-тема поверх стандартной админки) |
-| БД | SQLite + расширение `mod_spatialite` (SpatiaLite 5.1) |
-| Гео-библиотеки | GDAL 3.8, GEOS, PROJ — берутся из системы |
-| Карта в формах | `django-leaflet` (Leaflet + Leaflet.draw, ассеты локальные) |
+| Django | 5.2 |
+| django-unfold | 0.91 |
+| БД | SQLite (файл `db.sqlite3`) |
+
+Никаких системных зависимостей: `pip install -r requirements.txt` и всё работает.
 
 ## Запуск
 
 ```bash
-# системные библиотеки (Ubuntu/Debian)
-sudo apt-get install -y libsqlite3-mod-spatialite gdal-bin libgdal-dev binutils libproj-dev libgeos-dev
-
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
 python manage.py migrate
-python manage.py seed          # демо-данные + суперпользователь admin / admin12345
+python manage.py createsuperuser
 python manage.py runserver
 ```
 
 Админка: http://127.0.0.1:8000/admin/
 
-## Что внутри
+## Структура
 
 ```
-config/settings.py   настройки: spatialite-движок, UNFOLD (сайдбар, цвета, дашборд), LEAFLET_CONFIG
-fleet/models.py      Zone (PolygonField), Vehicle (PointField), Trip (LineStringField), Alert
-fleet/admin.py       Unfold ModelAdmin + LeafletGeoAdminMixin, бейджи, фильтры, дашборд-callback
-templates/admin/index.html   кастомный дашборд на компонентах Unfold
-fleet/management/commands/seed.py   генератор демо-данных
-tools/make_tiles.py  офлайн-тайлы подложки (см. ниже)
-tools/shots.py       скриншоты админки через Playwright
+config/settings.py   настройки проекта и словарь UNFOLD (сайдбар, цвета, дашборд)
+config/urls.py       / → редирект на /admin/
+core/admin.py        dashboard_callback, оформленные UserAdmin и GroupAdmin
+core/models.py       место для доменных моделей
+templates/admin/index.html   дашборд на компонентах Unfold
+tools/shots.py       скриншоты админки (dev, см. requirements-dev.txt)
 ```
 
-Геометрия считается на стороне GEOS/GDAL, а не в Python:
+## Как это настроено
+
+**Unfold идёт первым в `INSTALLED_APPS`** — до `django.contrib.admin`, иначе его шаблоны не подхватятся.
+
+**Своя админ-модель наследует два класса:**
 
 ```python
-# площадь геозоны в км² — перепроекция 4326 → 3857 средствами GDAL
-self.area.transform(3857, clone=True).area / 1_000_000
+from unfold.admin import ModelAdmin
 
-# длина трека рейса
-track.transform(3857, clone=True).length / 1000
+@admin.register(Article)
+class ArticleAdmin(ModelAdmin):
+    ...
 ```
 
-## Про подложку карты
+Для моделей, у которых уже есть готовый ModelAdmin (User, Group), миксуются оба —
+см. `core/admin.py`.
 
-Стенд собирался в песочнице без доступа к `tile.openstreetmap.org`, поэтому
-подложка сгенерирована офлайн из береговых линий GSHHS (`tools/make_tiles.py`)
-и лежит в `static/tiles/` (в git не коммитится — генерируется командой
-`python tools/make_tiles.py 7`).
+**Дашборд** рисуется из `templates/admin/index.html`, данные приходят из
+`core.admin.dashboard_callback` (указан в `UNFOLD["DASHBOARD_CALLBACK"]`).
+Сейчас показывает метрики по пользователям; доменные метрики добавляются туда же.
 
-В обычном окружении вместо неё ставится обычный OSM-слой в `config/settings.py`:
+**Сайдбар** задаётся вручную в `UNFOLD["SIDEBAR"]["navigation"]` — новые разделы
+нужно дописывать туда, автоматически они не появляются.
 
-```python
-LEAFLET_CONFIG = {
-    "TILES": [("OSM", "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-               {"attribution": "© OpenStreetMap"})],
-}
-```
+## Настройки окружения
 
-## Замечания по связке
+| Переменная | По умолчанию |
+|---|---|
+| `DJANGO_SECRET_KEY` | небезопасный ключ для разработки |
+| `DJANGO_DEBUG` | `1` |
+| `DJANGO_ALLOWED_HOSTS` | `*` |
 
-- **SpatiaLite тянет почти весь PostGIS-функционал**: индексы, `transform()`,
-  предикаты (`contains`, `intersects`, `dwithin`). Чего нет — оконных гео-агрегатов
-  и части растровых операций; при росте нагрузки переезд на PostGIS — смена одной строки `ENGINE`.
-- **Unfold не имеет своего гео-виджета**: GIS-поля рисует либо стандартный
-  OpenLayers-виджет Django, либо `django-leaflet` (взят здесь — ассеты локальные, есть Leaflet.draw).
-  Подключается миксином: `class VehicleAdmin(LeafletGeoAdminMixin, unfold.admin.ModelAdmin)`.
-- **Интерфейс Unfold переведён не полностью** — часть строк («Type to search», «Filters»)
-  остаётся на английском, переводится через собственный `.po`.
+Перед деплоем задать все три.
+
+## Что дальше
+
+- Доменные модели в `core` (или отдельными приложениями) + их `ModelAdmin`.
+- Русская локаль для Unfold: часть строк интерфейса («Type to search», «Filters»)
+  остаётся английской, лечится собственным `.po`-файлом.
+- Гео-слой (SpatiaLite + GDAL + карты в формах) — рабочий вариант лежит в истории
+  ветки, коммит `d5efad7`: `git show d5efad7 --stat`.

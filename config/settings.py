@@ -1,12 +1,14 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-demo-key-not-for-production"
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-change-me-before-deploy")
+DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
 INSTALLED_APPS = [
+    # Unfold должен идти до django.contrib.admin — он подменяет шаблоны админки
     "unfold",
     "unfold.contrib.filters",
     "unfold.contrib.forms",
@@ -17,9 +19,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django.contrib.gis",
-    "leaflet",
-    "fleet",
+    "core",
 ]
 
 MIDDLEWARE = [
@@ -29,6 +29,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -50,17 +51,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# GeoDjango на SQLite: движок spatialite, расширение mod_spatialite грузится в
-# каждое соединение. GDAL/GEOS подхватываются через системные библиотеки.
 DATABASES = {
     "default": {
-        "ENGINE": "django.contrib.gis.db.backends.spatialite",
+        "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-SPATIALITE_LIBRARY_PATH = "mod_spatialite"
 
-AUTH_PASSWORD_VALIDATORS = []
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
 
 LANGUAGE_CODE = "ru"
 TIME_ZONE = "Europe/Moscow"
@@ -68,30 +71,21 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+LOGIN_REDIRECT_URL = "/admin/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Тайлы — локальные, сгенерированы офлайн (tools/make_tiles.py).
-# В обычном окружении сюда ставится OSM: https://tile.openstreetmap.org/{z}/{x}/{y}.png
-LEAFLET_CONFIG = {
-    "DEFAULT_CENTER": (55.75, 37.62),
-    "DEFAULT_ZOOM": 5,
-    "MIN_ZOOM": 3,
-    "MAX_ZOOM": 7,
-    "TILES": [("Схема", "/static/tiles/{z}/{x}/{y}.png", {"attribution": "GSHHS / офлайн-подложка"})],
-    "RESET_VIEW": False,
-    "SCALE": "metric",
-}
-
 UNFOLD = {
-    "SITE_TITLE": "Телеметрия",
-    "SITE_HEADER": "Телеметрия автопарка",
-    "SITE_SUBHEADER": "Django + Unfold + SpatiaLite + GDAL",
-    "SITE_SYMBOL": "local_shipping",
+    "SITE_TITLE": "Dashboard",
+    "SITE_HEADER": "Dashboard",
+    "SITE_SUBHEADER": "Панель управления",
+    "SITE_SYMBOL": "dashboard",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": False,
-    "ENVIRONMENT": "fleet.admin.environment_callback",
-    "DASHBOARD_CALLBACK": "fleet.admin.dashboard_callback",
+    "ENVIRONMENT": "core.admin.environment_callback",
+    "DASHBOARD_CALLBACK": "core.admin.dashboard_callback",
     "COLORS": {
         "primary": {
             "50": "oklch(97.7% .013 236.62)",
@@ -115,64 +109,17 @@ UNFOLD = {
                 "title": "Обзор",
                 "separator": False,
                 "items": [
-                    {
-                        "title": "Дашборд",
-                        "icon": "dashboard",
-                        "link": "/admin/",
-                    },
-                ],
-            },
-            {
-                "title": "Автопарк",
-                "separator": True,
-                "items": [
-                    {
-                        "title": "Транспорт",
-                        "icon": "local_shipping",
-                        "link": "/admin/fleet/vehicle/",
-                    },
-                    {
-                        "title": "Рейсы",
-                        "icon": "route",
-                        "link": "/admin/fleet/trip/",
-                    },
-                    {
-                        "title": "Геозоны",
-                        "icon": "pentagon",
-                        "link": "/admin/fleet/zone/",
-                    },
-                    {
-                        "title": "События",
-                        "icon": "notifications_active",
-                        "link": "/admin/fleet/alert/",
-                    },
+                    {"title": "Дашборд", "icon": "dashboard", "link": "/admin/"},
                 ],
             },
             {
                 "title": "Доступ",
                 "separator": True,
                 "items": [
-                    {
-                        "title": "Пользователи",
-                        "icon": "person",
-                        "link": "/admin/auth/user/",
-                    },
-                    {
-                        "title": "Группы",
-                        "icon": "groups",
-                        "link": "/admin/auth/group/",
-                    },
+                    {"title": "Пользователи", "icon": "person", "link": "/admin/auth/user/"},
+                    {"title": "Группы", "icon": "groups", "link": "/admin/auth/group/"},
                 ],
             },
         ],
     },
-    "TABS": [
-        {
-            "models": ["fleet.vehicle", "fleet.trip"],
-            "items": [
-                {"title": "Транспорт", "link": "/admin/fleet/vehicle/"},
-                {"title": "Рейсы", "link": "/admin/fleet/trip/"},
-            ],
-        },
-    ],
 }

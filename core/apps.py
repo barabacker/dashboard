@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 
 
-class FleetConfig(AppConfig):
+class CoreConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "fleet"
-    verbose_name = "Автопарк"
+    name = "core"
+    verbose_name = "Основное"

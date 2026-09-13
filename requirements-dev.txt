@@ -1,0 +1,4 @@
+-r requirements.txt
+
+# Только для tools/shots.py — снимает скриншоты админки
+playwright>=1.49
