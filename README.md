@@ -4,11 +4,6 @@ Django-проект с админкой на [Unfold](https://unfoldadmin.com/).
 настроенная тема, кастомный дашборд, оформленные пользователи и группы.
 Доменных моделей пока нет — они добавляются в приложение `core`.
 
-![Дашборд](docs/screenshots/01-dashboard.png)
-
-Светлая и тёмная темы (Unfold переключает их сам), адаптив до 420 px —
-остальные экраны в [docs/screenshots](docs/screenshots).
-
 ## Стек
 
 | | |
@@ -22,15 +17,36 @@ Django-проект с админкой на [Unfold](https://unfoldadmin.com/).
 ## Запуск
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
+make install-dev     # venv + зависимости
+make migrate
+make superuser
+make run
 ```
 
 Админка: http://127.0.0.1:8000/admin/
+
+Всё то же самое без Makefile — обычными командами Django:
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate && python manage.py createsuperuser
+python manage.py runserver
+```
+
+## Команды
+
+`make help` покажет список. Основное:
+
+| Команда | Что делает |
+|---|---|
+| `make run` | сервер разработки, порт меняется через `PORT=8080` |
+| `make migrate` / `make migrations` | применить / создать миграции |
+| `make test` | тесты |
+| `make lint` / `make fmt` | проверить / отформатировать код (ruff) |
+| `make check` | `manage.py check` + проверка несозданных миграций |
+| `make ci` | всё, что гоняет CI: lint + check + test |
+| `make clean` / `make distclean` | убрать кэши / ещё и venv с базой |
 
 ## Структура
 
@@ -39,23 +55,22 @@ config/settings.py   настройки проекта и словарь UNFOLD 
 config/urls.py       / → редирект на /admin/
 core/admin.py        dashboard_callback, оформленные UserAdmin и GroupAdmin
 core/models.py       место для доменных моделей
-templates/admin/index.html   дашборд на компонентах Unfold
 core/tests.py        тесты дашборда и доступа к админке
-tools/shots.py       скриншоты админки (dev, см. requirements-dev.txt)
+templates/admin/index.html   дашборд на компонентах Unfold
 ```
 
 ## Как это настроено
 
 **Unfold идёт первым в `INSTALLED_APPS`** — до `django.contrib.admin`, иначе его шаблоны не подхватятся.
 
-**Своя админ-модель наследует два класса:**
+**Своя админ-модель наследует ModelAdmin из Unfold:**
 
 ```python
 from unfold.admin import ModelAdmin
 
 @admin.register(Article)
 class ArticleAdmin(ModelAdmin):
-    ...
+    list_display = ("title", "created_at")
 ```
 
 Для моделей, у которых уже есть готовый ModelAdmin (User, Group), миксуются оба —
@@ -77,13 +92,7 @@ GitHub Actions (`.github/workflows/ci.yml`) на каждый push в `main` и 
 | Линтер | `ruff check` + `ruff format --check` |
 | Тесты | `manage.py check`, проверка несозданных миграций, `manage.py test`, `collectstatic` на Python 3.11 / 3.12 / 3.13 |
 
-Локально то же самое:
-
-```bash
-pip install -r requirements-dev.txt
-ruff check . && ruff format --check .
-python manage.py test
-```
+Локально то же самое — `make ci`.
 
 ## Настройки окружения
 
@@ -100,5 +109,5 @@ python manage.py test
 - Доменные модели в `core` (или отдельными приложениями) + их `ModelAdmin`.
 - Русская локаль для Unfold: часть строк интерфейса («Type to search», «Filters»)
   остаётся английской, лечится собственным `.po`-файлом.
-- Гео-слой (SpatiaLite + GDAL + карты в формах) — рабочий вариант лежит в истории
-  ветки, коммит `d5efad7`: `git show d5efad7 --stat`.
+- Гео-слой (SpatiaLite + GDAL + карты в формах) — рабочий вариант лежит в истории,
+  коммит `d5efad7`: `git show d5efad7 --stat`.
