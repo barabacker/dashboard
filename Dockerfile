@@ -5,7 +5,6 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
-    UV_FROZEN=1 \
     # окружение вне /app, чтобы bind-mount с кодом его не перекрывал
     UV_PROJECT_ENVIRONMENT=/venv \
     PATH="/venv/bin:$PATH" \
